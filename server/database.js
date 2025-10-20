@@ -1,52 +1,40 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// Configuração do pool de conexões com sua DATABASE_URL
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
-        rejectUnauthorized: false  // Necessário para Render PostgreSQL
-    },
-    // Configurações adicionais para melhor performance
-    max: 20, // número máximo de clientes no pool
-    idleTimeoutMillis: 30000, // tempo que um cliente pode ficar idle antes de ser fechado
-    connectionTimeoutMillis: 2000, // tempo máximo para tentar conectar
+        rejectUnauthorized: false
+    }
 });
-
-// Variável para verificar se as tabelas já foram criadas
-let tabelasCriadas = false;
 
 export async function connectDB() {
     try {
-        // Testar a conexão
-        const client = await pool.connect();
-        console.log('✅ Conectado ao PostgreSQL no Render com sucesso!');
-        console.log('📊 Database: sistema_ponto_db');
+        console.log('🔗 Conectando ao PostgreSQL...');
         
-        // Criar tabelas se não existirem
-        if (!tabelasCriadas) {
-            await criarTabelas();
-            tabelasCriadas = true;
-        }
+        const client = await pool.connect();
+        console.log('✅ Conectado ao PostgreSQL no Render!');
+        
+        // Verificar qual schema estamos usando
+        const schemaResult = await pool.query('SELECT current_schema()');
+        console.log('📊 Schema atual:', schemaResult.rows[0].current_schema);
+        
+        await criarTabelas();
         
         client.release();
         return true;
         
     } catch (error) {
-        console.error('❌ Erro ao conectar ao banco de dados:', error.message);
-        console.log('🔍 Verifique se:');
-        console.log('   1. A DATABASE_URL está correta no Render');
-        console.log('   2. O PostgreSQL está rodando');
-        console.log('   3. As credenciais estão válidas');
+        console.error('❌ Erro ao conectar:', error.message);
         return false;
     }
 }
 
 async function criarTabelas() {
     try {
-        console.log('🔄 Verificando/Criando tabelas...');
+        console.log('🔄 Criando tabelas...');
         
-        // Tabela de usuários
+        // Tabela de usuários - SEM schema específico (usa o default)
         await pool.query(`
             CREATE TABLE IF NOT EXISTS usuarios (
                 id SERIAL PRIMARY KEY,
@@ -59,7 +47,7 @@ async function criarTabelas() {
                 ativo BOOLEAN DEFAULT TRUE
             )
         `);
-        console.log('✅ Tabela "usuarios" verificada/criada');
+        console.log('✅ Tabela "usuarios" criada/verificada');
 
         // Tabela de registros de ponto
         await pool.query(`
@@ -69,93 +57,67 @@ async function criarTabelas() {
                 tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('entrada', 'saida_almoco', 'retorno_almoco', 'saida')),
                 data_registro DATE NOT NULL,
                 hora_registro TIME NOT NULL,
-                timestamp_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                timestamp_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
-        console.log('✅ Tabela "registros_ponto" verificada/criada');
+        console.log('✅ Tabela "registros_ponto" criada/verificada');
 
-        // Índices para melhor performance
-        await pool.query(`
-            CREATE INDEX IF NOT EXISTS idx_registros_usuario_id 
-            ON registros_ponto(usuario_id)
-        `);
-        
-        await pool.query(`
-            CREATE INDEX IF NOT EXISTS idx_registros_data 
-            ON registros_ponto(data_registro)
-        `);
-        
-        await pool.query(`
-            CREATE INDEX IF NOT EXISTS idx_usuarios_email 
-            ON usuarios(email)
-        `);
-
-        console.log('✅ Índices criados/verificados');
-        console.log('🎉 Banco de dados configurado com sucesso!');
+        console.log('🎉 Todas as tabelas criadas com sucesso!');
 
     } catch (error) {
-        console.error('❌ Erro ao criar tabelas:', error);
-        throw error; // Propaga o erro para quem chamou
+        console.error('❌ Erro ao criar tabelas:', error.message);
+        
+        // Se der erro de permissão, tentar método alternativo
+        if (error.message.includes('permission denied')) {
+            console.log('🔄 Tentando método alternativo...');
+            await criarTabelasAlternativo();
+        } else {
+            throw error;
+        }
     }
 }
 
-// Função para executar queries
+// Método alternativo se o primeiro falhar
+async function criarTabelasAlternativo() {
+    try {
+        console.log('🔄 Usando método alternativo para criar tabelas...');
+        
+        // Verificar se as tabelas já existem de alguma forma
+        const tablesCheck = await pool.query(`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema != 'information_schema' 
+            AND table_name IN ('usuarios', 'registros_ponto')
+        `);
+        
+        console.log('📊 Tabelas encontradas:', tablesCheck.rows);
+        
+        if (tablesCheck.rows.length === 0) {
+            console.log('❌ Não foi possível criar tabelas automaticamente.');
+            console.log('💡 Execute manualmente: https://seu-app.onrender.com/api/debug/create-tables');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro no método alternativo:', error.message);
+    }
+}
+
 export async function query(text, params) {
     try {
-        const start = Date.now();
         const result = await pool.query(text, params);
-        const duration = Date.now() - start;
-        
-        // Log para debug (opcional)
-        console.log(`📝 Query executada: ${text} - ${duration}ms`);
-        
         return result;
     } catch (error) {
-        console.error('❌ Erro na query:', {
-            query: text,
-            params: params,
-            error: error.message
-        });
+        console.error('❌ Erro na query:', error.message);
         throw error;
     }
 }
 
-// Função para obter um cliente do pool (para transações)
-export async function getClient() {
-    const client = await pool.connect();
-    
-    const query = client.query;
-    const release = client.release;
-    
-    // Configurar timeout para o client
-    const timeout = setTimeout(() => {
-        console.error('⚠️ Client inativo por muito tempo, liberando...');
-        client.release();
-    }, 30000); // 30 segundos
-
-    client.release = () => {
-        clearTimeout(timeout);
-        client.release = release;
-        return release.apply(client);
-    };
-
-    client.query = (...args) => {
-        return query.apply(client, args);
-    };
-
-    return client;
-}
-
-// Função para verificar saúde do banco
 export async function healthCheck() {
     try {
-        const result = await pool.query('SELECT NOW() as current_time, version() as postgres_version');
+        const result = await pool.query('SELECT NOW() as current_time');
         return {
             status: 'healthy',
-            database: 'sistema_ponto_db',
-            current_time: result.rows[0].current_time,
-            postgres_version: result.rows[0].postgres_version.split(',')[0] // pega apenas a primeira parte
+            current_time: result.rows[0].current_time
         };
     } catch (error) {
         return {
@@ -165,10 +127,4 @@ export async function healthCheck() {
     }
 }
 
-// Função para fechar o pool (útil para testes)
-export async function closePool() {
-    await pool.end();
-}
-
-// Exportar o pool para uso direto se necessário
 export { pool };
