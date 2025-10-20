@@ -1,14 +1,12 @@
 {
-  "name": "meu-app-html",
+  "name": "sistema-ponto-completo",
   "version": "1.0.0",
-  "description": "Meu aplicativo HTML moderno",
   "scripts": {
-    "start": "npx serve -s public -l 3000",
-    "build": "echo 'Build completo!'"
+    "start": "cd server && npm start",
+    "dev": "cd server && npm run dev",
+    "install-server": "cd server && npm install",
+    "install-all": "npm install && npm run install-server"
   },
-  "keywords": ["html", "css", "javascript"],
-  "author": "Seu Nome",
-  "license": "MIT",
   "dependencies": {
     "serve": "^14.0.0"
   }
