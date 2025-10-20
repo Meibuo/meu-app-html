@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
-import { connectDB, query, healthCheck } from './database.js';
+import { connectDB, query, healthCheck, pool } from './database.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,9 +25,100 @@ connectDB().then(success => {
     }
 });
 
+// ==================== ROTA FORCE-INIT (ADICIONE ESTA ROTA!) ====================
+
+app.post('/api/force-init', async (req, res) => {
+    const client = await pool.connect();
+    
+    try {
+        console.log('🚀 FORÇANDO CRIAÇÃO DO BANCO...');
+        
+        // 1. Criar schema
+        await client.query('CREATE SCHEMA IF NOT EXISTS sistema_ponto');
+        console.log('✅ Schema sistema_ponto criado');
+        
+        // 2. Usar o schema
+        await client.query('SET search_path TO sistema_ponto');
+        
+        // 3. Criar tabela usuarios
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                nome_completo VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                empresa VARCHAR(255) NOT NULL,
+                cargo VARCHAR(255) NOT NULL,
+                senha_hash VARCHAR(255) NOT NULL,
+                data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                ativo BOOLEAN DEFAULT TRUE
+            )
+        `);
+        console.log('✅ Tabela usuarios criada');
+        
+        // 4. Criar tabela registros_ponto
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS registros_ponto (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+                tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('entrada', 'saida_almoco', 'retorno_almoco', 'saida')),
+                data_registro DATE NOT NULL,
+                hora_registro TIME NOT NULL,
+                timestamp_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('✅ Tabela registros_ponto criada');
+        
+        // 5. Criar índices
+        await client.query('CREATE INDEX IF NOT EXISTS idx_registros_usuario_id ON registros_ponto(usuario_id)');
+        await client.query('CREATE INDEX IF NOT EXISTS idx_registros_data ON registros_ponto(data_registro)');
+        await client.query('CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email)');
+        console.log('✅ Índices criados');
+        
+        // 6. Verificar se deu certo
+        const tables = await client.query(`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'sistema_ponto'
+        `);
+        
+        console.log('📊 Tabelas criadas:', tables.rows.map(t => t.table_name));
+        
+        // 7. Testar inserção
+        const testResult = await client.query(`
+            INSERT INTO usuarios (nome_completo, email, empresa, cargo, senha_hash) 
+            VALUES ($1, $2, $3, $4, $5) 
+            RETURNING id, email
+        `, ['Usuario Teste', 'teste@teste.com', 'Empresa Teste', 'Cargo Teste', 'testehash']);
+        
+        console.log('✅ Teste de inserção:', testResult.rows[0]);
+        
+        // 8. Limpar teste
+        await client.query('DELETE FROM usuarios WHERE email = $1', ['teste@teste.com']);
+        
+        client.release();
+        
+        res.json({
+            success: true,
+            message: '🎉 Banco de dados criado e testado com sucesso!',
+            schema: 'sistema_ponto',
+            tables: tables.rows,
+            test: 'Inserção e exclusão de teste funcionaram'
+        });
+        
+    } catch (error) {
+        console.error('❌ ERRO na force-init:', error);
+        client.release();
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            details: 'Verifique os logs para mais informações'
+        });
+    }
+});
+
 // ==================== ROTAS DE DEBUG ====================
 
-// Rota de health check MELHORADA
+// Rota de health check
 app.get('/api/health', async (req, res) => {
     try {
         const dbHealth = await healthCheck();
@@ -51,145 +142,56 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
-// Rota de debug COMPLETA (REMOVA EM PRODUÇÃO)
+// Rota de debug
 app.get('/api/debug', async (req, res) => {
+    const client = await pool.connect();
+    
     try {
-        console.log('🔍 Iniciando debug completo...');
+        console.log('🔍 Iniciando debug...');
         
-        // 1. Testar conexão
-        const dbHealth = await healthCheck();
+        // Verificar schema atual
+        const schemaResult = await client.query('SELECT current_schema()');
+        const currentSchema = schemaResult.rows[0].current_schema;
         
-        // 2. Verificar tabelas
-        const tables = await query(`
+        // Verificar tabelas no schema atual
+        const tables = await client.query(`
             SELECT table_name 
             FROM information_schema.tables 
-            WHERE table_schema = 'public'
-            ORDER BY table_name
-        `);
+            WHERE table_schema = $1
+        `, [currentSchema]);
         
-        // 3. Verificar estrutura das tabelas
-        const tableDetails = {};
-        for (let table of tables.rows) {
-            const columns = await query(`
-                SELECT column_name, data_type, is_nullable, column_default
-                FROM information_schema.columns
-                WHERE table_name = $1
-                ORDER BY ordinal_position
-            `, [table.table_name]);
-            tableDetails[table.table_name] = columns.rows;
+        // Verificar todos os schemas
+        const allSchemas = await client.query('SELECT schema_name FROM information_schema.schemata');
+        
+        // Verificar usuários se a tabela existir
+        let usuarios = [];
+        if (tables.rows.some(t => t.table_name === 'usuarios')) {
+            const usuariosResult = await client.query('SELECT id, nome_completo, email, empresa FROM usuarios');
+            usuarios = usuariosResult.rows;
         }
         
-        // 4. Verificar usuários
-        const usuarios = await query('SELECT id, nome_completo, email, empresa, data_cadastro FROM usuarios ORDER BY data_cadastro DESC');
-        
-        // 5. Verificar registros
-        const registros = await query('SELECT id, usuario_id, tipo, data_registro, hora_registro FROM registros_ponto ORDER BY timestamp_registro DESC LIMIT 10');
-        
-        // 6. Testar INSERT simples
-        let testInsert = { success: false, error: null };
-        try {
-            const testEmail = `debug-${Date.now()}@test.com`;
-            const insertResult = await query(
-                `INSERT INTO usuarios (nome_completo, email, empresa, cargo, senha_hash) 
-                 VALUES ($1, $2, $3, $4, $5) 
-                 RETURNING id`,
-                ['Debug User', testEmail, 'Debug Empresa', 'Debug Cargo', 'debug_hash']
-            );
-            testInsert.success = true;
-            testInsert.id = insertResult.rows[0].id;
-            
-            // Limpar teste
-            await query('DELETE FROM usuarios WHERE id = $1', [testInsert.id]);
-        } catch (insertError) {
-            testInsert.error = insertError.message;
-        }
-
-        console.log('✅ Debug completo finalizado');
+        client.release();
         
         res.json({
-            status: 'debug_completed',
-            timestamp: new Date().toISOString(),
-            database: dbHealth,
-            tables: tables.rows,
-            table_details: tableDetails,
-            usuarios: usuarios.rows,
-            total_usuarios: usuarios.rows.length,
-            registros: registros.rows,
-            total_registros: registros.rows.length,
-            test_insert: testInsert,
-            environment: {
-                node_version: process.version,
-                database_url_defined: !!process.env.DATABASE_URL,
-                port: PORT
-            }
+            current_schema: currentSchema,
+            tables_in_current_schema: tables.rows,
+            all_schemas: allSchemas.rows,
+            usuarios: usuarios,
+            total_usuarios: usuarios.length
         });
         
     } catch (error) {
         console.error('❌ Erro no debug:', error);
+        client.release();
         res.status(500).json({ 
-            status: 'debug_error',
-            error: error.message,
-            stack: error.stack
-        });
-    }
-});
-
-// Rota para criar tabelas manualmente (EMERGÊNCIA)
-app.post('/api/debug/create-tables', async (req, res) => {
-    try {
-        console.log('🛠️ Criando tabelas manualmente...');
-        
-        // Tabela de usuários
-        await query(`
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id SERIAL PRIMARY KEY,
-                nome_completo VARCHAR(255) NOT NULL,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                empresa VARCHAR(255) NOT NULL,
-                cargo VARCHAR(255) NOT NULL,
-                senha_hash VARCHAR(255) NOT NULL,
-                data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                ativo BOOLEAN DEFAULT TRUE
-            )
-        `);
-        
-        // Tabela de registros de ponto
-        await query(`
-            CREATE TABLE IF NOT EXISTS registros_ponto (
-                id SERIAL PRIMARY KEY,
-                usuario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
-                tipo VARCHAR(50) NOT NULL CHECK (tipo IN ('entrada', 'saida_almoco', 'retorno_almoco', 'saida')),
-                data_registro DATE NOT NULL,
-                hora_registro TIME NOT NULL,
-                timestamp_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        
-        // Criar índices
-        await query('CREATE INDEX IF NOT EXISTS idx_registros_usuario_id ON registros_ponto(usuario_id)');
-        await query('CREATE INDEX IF NOT EXISTS idx_registros_data ON registros_ponto(data_registro)');
-        await query('CREATE INDEX IF NOT EXISTS idx_usuarios_email ON usuarios(email)');
-        
-        console.log('✅ Tabelas criadas com sucesso');
-        
-        res.json({
-            success: true,
-            message: 'Tabelas criadas/verificadas com sucesso',
-            tables_created: ['usuarios', 'registros_ponto']
-        });
-        
-    } catch (error) {
-        console.error('❌ Erro ao criar tabelas:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
+            error: error.message 
         });
     }
 });
 
 // ==================== ROTAS PRINCIPAIS ====================
 
-// Rota de cadastro - COM MAIS LOGS
+// Rota de cadastro
 app.post('/api/cadastro', async (req, res) => {
     console.log('🎯 INICIANDO CADASTRO...', req.body);
     
@@ -256,14 +258,14 @@ app.post('/api/cadastro', async (req, res) => {
     }
 });
 
-// Rota de login - CORRIGIDA
+// Rota de login
 app.post('/api/login', async (req, res) => {
     try {
         const { email, senha } = req.body;
 
         console.log(`🔐 Tentativa de login: ${email}`);
 
-        // Buscar usuário - CORRIGIDO: usando snake_case
+        // Buscar usuário
         const result = await query(
             'SELECT id, nome_completo as "nomeCompleto", email, empresa, cargo, senha_hash as "senhaHash", data_cadastro as "dataCadastro" FROM usuarios WHERE email = $1 AND ativo = true',
             [email]
@@ -386,32 +388,9 @@ app.get('/api/registros/:usuarioId', async (req, res) => {
     }
 });
 
-// Rota para verificar se email existe
-app.get('/api/verificar-email/:email', async (req, res) => {
-    try {
-        const { email } = req.params;
-
-        const result = await query(
-            'SELECT id FROM usuarios WHERE email = $1',
-            [email]
-        );
-
-        res.json({
-            exists: result.rows.length > 0
-        });
-
-    } catch (error) {
-        console.error('❌ Erro ao verificar email:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Erro ao verificar email' 
-        });
-    }
-});
-
 app.listen(PORT, () => {
     console.log(`🎯 Servidor rodando na porta ${PORT}`);
     console.log(`🌐 Health check: https://seu-app.onrender.com/api/health`);
     console.log(`🔍 Debug: https://seu-app.onrender.com/api/debug`);
-    console.log(`🛠️ Criar tabelas: https://seu-app.onrender.com/api/debug/create-tables`);
+    console.log(`🚀 Force Init: https://seu-app.onrender.com/api/force-init`);
 });
