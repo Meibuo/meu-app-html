@@ -1,144 +1,106 @@
-// Sistema de Cadastro
-class CadastroSystem {
-    constructor() {
-        this.init();
-    }
+// NOVO database.js - CORRIGIDO
+import pkg from 'pg';
+const { Pool } = pkg;
 
-    init() {
-        this.configurarCadastro();
-    }
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
 
-    configurarCadastro() {
-        const cadastroForm = document.getElementById('cadastro-form');
-        const mensagemSucesso = document.getElementById('mensagem-sucesso');
-        const mensagemErro = document.getElementById('mensagem-erro');
+const APP_SCHEMA = 'sistema_ponto';
 
-        cadastroForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(cadastroForm);
-            const usuarioData = {
-                nomeCompleto: formData.get('nomeCompleto'),
-                email: formData.get('email'),
-                empresa: formData.get('empresa'),
-                cargo: formData.get('cargo'),
-                senha: formData.get('senha')
-            };
-
-            const confirmarSenha = formData.get('confirmarSenha');
-
-            // Limpar mensagens anteriores
-            mensagemErro.textContent = '';
-            mensagemSucesso.textContent = '';
-
-            // Validações
-            if (usuarioData.senha !== confirmarSenha) {
-                this.mostrarMensagemErro('As senhas não coincidem!');
-                return;
-            }
-
-            if (usuarioData.senha.length < 6) {
-                this.mostrarMensagemErro('A senha deve ter no mínimo 6 caracteres!');
-                return;
-            }
-
-            console.log('📤 Enviando dados para cadastro:', usuarioData);
-
-            try {
-                const response = await fetch('/api/cadastro', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(usuarioData)
-                });
-
-                console.log('📥 Resposta recebida, status:', response.status);
-
-                const data = await response.json();
-                console.log('📊 Dados da resposta:', data);
-
-                if (data.success) {
-                    this.mostrarConfirmacaoSucesso(usuarioData);
-                } else {
-                    this.mostrarMensagemErro(data.message || 'Erro no cadastro');
-                }
-
-            } catch (error) {
-                console.error('❌ Erro na comunicação:', error);
-                this.mostrarMensagemErro('Erro de conexão com o servidor: ' + error.message);
-            }
-        });
-    }
-
-    mostrarConfirmacaoSucesso(usuarioData) {
-        const cadastroForm = document.getElementById('cadastro-form');
-        const mensagemSucesso = document.getElementById('mensagem-sucesso');
+// Função para executar queries - CORRIGIDA
+export async function query(text, params) {
+    const client = await pool.connect();
+    
+    try {
+        // FORÇAR uso do nosso schema em TODAS as queries
+        await client.query(`SET search_path TO ${APP_SCHEMA}`);
         
-        // Criar conteúdo de confirmação
-        mensagemSucesso.innerHTML = `
-            <div class="confirmacao-sucesso">
-                <div class="icone-sucesso">✅</div>
-                <h3>Cadastro Criado com Sucesso!</h3>
-                <div class="dados-cadastro">
-                    <p><strong>Nome:</strong> ${usuarioData.nomeCompleto}</p>
-                    <p><strong>E-mail:</strong> ${usuarioData.email}</p>
-                    <p><strong>Empresa:</strong> ${usuarioData.empresa}</p>
-                    <p><strong>Cargo:</strong> ${usuarioData.cargo}</p>
-                </div>
-                <p class="instrucao">Você será redirecionado para a página de login em <span id="contador">5</span> segundos...</p>
-                <div class="botoes-confirmacao">
-                    <button onclick="window.location.href='index.html'" class="btn-confirmacao primario">
-                        🚀 Ir para Login Agora
-                    </button>
-                    <button onclick="window.location.href='cadastro.html'" class="btn-confirmacao secundario">
-                        📝 Fazer Novo Cadastro
-                    </button>
-                </div>
-            </div>
-        `;
-
-        // Esconder formulário
-        cadastroForm.style.display = 'none';
-        mensagemSucesso.style.display = 'block';
-
-        // Contador regressivo
-        this.iniciarContador();
-    }
-
-    iniciarContador() {
-        let segundos = 5;
-        const contadorElement = document.getElementById('contador');
-        const intervalo = setInterval(() => {
-            segundos--;
-            contadorElement.textContent = segundos;
-            
-            if (segundos <= 0) {
-                clearInterval(intervalo);
-                window.location.href = 'index.html';
-            }
-        }, 1000);
-    }
-
-    mostrarMensagemErro(mensagem) {
-        const mensagemErro = document.getElementById('mensagem-erro');
-        mensagemErro.innerHTML = `
-            <div class="erro-container">
-                <span>⚠️ ${mensagem}</span>
-            </div>
-        `;
-        setTimeout(() => {
-            mensagemErro.innerHTML = '';
-        }, 5000);
+        console.log(`📝 Executando query: ${text.substring(0, 100)}...`);
+        const result = await client.query(text, params);
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Erro na query:', error.message);
+        console.error('Query:', text);
+        console.error('Params:', params);
+        throw error;
+    } finally {
+        client.release();
     }
 }
 
-// Inicializar sistema de cadastro
-document.addEventListener('DOMContentLoaded', function() {
-    new CadastroSystem();
+export async function connectDB() {
+    try {
+        const client = await pool.connect();
+        console.log('✅ Conectado ao PostgreSQL!');
+        
+        // Criar schema se não existir
+        await client.query(`CREATE SCHEMA IF NOT EXISTS ${APP_SCHEMA}`);
+        console.log(`✅ Schema ${APP_SCHEMA} verificado`);
+        
+        // Criar tabelas
+        await client.query(`SET search_path TO ${APP_SCHEMA}`);
+        
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id SERIAL PRIMARY KEY,
+                nome_completo VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                empresa VARCHAR(255) NOT NULL,
+                cargo VARCHAR(255) NOT NULL,
+                senha_hash VARCHAR(255) NOT NULL,
+                data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS registros_ponto (
+                id SERIAL PRIMARY KEY,
+                usuario_id INTEGER REFERENCES usuarios(id),
+                tipo VARCHAR(50) NOT NULL,
+                data_registro DATE NOT NULL,
+                hora_registro TIME NOT NULL,
+                timestamp_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        console.log('✅ Tabelas criadas/verificadas');
+        client.release();
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erro ao conectar:', error.message);
+        return false;
+    }
+}
+
+export async function healthCheck() {
+    const client = await pool.connect();
     
-    // Debug automático
-    console.log('🔍 Cadastro system inicializado');
-    console.log('💡 Dica: Use F12 → Console para ver os logs');
-});
+    try {
+        await client.query(`SET search_path TO ${APP_SCHEMA}`);
+        
+        const timeResult = await client.query('SELECT NOW() as current_time');
+        const userCount = await client.query('SELECT COUNT(*) as count FROM usuarios');
+        
+        return {
+            status: 'healthy',
+            schema: APP_SCHEMA,
+            current_time: timeResult.rows[0].current_time,
+            usuarios: parseInt(userCount.rows[0].count)
+        };
+        
+    } catch (error) {
+        return {
+            status: 'unhealthy', 
+            error: error.message
+        };
+    } finally {
+        client.release();
+    }
+}
+
+export { pool };
