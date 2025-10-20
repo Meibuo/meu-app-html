@@ -6,7 +6,12 @@ import { connectDB, query, healthCheck, pool } from './database.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS configurado corretamente
+app.use(cors({
+    origin: true, // Permite todas as origens
+    credentials: true
+}));
+
 app.use(express.json());
 app.use(express.static('../public'));
 
@@ -25,7 +30,7 @@ connectDB().then(success => {
     }
 });
 
-// ==================== ROTA FORCE-INIT (ADICIONE ESTA ROTA!) ====================
+// ==================== ROTA FORCE-INIT ====================
 
 app.post('/api/force-init', async (req, res) => {
     const client = await pool.connect();
