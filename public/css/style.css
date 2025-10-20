@@ -1,163 +1,139 @@
 /* ... (mantenha todos os estilos anteriores) ... */
 
-/* Páginas de Autenticação */
-.auth-page {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
-
-.auth-container {
-    width: 100%;
-    max-width: 400px;
-}
-
-.auth-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 15px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-}
-
-.auth-header {
+/* Confirmação de Sucesso */
+.confirmacao-sucesso {
     text-align: center;
-    margin-bottom: 2rem;
+    padding: 1rem;
 }
 
-.auth-header h1 {
+.icone-sucesso {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.confirmacao-sucesso h3 {
+    color: #27ae60;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.dados-cadastro {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.dados-cadastro p {
+    margin: 0.5rem 0;
+    padding: 0.3rem 0;
+    border-bottom: 1px solid #e1e8ed;
+}
+
+.dados-cadastro p:last-child {
+    border-bottom: none;
+}
+
+.dados-cadastro strong {
     color: #2c3e50;
-    margin-bottom: 0.5rem;
 }
 
-.auth-header p {
+.instrucao {
     color: #666;
+    margin: 1.5rem 0;
+    font-size: 1.1rem;
 }
 
-.auth-form {
+#contador {
+    font-weight: bold;
+    color: #e74c3c;
+    font-size: 1.2rem;
+}
+
+.botoes-confirmacao {
     display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #333;
-}
-
-.form-group input {
-    padding: 0.75rem;
-    border: 2px solid #e1e8ed;
+.btn-confirmacao {
+    padding: 0.75rem 1.5rem;
+    border: none;
     border-radius: 8px;
     font-size: 1rem;
-    transition: border-color 0.3s;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: #3498db;
-}
-
-.btn-auth {
-    background: #27ae60;
-    color: white;
-    border: none;
-    padding: 1rem;
-    border-radius: 8px;
-    font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.3s;
-}
-
-.btn-auth:hover {
-    background: #219a52;
-}
-
-.auth-links {
-    text-align: center;
-    margin-top: 1rem;
-}
-
-.auth-links a {
-    color: #3498db;
+    transition: all 0.3s;
     text-decoration: none;
+    display: inline-block;
 }
 
-.auth-links a:hover {
-    text-decoration: underline;
+.btn-confirmacao.primario {
+    background: #27ae60;
+    color: white;
+}
+
+.btn-confirmacao.primario:hover {
+    background: #219a52;
+    transform: translateY(-2px);
+}
+
+.btn-confirmacao.secundario {
+    background: #3498db;
+    color: white;
+}
+
+.btn-confirmacao.secundario:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+/* Container de Erro */
+.erro-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f8d7da;
+    color: #721c24;
+    border-radius: 5px;
+    border: 1px solid #f5c6cb;
 }
 
 /* Mensagens */
 .mensagem-sucesso {
-    background: #d4edda;
-    color: #155724;
-    padding: 1rem;
-    border-radius: 5px;
-    margin-top: 1rem;
-    border: 1px solid #c3e6cb;
+    display: none;
 }
 
 .mensagem-erro {
-    background: #f8d7da;
-    color: #721c24;
-    padding: 1rem;
-    border-radius: 5px;
     margin-top: 1rem;
-    border: 1px solid #f5c6cb;
 }
 
-/* Botão Sair */
-.btn-logout {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.btn-logout:hover {
-    background: #c0392b;
-}
-
-/* Seção Perfil */
-.perfil-container {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.perfil-info {
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.perfil-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 1rem;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-.perfil-item:last-child {
-    border-bottom: none;
-}
-
-.perfil-item strong {
-    color: #2c3e50;
-}
-
-.perfil-item span {
-    color: #666;
+/* Responsividade para Confirmação */
+@media (max-width: 768px) {
+    .botoes-confirmacao {
+        flex-direction: column;
+    }
+    
+    .btn-confirmacao {
+        width: 100%;
+    }
+    
+    .dados-cadastro {
+        padding: 1rem;
+    }
+    
+    .icone-sucesso {
+        font-size: 3rem;
+    }
 }
