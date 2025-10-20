@@ -1,0 +1,15 @@
+{
+  "name": "meu-app-html",
+  "version": "1.0.0",
+  "description": "Meu aplicativo HTML moderno",
+  "scripts": {
+    "start": "npx serve -s public -l 3000",
+    "build": "echo 'Build completo!'"
+  },
+  "keywords": ["html", "css", "javascript"],
+  "author": "Seu Nome",
+  "license": "MIT",
+  "dependencies": {
+    "serve": "^14.0.0"
+  }
+}
