@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro - Sistema de Ponto</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>📝 Cadastro</h1>
+                <p>Crie sua conta no sistema de ponto</p>
+            </div>
+
+            <form id="cadastro-form" class="auth-form">
+                <div class="form-group">
+                    <label for="nome-completo">Nome Completo</label>
+                    <input 
+                        type="text" 
+                        id="nome-completo" 
+                        name="nomeCompleto" 
+                        required 
+                        placeholder="Seu nome completo"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email-cadastro">E-mail</label>
+                    <input 
+                        type="email" 
+                        id="email-cadastro" 
+                        name="email" 
+                        required 
+                        placeholder="seu@email.com"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="empresa">Empresa</label>
+                    <input 
+                        type="text" 
+                        id="empresa" 
+                        name="empresa" 
+                        required 
+                        placeholder="Nome da empresa"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="cargo">Cargo</label>
+                    <input 
+                        type="text" 
+                        id="cargo" 
+                        name="cargo" 
+                        required 
+                        placeholder="Seu cargo"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="senha-cadastro">Senha</label>
+                    <input 
+                        type="password" 
+                        id="senha-cadastro" 
+                        name="senha" 
+                        required 
+                        placeholder="Mínimo 6 caracteres"
+                        minlength="6"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmar-senha">Confirmar Senha</label>
+                    <input 
+                        type="password" 
+                        id="confirmar-senha" 
+                        name="confirmarSenha" 
+                        required 
+                        placeholder="Digite novamente sua senha"
+                    >
+                </div>
+
+                <button type="submit" class="btn-auth">
+                    ✅ Criar Conta
+                </button>
+
+                <div class="auth-links">
+                    <p>Já tem conta? <a href="index.html">Faça login aqui</a></p>
+                </div>
+            </form>
+
+            <div id="mensagem-sucesso" class="mensagem-sucesso"></div>
+            <div id="mensagem-erro" class="mensagem-erro"></div>
+        </div>
+    </div>
+
+    <script src="js/cadastro.js"></script>
+</body>
+</html>
