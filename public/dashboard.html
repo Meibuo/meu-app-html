@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Ponto - Sistema de Registro</title>
+    <title>Meu Ponto - Mobile</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -24,596 +24,587 @@
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f8f9fa;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        /* HEADER */
-        .header {
+        /* HEADER MOBILE */
+        .mobile-header {
             background: white;
-            padding: 20px 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 5px solid var(--primary);
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .user-info {
+        .user-info-mobile {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
-        .user-avatar {
-            width: 60px;
-            height: 60px;
+        .user-avatar-mobile {
+            width: 45px;
+            height: 45px;
             background: linear-gradient(135deg, var(--primary), #2980b9);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
         }
 
-        .user-details h2 {
+        .user-details-mobile h2 {
+            font-size: 16px;
             color: var(--dark);
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
 
-        .user-details p {
+        .user-details-mobile p {
+            font-size: 12px;
             color: var(--gray);
-            font-size: 14px;
         }
 
-        .logout-btn {
+        .logout-btn-mobile {
+            position: absolute;
+            top: 15px;
+            right: 15px;
             background: var(--danger);
             color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            cursor: pointer;
         }
 
-        .logout-btn:hover {
-            background: #c0392b;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        /* CONTEÚDO PRINCIPAL */
+        .mobile-container {
+            padding: 15px;
+            padding-bottom: 80px; /* Espaço para o bottom nav */
         }
 
-        /* DASHBOARD CARDS */
-        .dashboard-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .dashboard-card {
+        /* STATUS ATUAL MOBILE */
+        .status-mobile {
             background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            transition: transform 0.3s;
-            border-top: 4px solid var(--primary);
-        }
-
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .dashboard-card.entrada {
-            border-top-color: var(--success);
-        }
-
-        .dashboard-card.saida {
-            border-top-color: var(--danger);
-        }
-
-        .dashboard-card.horas {
-            border-top-color: var(--warning);
-        }
-
-        .card-icon {
-            font-size: 40px;
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 15px;
-        }
-
-        .entrada .card-icon { color: var(--success); }
-        .saida .card-icon { color: var(--danger); }
-        .horas .card-icon { color: var(--warning); }
-
-        .card-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 5px;
-        }
-
-        .card-label {
-            color: var(--gray);
-            font-size: 14px;
-        }
-
-        /* REGISTRO DE PONTO */
-        .ponto-section {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             text-align: center;
         }
 
-        .section-title {
-            color: var(--dark);
-            margin-bottom: 25px;
-            font-size: 24px;
+        .status-indicator-mobile {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
+            margin-bottom: 10px;
         }
 
-        .ponto-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            max-width: 500px;
-            margin: 0 auto;
+        .status-dot-mobile {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
         }
 
-        .ponto-btn {
-            padding: 25px 20px;
+        .status-dot-mobile.ativo {
+            background: var(--success);
+        }
+
+        .status-dot-mobile.inativo {
+            background: var(--gray);
+        }
+
+        .status-text-mobile {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--dark);
+        }
+
+        .current-time-mobile {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--dark);
+            margin: 10px 0;
+        }
+
+        .current-date-mobile {
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        /* BOTÕES DE PONTO MOBILE */
+        .ponto-buttons-mobile {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .ponto-btn-mobile {
+            padding: 20px;
             border: none;
             border-radius: 12px;
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        .entrada-btn {
+        .entrada-btn-mobile {
             background: linear-gradient(135deg, var(--success), #27ae60);
             color: white;
         }
 
-        .entrada-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
-        }
-
-        .saida-btn {
+        .saida-btn-mobile {
             background: linear-gradient(135deg, var(--danger), #c0392b);
             color: white;
         }
 
-        .saida-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+        .ponto-btn-mobile:active {
+            transform: scale(0.98);
         }
 
-        .btn-icon {
-            font-size: 28px;
+        .btn-icon-mobile {
+            font-size: 24px;
         }
 
-        /* STATUS ATUAL */
-        .status-section {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 25px;
-            margin-bottom: 25px;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            padding: 20px;
-            background: var(--light);
-            border-radius: 10px;
+        /* CARDS DE ESTATÍSTICAS */
+        .stats-mobile {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
             margin-bottom: 20px;
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
+        .stat-card-mobile {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-value-mobile {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .stat-label-mobile {
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        /* REGISTROS RECENTES */
+        .registros-mobile {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section-title-mobile {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .registro-item-mobile {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .registro-item-mobile:last-child {
+            border-bottom: none;
+        }
+
+        .registro-info-mobile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .registro-icon-mobile {
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
         }
 
-        .status-dot.ativo {
-            background: var(--success);
+        .entrada-icon-mobile {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--success);
         }
 
-        .status-dot.inativo {
-            background: var(--gray);
+        .saida-icon-mobile {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
         }
 
+        .registro-details-mobile {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .registro-tipo-mobile {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--dark);
+        }
+
+        .registro-hora-mobile {
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--dark);
+        }
+
+        /* BOTTOM NAVIGATION */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            border-top: 1px solid #f1f1f1;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: var(--gray);
+            font-size: 10px;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 18px;
+        }
+
+        /* MODAL DE HISTÓRICO */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #f1f1f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        /* MENSAGENS MOBILE */
+        .alert-mobile {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: rgba(46, 204, 113, 0.1);
+            color: var(--success);
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-warning {
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning);
+            border-left: 4px solid var(--warning);
+        }
+
+        /* ANIMAÇÕES */
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
         }
 
-        /* REGISTROS */
-        .registros-section {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            margin-bottom: 25px;
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
-        .registros-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 20px;
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
         }
 
-        .date-navigation {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        /* SCROLL PERSONALIZADO */
+        .modal-body::-webkit-scrollbar {
+            width: 4px;
         }
 
-        .date-btn {
-            background: var(--light);
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.3s;
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
 
-        .date-btn:hover {
-            background: #d5dbdb;
+        .modal-body::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 2px;
         }
 
-        .current-date {
-            font-weight: 600;
-            color: var(--dark);
-            min-width: 150px;
-            text-align: center;
-        }
-
-        .registros-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .registro-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 18px 20px;
-            border-bottom: 1px solid #ecf0f1;
-            transition: background 0.3s;
-        }
-
-        .registro-item:hover {
-            background: #f8f9fa;
-        }
-
-        .registro-item:last-child {
-            border-bottom: none;
-        }
-
-        .registro-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .registro-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-        }
-
-        .entrada-icon {
-            background: rgba(46, 204, 113, 0.1);
-            color: var(--success);
-        }
-
-        .saida-icon {
-            background: rgba(231, 76, 60, 0.1);
-            color: var(--danger);
-        }
-
-        .registro-details {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .registro-tipo {
-            font-weight: 600;
-            font-size: 16px;
-            color: var(--dark);
-        }
-
-        .registro-data {
-            color: var(--gray);
-            font-size: 13px;
-        }
-
-        .registro-hora {
-            font-weight: 700;
-            font-size: 18px;
-            color: var(--dark);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--gray);
-        }
-
-        .empty-state i {
-            font-size: 60px;
-            margin-bottom: 20px;
-            color: #bdc3c7;
-        }
-
-        /* RESUMO DO DIA */
-        .resumo-section {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 25px;
-        }
-
-        .resumo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .resumo-item {
-            text-align: center;
-            padding: 20px;
-            background: var(--light);
-            border-radius: 10px;
-        }
-
-        .resumo-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 5px;
-        }
-
-        .resumo-label {
-            color: var(--gray);
-            font-size: 14px;
-        }
-
-        /* MENSAGENS */
-        .success-message {
-            background: rgba(46, 204, 113, 0.1);
-            color: var(--success);
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-            align-items: center;
-            gap: 12px;
-            border-left: 4px solid var(--success);
-        }
-
-        .warning-message {
-            background: rgba(243, 156, 18, 0.1);
-            color: var(--warning);
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-            align-items: center;
-            gap: 12px;
-            border-left: 4px solid var(--warning);
-        }
-
-        /* RESPONSIVO */
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
+        /* RESPONSIVIDADE EXTRA */
+        @media (max-width: 360px) {
+            .mobile-container {
+                padding: 10px;
+                padding-bottom: 70px;
             }
-
-            .ponto-buttons {
-                grid-template-columns: 1fr;
+            
+            .ponto-btn-mobile {
+                padding: 18px;
+                font-size: 16px;
             }
-
-            .dashboard-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .registros-header {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .resumo-grid {
-                grid-template-columns: 1fr;
+            
+            .stat-value-mobile {
+                font-size: 18px;
             }
         }
 
-        /* LOADING */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #ffffff;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 10px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        /* ORIENTAÇÃO LANDSCAPE */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .mobile-header {
+                position: relative;
+            }
+            
+            .bottom-nav {
+                position: relative;
+                margin-top: 20px;
+            }
+            
+            .mobile-container {
+                padding-bottom: 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- HEADER -->
-        <div class="header">
-            <div class="user-info">
-                <div class="user-avatar" id="userAvatar">U</div>
-                <div class="user-details">
-                    <h2 id="userName">Usuário</h2>
-                    <p id="userEmail">usuario@empresa.com</p>
-                </div>
+    <!-- HEADER MOBILE -->
+    <div class="mobile-header">
+        <div class="user-info-mobile">
+            <div class="user-avatar-mobile" id="userAvatarMobile">U</div>
+            <div class="user-details-mobile">
+                <h2 id="userNameMobile">Usuário</h2>
+                <p id="userEmailMobile">usuario@empresa.com</p>
             </div>
-            <button class="logout-btn" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Sair
+        </div>
+        <button class="logout-btn-mobile" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+        </button>
+    </div>
+
+    <!-- ALERTAS -->
+    <div class="alert-mobile alert-success" id="successAlert">
+        <i class="fas fa-check-circle"></i>
+        <span id="successTextMobile"></span>
+    </div>
+
+    <div class="alert-mobile alert-warning" id="warningAlert">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="warningTextMobile"></span>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="mobile-container">
+        <!-- STATUS ATUAL -->
+        <div class="status-mobile slide-in">
+            <div class="status-indicator-mobile">
+                <div class="status-dot-mobile" id="statusDotMobile"></div>
+                <span class="status-text-mobile" id="statusTextMobile">Carregando...</span>
+            </div>
+            <div class="current-time-mobile" id="currentTimeMobile">--:--</div>
+            <div class="current-date-mobile" id="currentDateMobile">--/--/----</div>
+        </div>
+
+        <!-- BOTÕES DE REGISTRO -->
+        <div class="ponto-buttons-mobile">
+            <button class="ponto-btn-mobile entrada-btn-mobile" onclick="registrarPontoMobile('entrada')">
+                <i class="fas fa-sign-in-alt btn-icon-mobile"></i>
+                Registrar Entrada
+            </button>
+            <button class="ponto-btn-mobile saida-btn-mobile" onclick="registrarPontoMobile('saida')">
+                <i class="fas fa-sign-out-alt btn-icon-mobile"></i>
+                Registrar Saída
             </button>
         </div>
 
-        <!-- MENSAGENS -->
-        <div class="success-message" id="successMessage">
-            <i class="fas fa-check-circle"></i>
-            <span id="successText"></span>
-        </div>
-
-        <div class="warning-message" id="warningMessage">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span id="warningText"></span>
-        </div>
-
-        <!-- DASHBOARD CARDS -->
-        <div class="dashboard-cards">
-            <div class="dashboard-card entrada">
-                <i class="fas fa-sign-in-alt card-icon"></i>
-                <div class="card-value" id="totalEntradas">0</div>
-                <div class="card-label">Entradas Hoje</div>
+        <!-- ESTATÍSTICAS -->
+        <div class="stats-mobile">
+            <div class="stat-card-mobile">
+                <div class="stat-value-mobile" id="entradasHojeMobile">0</div>
+                <div class="stat-label-mobile">Entradas Hoje</div>
             </div>
-            <div class="dashboard-card saida">
-                <i class="fas fa-sign-out-alt card-icon"></i>
-                <div class="card-value" id="totalSaidas">0</div>
-                <div class="card-label">Saídas Hoje</div>
+            <div class="stat-card-mobile">
+                <div class="stat-value-mobile" id="saidasHojeMobile">0</div>
+                <div class="stat-label-mobile">Saídas Hoje</div>
             </div>
-            <div class="dashboard-card horas">
-                <i class="fas fa-clock card-icon"></i>
-                <div class="card-value" id="horasTrabalhadas">0h 00m</div>
-                <div class="card-label">Horas Trabalhadas</div>
+            <div class="stat-card-mobile">
+                <div class="stat-value-mobile" id="horasMobile">0h 00m</div>
+                <div class="stat-label-mobile">Horas Trabalhadas</div>
+            </div>
+            <div class="stat-card-mobile">
+                <div class="stat-value-mobile" id="intervalosMobile">0</div>
+                <div class="stat-label-mobile">Intervalos</div>
             </div>
         </div>
 
-        <!-- STATUS ATUAL -->
-        <div class="status-section">
-            <h3 class="section-title">
-                <i class="fas fa-user-clock"></i>
-                Status Atual
+        <!-- REGISTROS RECENTES -->
+        <div class="registros-mobile slide-in">
+            <h3 class="section-title-mobile">
+                <i class="fas fa-history"></i>
+                Registros de Hoje
             </h3>
-            <div class="status-indicator">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Status do dia</span>
+            <div id="registrosListMobile">
+                <div style="text-align: center; color: var(--gray); padding: 20px;">
+                    <i class="fas fa-clock" style="font-size: 24px; margin-bottom: 10px;"></i>
+                    <p>Nenhum registro hoje</p>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- REGISTRO DE PONTO -->
-        <div class="ponto-section">
-            <h3 class="section-title">
-                <i class="fas fa-fingerprint"></i>
-                Registrar Ponto
-            </h3>
-            <div class="ponto-buttons">
-                <button class="ponto-btn entrada-btn" onclick="registrarPonto('entrada')">
-                    <i class="fas fa-sign-in-alt btn-icon"></i>
-                    Entrada
-                    <small id="ultimaEntrada">Última: --:--</small>
+    <!-- BOTTOM NAVIGATION -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="showSection('home')">
+            <i class="fas fa-home nav-icon"></i>
+            Início
+        </button>
+        <button class="nav-item" onclick="showSection('history')">
+            <i class="fas fa-calendar nav-icon"></i>
+            Histórico
+        </button>
+        <button class="nav-item" onclick="showSection('profile')">
+            <i class="fas fa-user nav-icon"></i>
+            Perfil
+        </button>
+        <button class="nav-item" onclick="showModal('helpModal')">
+            <i class="fas fa-question-circle nav-icon"></i>
+            Ajuda
+        </button>
+    </div>
+
+    <!-- MODAL DE HISTÓRICO -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Histórico Completo</h3>
+                <button class="close-modal" onclick="closeModal('historyModal')">
+                    <i class="fas fa-times"></i>
                 </button>
-                <button class="ponto-btn saida-btn" onclick="registrarPonto('saida')">
-                    <i class="fas fa-sign-out-alt btn-icon"></i>
-                    Saída
-                    <small id="ultimaSaida">Última: --:--</small>
+            </div>
+            <div class="modal-body" id="historyModalBody">
+                <!-- Conteúdo do histórico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE AJUDA -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Como Usar</h3>
+                <button class="close-modal" onclick="closeModal('helpModal')">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
-        </div>
-
-        <!-- RESUMO DO DIA -->
-        <div class="resumo-section">
-            <h3 class="section-title">
-                <i class="fas fa-chart-bar"></i>
-                Resumo do Dia
-            </h3>
-            <div class="resumo-grid">
-                <div class="resumo-item">
-                    <div class="resumo-value" id="primeiraEntrada">--:--</div>
-                    <div class="resumo-label">Primeira Entrada</div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <strong>📱 Registrar Ponto:</strong><br>
+                    Toque em "Registrar Entrada" ao chegar e "Registrar Saída" ao sair.
                 </div>
-                <div class="resumo-item">
-                    <div class="resumo-value" id="ultimaSaidaResumo">--:--</div>
-                    <div class="resumo-label">Última Saída</div>
+                <div style="margin-bottom: 15px;">
+                    <strong>⏰ Horas Trabalhadas:</strong><br>
+                    O sistema calcula automaticamente suas horas trabalhadas.
                 </div>
-                <div class="resumo-item">
-                    <div class="resumo-value" id="totalIntervalos">0</div>
-                    <div class="resumo-label">Intervalos</div>
+                <div style="margin-bottom: 15px;">
+                    <strong>📊 Estatísticas:</strong><br>
+                    Veja quantas entradas, saídas e intervalos você fez.
                 </div>
-                <div class="resumo-item">
-                    <div class="resumo-value" id="saldoDia">+0h 00m</div>
-                    <div class="resumo-label">Saldo do Dia</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- REGISTROS -->
-        <div class="registros-section">
-            <div class="registros-header">
-                <h3 class="section-title">
-                    <i class="fas fa-history"></i>
-                    Meus Registros de Hoje
-                </h3>
-                <div class="date-navigation">
-                    <button class="date-btn" onclick="mudarData(-1)">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <div class="current-date" id="currentDate">Carregando...</div>
-                    <button class="date-btn" onclick="mudarData(1)">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="registros-list" id="registrosList">
-                <div class="empty-state">
-                    <i class="fas fa-clock"></i>
-                    <p>Nenhum registro encontrado para hoje</p>
+                <div>
+                    <strong>🔍 Histórico:</strong><br>
+                    Acesse o histórico completo pelos ícones inferiores.
                 </div>
             </div>
         </div>
@@ -621,51 +612,152 @@
 
     <script>
         let currentUser = null;
-        let currentViewDate = new Date();
+        let currentSection = 'home';
 
-        // Verificar se usuário está logado
+        // INICIALIZAÇÃO
         document.addEventListener('DOMContentLoaded', function() {
             currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
             if (!currentUser) {
-                alert('Você precisa fazer login primeiro!');
                 window.location.href = 'login.html';
                 return;
             }
 
-            // Configurar informações do usuário
-            document.getElementById('userName').textContent = currentUser.nome;
-            document.getElementById('userEmail').textContent = currentUser.email;
-            document.getElementById('userAvatar').textContent = currentUser.nome.charAt(0).toUpperCase();
+            // Configurar usuário
+            document.getElementById('userNameMobile').textContent = currentUser.nome;
+            document.getElementById('userEmailMobile').textContent = currentUser.email;
+            document.getElementById('userAvatarMobile').textContent = currentUser.nome.charAt(0).toUpperCase();
+
+            // Carregar dados iniciais
+            loadMobileDashboard();
             
-            // Carregar dados
-            loadDashboard();
+            // Atualizar relógio em tempo real
+            updateClock();
+            setInterval(updateClock, 1000);
             
-            // Atualizar a cada minuto
-            setInterval(loadDashboard, 60000);
+            // Atualizar dashboard a cada 30 segundos
+            setInterval(loadMobileDashboard, 30000);
         });
 
-        function loadDashboard() {
-            updateCurrentDate();
-            loadRegistros();
-            calcularHorasTrabalhadas();
-            atualizarStatus();
-            atualizarResumo();
-            atualizarUltimosRegistros();
+        function loadMobileDashboard() {
+            updateStats();
+            updateRegistros();
+            updateStatus();
         }
 
-        function updateCurrentDate() {
-            const options = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            };
-            document.getElementById('currentDate').textContent = 
-                currentViewDate.toLocaleDateString('pt-BR', options);
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTimeMobile').textContent = 
+                now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('currentDateMobile').textContent = 
+                now.toLocaleDateString('pt-BR');
         }
 
-        function registrarPonto(tipo) {
+        function updateStats() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
+            const registrosHoje = todosRegistros.filter(r => 
+                r.userId === currentUser.email && r.data === hoje
+            );
+
+            const entradas = registrosHoje.filter(r => r.tipo === 'entrada');
+            const saidas = registrosHoje.filter(r => r.tipo === 'saida');
+
+            document.getElementById('entradasHojeMobile').textContent = entradas.length;
+            document.getElementById('saidasHojeMobile').textContent = saidas.length;
+            document.getElementById('intervalosMobile').textContent = Math.max(0, Math.min(entradas.length, saidas.length) - 1);
+
+            // Calcular horas trabalhadas
+            let totalMinutos = 0;
+            let entradaPendente = null;
+
+            registrosHoje.sort((a, b) => a.timestamp - b.timestamp).forEach(registro => {
+                if (registro.tipo === 'entrada') {
+                    entradaPendente = registro;
+                } else if (registro.tipo === 'saida' && entradaPendente) {
+                    const diffMs = registro.timestamp - entradaPendente.timestamp;
+                    totalMinutos += Math.floor(diffMs / (1000 * 60));
+                    entradaPendente = null;
+                }
+            });
+
+            const horas = Math.floor(totalMinutos / 60);
+            const minutos = totalMinutos % 60;
+            document.getElementById('horasMobile').textContent = `${horas}h ${minutos.toString().padStart(2, '0')}m`;
+        }
+
+        function updateRegistros() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
+            const registrosHoje = todosRegistros.filter(r => 
+                r.userId === currentUser.email && r.data === hoje
+            ).sort((a, b) => b.timestamp - a.timestamp);
+
+            const registrosList = document.getElementById('registrosListMobile');
+            
+            if (registrosHoje.length === 0) {
+                registrosList.innerHTML = `
+                    <div style="text-align: center; color: var(--gray); padding: 20px;">
+                        <i class="fas fa-clock" style="font-size: 24px; margin-bottom: 10px;"></i>
+                        <p>Nenhum registro hoje</p>
+                    </div>
+                `;
+                return;
+            }
+
+            registrosList.innerHTML = registrosHoje.slice(0, 5).map(registro => `
+                <div class="registro-item-mobile">
+                    <div class="registro-info-mobile">
+                        <div class="registro-icon-mobile ${registro.tipo === 'entrada' ? 'entrada-icon-mobile' : 'saida-icon-mobile'}">
+                            <i class="fas fa-${registro.tipo === 'entrada' ? 'sign-in-alt' : 'sign-out-alt'}"></i>
+                        </div>
+                        <div class="registro-details-mobile">
+                            <span class="registro-tipo-mobile">
+                                ${registro.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="registro-hora-mobile">${registro.hora}</div>
+                </div>
+            `).join('');
+
+            if (registrosHoje.length > 5) {
+                registrosList.innerHTML += `
+                    <div style="text-align: center; padding: 15px; color: var(--primary);">
+                        <i class="fas fa-ellipsis-h"></i>
+                        <span style="font-size: 12px;">+${registrosHoje.length - 5} registros</span>
+                    </div>
+                `;
+            }
+        }
+
+        function updateStatus() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
+            const registrosHoje = todosRegistros.filter(r => 
+                r.userId === currentUser.email && r.data === hoje
+            ).sort((a, b) => b.timestamp - a.timestamp);
+
+            const statusDot = document.getElementById('statusDotMobile');
+            const statusText = document.getElementById('statusTextMobile');
+
+            if (registrosHoje.length === 0) {
+                statusDot.className = 'status-dot-mobile inativo';
+                statusText.textContent = 'Sem registros hoje';
+                return;
+            }
+
+            const ultimoRegistro = registrosHoje[0];
+            if (ultimoRegistro.tipo === 'entrada') {
+                statusDot.className = 'status-dot-mobile ativo';
+                statusText.textContent = 'Trabalhando';
+            } else {
+                statusDot.className = 'status-dot-mobile inativo';
+                statusText.textContent = 'Fora';
+            }
+        }
+
+        function registrarPontoMobile(tipo) {
             const now = new Date();
             const registro = {
                 tipo: tipo,
@@ -679,166 +771,107 @@
             todosRegistros.push(registro);
             localStorage.setItem('pontos', JSON.stringify(todosRegistros));
 
-            showSuccess(`Ponto de ${tipo === 'entrada' ? 'entrada' : 'saída'} registrado às ${registro.hora}`);
-            loadDashboard();
-        }
+            showAlert('success', `Ponto de ${tipo} registrado às ${registro.hora}`);
+            loadMobileDashboard();
 
-        function loadRegistros() {
-            const dataSelecionada = currentViewDate.toISOString().split('T')[0];
-            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
-            const registrosUsuario = todosRegistros.filter(r => 
-                r.userId === currentUser.email && r.data === dataSelecionada
-            );
-
-            // Atualizar contadores
-            document.getElementById('totalEntradas').textContent = 
-                registrosUsuario.filter(r => r.tipo === 'entrada').length;
-            document.getElementById('totalSaidas').textContent = 
-                registrosUsuario.filter(r => r.tipo === 'saida').length;
-
-            // Atualizar lista
-            const registrosList = document.getElementById('registrosList');
-            
-            if (registrosUsuario.length === 0) {
-                registrosList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-clock"></i>
-                        <p>Nenhum registro encontrado para esta data</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            registrosUsuario.sort((a, b) => b.timestamp - a.timestamp);
-            
-            registrosList.innerHTML = registrosUsuario.map(registro => `
-                <div class="registro-item">
-                    <div class="registro-info">
-                        <div class="registro-icon ${registro.tipo === 'entrada' ? 'entrada-icon' : 'saida-icon'}">
-                            <i class="fas fa-${registro.tipo === 'entrada' ? 'sign-in-alt' : 'sign-out-alt'}"></i>
-                        </div>
-                        <div class="registro-details">
-                            <span class="registro-tipo">
-                                ${registro.tipo === 'entrada' ? 'Entrada Registrada' : 'Saída Registrada'}
-                            </span>
-                            <span class="registro-data">${formatarData(registro.data)}</span>
-                        </div>
-                    </div>
-                    <div class="registro-hora">${registro.hora}</div>
-                </div>
-            `).join('');
-        }
-
-        function calcularHorasTrabalhadas() {
-            const hoje = new Date().toISOString().split('T')[0];
-            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
-            const registrosHoje = todosRegistros.filter(r => 
-                r.userId === currentUser.email && r.data === hoje
-            ).sort((a, b) => a.timestamp - b.timestamp);
-
-            let totalMinutos = 0;
-            let entradaPendente = null;
-
-            registrosHoje.forEach(registro => {
-                if (registro.tipo === 'entrada') {
-                    entradaPendente = registro;
-                } else if (registro.tipo === 'saida' && entradaPendente) {
-                    const diffMs = registro.timestamp - entradaPendente.timestamp;
-                    const diffMinutos = Math.floor(diffMs / (1000 * 60));
-                    totalMinutos += diffMinutos;
-                    entradaPendente = null;
-                }
-            });
-
-            const horas = Math.floor(totalMinutos / 60);
-            const minutos = totalMinutos % 60;
-            document.getElementById('horasTrabalhadas').textContent = 
-                `${horas}h ${minutos.toString().padStart(2, '0')}m`;
-        }
-
-        function atualizarStatus() {
-            const hoje = new Date().toISOString().split('T')[0];
-            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
-            const registrosHoje = todosRegistros.filter(r => 
-                r.userId === currentUser.email && r.data === hoje
-            ).sort((a, b) => b.timestamp - a.timestamp);
-
-            const statusDot = document.getElementById('statusDot');
-            const statusText = document.getElementById('statusText');
-
-            if (registrosHoje.length === 0) {
-                statusDot.className = 'status-dot inativo';
-                statusText.textContent = 'Aguardando primeiro registro';
-                return;
-            }
-
-            const ultimoRegistro = registrosHoje[0];
-            if (ultimoRegistro.tipo === 'entrada') {
-                statusDot.className = 'status-dot ativo';
-                statusText.textContent = `Trabalhando desde ${ultimoRegistro.hora}`;
-            } else {
-                statusDot.className = 'status-dot inativo';
-                statusText.textContent = `Fora desde ${ultimoRegistro.hora}`;
+            // Feedback tátil (vibração se suportado)
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
             }
         }
 
-        function atualizarResumo() {
-            const hoje = new Date().toISOString().split('T')[0];
-            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
-            const registrosHoje = todosRegistros.filter(r => 
-                r.userId === currentUser.email && r.data === hoje
-            ).sort((a, b) => a.timestamp - b.timestamp);
-
-            const entradas = registrosHoje.filter(r => r.tipo === 'entrada');
-            const saidas = registrosHoje.filter(r => r.tipo === 'saida');
-
-            document.getElementById('primeiraEntrada').textContent = 
-                entradas.length > 0 ? entradas[0].hora : '--:--';
-            document.getElementById('ultimaSaidaResumo').textContent = 
-                saidas.length > 0 ? saidas[saidas.length - 1].hora : '--:--';
-            document.getElementById('totalIntervalos').textContent = 
-                Math.min(entradas.length, saidas.length) - 1;
-        }
-
-        function atualizarUltimosRegistros() {
-            const hoje = new Date().toISOString().split('T')[0];
-            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
-            const registrosHoje = todosRegistros.filter(r => 
-                r.userId === currentUser.email && r.data === hoje
-            ).sort((a, b) => b.timestamp - b.timestamp);
-
-            const ultimaEntrada = registrosHoje.find(r => r.tipo === 'entrada');
-            const ultimaSaida = registrosHoje.find(r => r.tipo === 'saida');
-
-            document.getElementById('ultimaEntrada').textContent = 
-                `Última: ${ultimaEntrada ? ultimaEntrada.hora : '--:--'}`;
-            document.getElementById('ultimaSaida').textContent = 
-                `Última: ${ultimaSaida ? ultimaSaida.hora : '--:--'}`;
-        }
-
-        function mudarData(dias) {
-            currentViewDate.setDate(currentViewDate.getDate() + dias);
-            loadDashboard();
-        }
-
-        function formatarData(data) {
-            const [ano, mes, dia] = data.split('-');
-            return `${dia}/${mes}/${ano}`;
-        }
-
-        function showSuccess(message) {
-            const successElement = document.getElementById('successMessage');
-            document.getElementById('successText').textContent = message;
-            successElement.style.display = 'flex';
+        function showAlert(type, message) {
+            const alert = document.getElementById(type === 'success' ? 'successAlert' : 'warningAlert');
+            const text = document.getElementById(type === 'success' ? 'successTextMobile' : 'warningTextMobile');
+            
+            text.textContent = message;
+            alert.style.display = 'flex';
             
             setTimeout(() => {
-                successElement.style.display = 'none';
-            }, 5000);
+                alert.style.display = 'none';
+            }, 4000);
+        }
+
+        function showSection(section) {
+            currentSection = section;
+            
+            // Atualizar navegação
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (section === 'history') {
+                showModal('historyModal');
+                loadHistory();
+            } else if (section === 'profile') {
+                // Futura implementação do perfil
+                showAlert('warning', 'Perfil em desenvolvimento');
+            }
+        }
+
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            // Voltar para a seção home
+            document.querySelectorAll('.nav-item').forEach((item, index) => {
+                item.classList.toggle('active', index === 0);
+            });
+        }
+
+        function loadHistory() {
+            // Implementação simplificada do histórico
+            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
+            const registrosUsuario = todosRegistros.filter(r => r.userId === currentUser.email)
+                .sort((a, b) => b.timestamp - a.timestamp);
+
+            const historyBody = document.getElementById('historyModalBody');
+            
+            if (registrosUsuario.length === 0) {
+                historyBody.innerHTML = '<p style="text-align: center; color: var(--gray);">Nenhum registro encontrado</p>';
+                return;
+            }
+
+            // Agrupar por data
+            const registrosPorData = {};
+            registrosUsuario.forEach(registro => {
+                if (!registrosPorData[registro.data]) {
+                    registrosPorData[registro.data] = [];
+                }
+                registrosPorData[registro.data].push(registro);
+            });
+
+            historyBody.innerHTML = Object.entries(registrosPorData).map(([data, registros]) => `
+                <div style="margin-bottom: 20px;">
+                    <div style="font-weight: 600; color: var(--dark); margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                        ${new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
+                    ${registros.sort((a, b) => b.timestamp - a.timestamp).map(registro => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f1f1;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${registro.tipo === 'entrada' ? '#2ecc71' : '#e74c3c'};"></div>
+                                <span>${registro.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span>
+                            </div>
+                            <span style="font-weight: 600;">${registro.hora}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
         }
 
         function logout() {
             localStorage.removeItem('currentUser');
             window.location.href = 'index.html';
+        }
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
         }
     </script>
 </body>
