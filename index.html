@@ -3,28 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Ponto</title>
+    <meta name="description" content="Sistema de ponto eletrônico online - Registre seus horários de trabalho de forma simples e segura">
+    <title>Sistema de Ponto Eletrônico | Login e Cadastro</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background: linear-gradient(135deg, #667eea, #764ba2); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; max-width: 400px; width: 100%; }
-        .logo { font-size: 28px; color: #2c3e50; margin-bottom: 20px; font-weight: bold; }
-        .buttons { display: flex; flex-direction: column; gap: 15px; margin: 30px 0; }
-        .btn { padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none; transition: all 0.3s; }
-        .btn-primary { background: #3498db; color: white; }
-        .btn-secondary { background: #ecf0f1; color: #2c3e50; border: 2px solid #bdc3c7; }
-        .btn:hover { transform: translateY(-2px); }
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --secondary-color: #ecf0f1;
+            --secondary-dark: #bdc3c7;
+            --text-color: #2c3e50;
+            --gradient-start: #667eea;
+            --gradient-end: #764ba2;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --shadow: 0 10px 30px rgba(0,0,0,0.2);
+            --border-radius: 15px;
+            --transition: all 0.3s ease;
+        }
+        
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+        
+        .container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: var(--border-radius); 
+            box-shadow: var(--shadow); 
+            text-align: center; 
+            max-width: 450px; 
+            width: 100%;
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .logo { 
+            font-size: 32px; 
+            color: var(--text-color); 
+            margin-bottom: 15px; 
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .logo-icon {
+            font-size: 36px;
+        }
+        
+        .tagline {
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 25px 0;
+            text-align: left;
+            padding: 0 15px;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #555;
+            font-size: 15px;
+        }
+        
+        .feature-icon {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        .buttons { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            margin: 30px 0 15px; 
+        }
+        
+        .btn { 
+            padding: 16px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            text-decoration: none; 
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary { 
+            background: var(--primary-color); 
+            color: white; 
+        }
+        
+        .btn-primary:hover, .btn-primary:focus { 
+            background: var(--primary-dark); 
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-secondary { 
+            background: var(--secondary-color); 
+            color: var(--text-color); 
+            border: 2px solid var(--secondary-dark); 
+        }
+        
+        .btn-secondary:hover, .btn-secondary:focus { 
+            background: #dfe6e9; 
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 15px rgba(189, 195, 199, 0.4);
+        }
+        
+        .btn:focus {
+            outline: 3px solid var(--warning-color);
+            outline-offset: 2px;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .btn-icon {
+            font-size: 18px;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            color: #95a5a6;
+            font-size: 14px;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 15px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .logo {
+                font-size: 28px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">⏰ Sistema de Ponto</div>
-        <p>Sistema online - Dados no servidor</p>
-        
-        <div class="buttons">
-            <a href="/login" class="btn btn-primary">Fazer Login</a>
-            <a href="/cadastro" class="btn btn-secondary">Criar Conta</a>
+    <main>
+        <div class="container" role="main">
+            <h1 class="logo">
+                <span class="logo-icon">⏰</span>
+                Sistema de Ponto
+            </h1>
+            <p class="tagline">Controle seus horários de trabalho de forma simples</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <span class="feature-icon">✓</span>
+                    <span>Registro online com dados no servidor</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">✓</span>
+                    <span>Acesso de qualquer dispositivo</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">✓</span>
+                    <span>Histórico completo de seus registros</span>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <a href="/login" class="btn btn-primary">
+                    <span class="btn-icon">→</span>
+                    Fazer Login
+                </a>
+                <a href="/cadastro" class="btn btn-secondary">
+                    <span class="btn-icon">+</span>
+                    Criar Conta
+                </a>
+            </div>
+            
+            <div class="footer">
+                Sistema seguro • Dados protegidos • Versão 2.0
+            </div>
         </div>
-    </div>
+    </main>
+
+    <script>
+        // Adicionar estados de loading nos botões quando clicados
+        document.addEventListener('DOMContentLoaded', function() {
+            const buttons = document.querySelectorAll('.btn');
+            
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Simular loading apenas para demonstração
+                    if (!this.getAttribute('href')) return;
+                    
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<span>Carregando...</span>';
+                    this.disabled = true;
+                    
+                    // Em um caso real, isso seria controlado pela navegação
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }, 1500);
+                });
+            });
+            
+            // Pré-carregar as páginas importantes
+            if ('connection' in navigator && navigator.connection.saveData) {
+                // Não pré-carregar se o usuário tem modo de economia de dados ativado
+                return;
+            }
+            
+            const links = ['/login', '/cadastro'];
+            links.forEach(link => {
+                const preloadLink = document.createElement('link');
+                preloadLink.rel = 'prefetch';
+                preloadLink.href = link;
+                preloadLink.as = 'document';
+                document.head.appendChild(preloadLink);
+            });
+        });
+    </script>
 </body>
 </html>
