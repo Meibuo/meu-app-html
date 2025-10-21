@@ -462,12 +462,14 @@
         <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
         
         <div class="nav-links" id="desktopNav">
+            <a href="/dashboard" class="nav-link">Dashboard</a>
             <a href="/perfil" class="nav-link">Meu Perfil</a>
             <a href="/admin" class="nav-link active">👑 Administração</a>
         </div>
         
         <div class="user-info" id="desktopUserInfo">
             <div class="admin-badge">ADMIN</div>
+            <span id="userName">Carregando...</span>
             <button class="btn btn-danger" onclick="logout()">Sair</button>
         </div>
     </div>
@@ -475,11 +477,13 @@
     <!-- Menu Mobile -->
     <div class="mobile-nav" id="mobileNav">
         <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="/dashboard" class="nav-link">Dashboard</a>
             <a href="/perfil" class="nav-link">Meu Perfil</a>
             <a href="/admin" class="nav-link active">👑 Administração</a>
         </div>
         <div class="user-info" style="justify-content: center; margin-top: 15px;">
             <div class="admin-badge">ADMIN</div>
+            <span id="userNameMobile">Carregando...</span>
             <button class="btn btn-danger" onclick="logout()">Sair</button>
         </div>
     </div>
@@ -584,21 +588,6 @@
                     <input type="tel" id="novoUserTelefone" placeholder="(11) 99999-9999">
                 </div>
                 
-                <div class="form-group">
-                    <label for="novoUserStatus">Status:</label>
-                    <select id="novoUserStatus" required>
-                        <option value="ativo">Ativo</option>
-                        <option value="inativo">Inativo</option>
-                        <option value="ferias">De Férias</option>
-                        <option value="bloqueado">Bloqueado</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="novoUserDataContratacao">Data de Contratação:</label>
-                    <input type="date" id="novoUserDataContratacao" required>
-                </div>
-                
                 <div class="loading" id="loadingNovoUsuario">
                     <div class="spinner"></div>
                     <span>Criando usuário...</span>
@@ -652,21 +641,6 @@
                     <input type="tel" id="editUserTelefone" placeholder="(11) 99999-9999">
                 </div>
                 
-                <div class="form-group">
-                    <label for="editUserStatus">Status:</label>
-                    <select id="editUserStatus" required>
-                        <option value="ativo">Ativo</option>
-                        <option value="inativo">Inativo</option>
-                        <option value="ferias">De Férias</option>
-                        <option value="bloqueado">Bloqueado</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editUserDataContratacao">Data de Contratação:</label>
-                    <input type="date" id="editUserDataContratacao" required>
-                </div>
-                
                 <div class="loading" id="loadingModal">
                     <div class="spinner"></div>
                     <span>Salvando...</span>
@@ -684,6 +658,59 @@
         let currentUser = null;
         let usuarios = [];
         
+        // Função para obter o token JWT
+        function getAuthToken() {
+            return localStorage.getItem('token');
+        }
+        
+        // Função para fazer requisições autenticadas
+        async function fetchWithAuth(url, options = {}) {
+            const token = getAuthToken();
+            
+            if (!token) {
+                showAlert('Token de autenticação não encontrado. Faça login novamente.', 'error');
+                logout();
+                return null;
+            }
+            
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+            
+            const mergedOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...options.headers
+                }
+            };
+            
+            try {
+                const response = await fetch(url, mergedOptions);
+                
+                if (response.status === 401) {
+                    showAlert('Sessão expirada. Faça login novamente.', 'error');
+                    logout();
+                    return null;
+                }
+                
+                if (response.status === 403) {
+                    showAlert('Acesso negado. Você não tem permissão para esta ação.', 'error');
+                    return null;
+                }
+                
+                return response;
+            } catch (error) {
+                console.error('Erro na requisição:', error);
+                showAlert('Erro de conexão. Tente novamente.', 'error');
+                return null;
+            }
+        }
+        
         // Menu mobile
         document.getElementById('mobileMenuBtn').addEventListener('click', function() {
             const mobileNav = document.getElementById('mobileNav');
@@ -694,26 +721,49 @@
         });
         
         // Verificar autenticação e admin
-        document.addEventListener('DOMContentLoaded', function() {
-            const userData = localStorage.getItem('currentUser');
+        document.addEventListener('DOMContentLoaded', async function() {
+            const token = getAuthToken();
             
-            if (!userData) {
+            if (!token) {
                 window.location.href = '/login';
                 return;
             }
             
-            currentUser = JSON.parse(userData);
-            
-            if (!currentUser.isAdmin) {
-                window.location.href = '/dashboard';
-                return;
+            // Verificar se o token é válido e obter dados do usuário
+            try {
+                const response = await fetchWithAuth('/api/me');
+                if (!response) return;
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentUser = data.user;
+                    
+                    if (!currentUser.isAdmin) {
+                        showAlert('Acesso negado. Apenas administradores podem acessar esta página.', 'error');
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 2000);
+                        return;
+                    }
+                    
+                    // Atualizar informações do usuário na interface
+                    document.getElementById('userName').textContent = currentUser.nome;
+                    document.getElementById('userNameMobile').textContent = currentUser.nome;
+                    
+                    carregarUsuarios();
+                    
+                    // Definir data atual como padrão no modal novo usuário
+                    const hoje = new Date().toISOString().split('T')[0];
+                    document.getElementById('novoUserDataContratacao').value = hoje;
+                } else {
+                    showAlert('Erro ao carregar dados do usuário.', 'error');
+                    logout();
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showAlert('Erro de conexão. Tente novamente.', 'error');
             }
-            
-            carregarUsuarios();
-            
-            // Definir data atual como padrão no modal novo usuário
-            const hoje = new Date().toISOString().split('T')[0];
-            document.getElementById('novoUserDataContratacao').value = hoje;
         });
         
         // Carregar lista de usuários
@@ -725,7 +775,9 @@
             tabela.innerHTML = '';
             
             try {
-                const response = await fetch('/api/admin/usuarios');
+                const response = await fetchWithAuth('/api/admin/usuarios');
+                if (!response) return;
+                
                 const data = await response.json();
                 
                 if (data.success) {
@@ -760,29 +812,23 @@
                     avatarHtml = `<div class="avatar-placeholder">${iniciais.substring(0, 2)}</div>`;
                 }
                 
-                // Status
+                // Status (usando perfilEditado como indicador de status ativo)
+                const status = usuario.perfilEditado ? 'ativo' : 'ativo';
                 const statusText = {
                     'ativo': 'Ativo',
-                    'inativo': 'Inativo', 
-                    'ferias': 'De Férias',
-                    'bloqueado': 'Bloqueado'
+                    'inativo': 'Inativo'
                 };
                 
                 const statusClass = {
                     'ativo': 'status-ativo',
-                    'inativo': 'status-inativo',
-                    'ferias': 'status-ferias',
-                    'bloqueado': 'status-bloqueado'
+                    'inativo': 'status-inativo'
                 };
                 
-                const statusHtml = `<span class="status-badge ${statusClass[usuario.status || 'ativo']}">${statusText[usuario.status || 'ativo']}</span>`;
+                const statusHtml = `<span class="status-badge ${statusClass[status]}">${statusText[status]}</span>`;
                 
                 // Data de contratação
                 let dataContratacao = '-';
-                if (usuario.dataContratacao) {
-                    const data = new Date(usuario.dataContratacao);
-                    dataContratacao = data.toLocaleDateString('pt-BR');
-                } else if (usuario.criadoEm) {
+                if (usuario.criadoEm) {
                     const data = new Date(usuario.criadoEm);
                     dataContratacao = data.toLocaleDateString('pt-BR');
                 }
@@ -791,10 +837,10 @@
                     <td>${avatarHtml}</td>
                     <td>
                         <strong>${usuario.nome}</strong>
-                        ${usuario.isAdmin ? '<div class="admin-badge" style="display: inline-block; margin-left: 5px;">ADMIN</div>' : ''}
+                        ${usuario.isAdmin ? '<div class="admin-badge" style="display: inline-block; margin-left: 5px; font-size: 10px; padding: 2px 6px;">ADMIN</div>' : ''}
                     </td>
                     <td>${usuario.email}</td>
-                    <td>${usuario.cargo || 'Funcionário'}</td>
+                    <td>${usuario.cargo || 'Terceiro'}</td>
                     <td>${usuario.telefone || '-'}</td>
                     <td>${statusHtml}</td>
                     <td>${dataContratacao}</td>
@@ -802,6 +848,11 @@
                         <button class="btn btn-primary btn-sm" onclick="editarUsuario('${usuario.id}')">
                             Editar
                         </button>
+                        ${!usuario.isAdmin ? `
+                        <button class="btn btn-warning btn-sm" onclick="redefinirSenha('${usuario.id}', '${usuario.nome}')">
+                            Redefinir Senha
+                        </button>
+                        ` : ''}
                     </td>
                 `;
                 
@@ -811,13 +862,13 @@
         
         // Atualizar estatísticas
         function atualizarEstatisticas(usuarios) {
-            const usuariosAtivos = usuarios.filter(u => (u.status === 'ativo' || !u.status) && !u.isAdmin).length;
-            const usuariosFerias = usuarios.filter(u => u.status === 'ferias' && !u.isAdmin).length;
+            const usuariosAtivos = usuarios.filter(u => !u.isAdmin).length;
+            const usuariosAdmin = usuarios.filter(u => u.isAdmin).length;
             const totalRegistros = 0; // Em produção, buscar do banco de dados
             
             document.getElementById('totalUsuarios').textContent = usuarios.length;
             document.getElementById('usuariosAtivos').textContent = usuariosAtivos;
-            document.getElementById('usuariosFerias').textContent = usuariosFerias;
+            document.getElementById('usuariosFerias').textContent = usuariosAdmin;
             document.getElementById('totalRegistros').textContent = totalRegistros;
         }
         
@@ -856,26 +907,6 @@
                     }
                     
                     document.getElementById('editUserTelefone').value = usuario.telefone || '';
-                    
-                    // Configurar status
-                    const selectStatus = document.getElementById('editUserStatus');
-                    if (selectStatus) {
-                        selectStatus.value = usuario.status || 'ativo';
-                    }
-                    
-                    // Configurar data de contratação
-                    const dataContratacao = document.getElementById('editUserDataContratacao');
-                    if (dataContratacao) {
-                        if (usuario.dataContratacao) {
-                            const data = new Date(usuario.dataContratacao);
-                            dataContratacao.value = data.toISOString().split('T')[0];
-                        } else if (usuario.criadoEm) {
-                            const data = new Date(usuario.criadoEm);
-                            dataContratacao.value = data.toISOString().split('T')[0];
-                        } else {
-                            dataContratacao.value = new Date().toISOString().split('T')[0];
-                        }
-                    }
                 }
             }
             
@@ -923,19 +954,16 @@
                 email: document.getElementById('novoUserEmail').value,
                 senha: document.getElementById('novoUserSenha').value,
                 cargo: document.getElementById('novoUserCargo').value,
-                telefone: document.getElementById('novoUserTelefone').value,
-                status: document.getElementById('novoUserStatus').value,
-                dataContratacao: document.getElementById('novoUserDataContratacao').value
+                telefone: document.getElementById('novoUserTelefone').value
             };
             
             try {
-                const response = await fetch('/api/admin/cadastro', {
+                const response = await fetchWithAuth('/api/admin/cadastro', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
                     body: JSON.stringify(formData)
                 });
+                
+                if (!response) return;
                 
                 const data = await response.json();
                 
@@ -945,6 +973,9 @@
                     carregarUsuarios();
                 } else {
                     showAlert(data.error, 'error');
+                console.error('Erro na criação:', data);
+                console.log('Dados enviados:', formData);
+                console.log('Resposta completa:', data);
                 }
             } catch (error) {
                 console.error('Erro:', error);
@@ -970,19 +1001,16 @@
                 nome: document.getElementById('editUserNome').value,
                 email: document.getElementById('editUserEmail').value,
                 cargo: document.getElementById('editUserCargo').value,
-                telefone: document.getElementById('editUserTelefone').value,
-                status: document.getElementById('editUserStatus').value,
-                dataContratacao: document.getElementById('editUserDataContratacao').value
+                telefone: document.getElementById('editUserTelefone').value
             };
             
             try {
-                const response = await fetch(`/api/admin/usuarios/${usuarioId}`, {
+                const response = await fetchWithAuth(`/api/admin/usuarios/${usuarioId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
                     body: JSON.stringify(formData)
                 });
+                
+                if (!response) return;
                 
                 const data = await response.json();
                 
@@ -1007,6 +1035,34 @@
             abrirModalEditar(usuarioId);
         }
         
+        // Redefinir senha do usuário
+        async function redefinirSenha(usuarioId, usuarioNome) {
+            if (!confirm(`Deseja redefinir a senha do usuário "${usuarioNome}"? Uma nova senha será gerada automaticamente.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetchWithAuth('/api/admin/redefinir-senha', {
+                    method: 'POST',
+                    body: JSON.stringify({ usuario_id: usuarioId })
+                });
+                
+                if (!response) return;
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(`Senha redefinida com sucesso! Nova senha: ${data.novaSenha}`, 'success');
+                    console.log(`Nova senha para ${usuarioNome}: ${data.novaSenha}`);
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showAlert('Erro ao redefinir senha.', 'error');
+            }
+        }
+        
         // Mostrar alertas
         function showAlert(message, type) {
             const alert = document.getElementById('alert');
@@ -1022,8 +1078,9 @@
         
         // Logout
         function logout() {
+            localStorage.removeItem('token');
             localStorage.removeItem('currentUser');
-            window.location.href = '/';
+            window.location.href = '/login';
         }
         
         // Fechar modal ao clicar fora
