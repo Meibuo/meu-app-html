@@ -51,7 +51,19 @@
             border: 1px solid #ffcccc;
         }
 
-        .error-message i {
+        .success-message {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #c8e6c9;
+        }
+
+        .error-message i, .success-message i {
             font-size: 18px;
         }
 
@@ -108,6 +120,13 @@
             transform: translateY(0);
         }
 
+        .btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .login-link {
             text-align: center;
             margin-top: 20px;
@@ -154,6 +173,21 @@
         .fa-youtube:hover { color: #FF0000 !important; }
         .fa-netflix:hover { color: #E50914 !important; }
 
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 20px;
@@ -185,10 +219,15 @@
             <i class="fab fa-netflix"></i>
         </div>
         
-        <!-- Mensagem de erro oculta inicialmente -->
+        <!-- Mensagens -->
         <div class="error-message" id="errorMessage">
             <i class="fas fa-exclamation-circle"></i>
-            <span>❌ Erro de conexão com o servidor</span>
+            <span id="errorText"></span>
+        </div>
+
+        <div class="success-message" id="successMessage">
+            <i class="fas fa-check-circle"></i>
+            <span id="successText"></span>
         </div>
         
         <form id="cadastroForm">
@@ -199,7 +238,7 @@
             
             <div class="form-group">
                 <label for="password">Senha</label>
-                <input type="password" id="password" placeholder="**********" required>
+                <input type="password" id="password" placeholder="**********" required minlength="6">
             </div>
             
             <div class="form-group">
@@ -207,43 +246,123 @@
                 <input type="password" id="confirm-password" placeholder="**********" required>
             </div>
             
-            <button type="submit" class="btn">Criar Conta</button>
+            <button type="submit" class="btn" id="submitBtn">
+                <span id="btnText">Criar Conta</span>
+            </button>
         </form>
         
         <div class="login-link">
-            Já tem conta? <a href="#">Faça login aqui</a>
+            Já tem conta? <a href="#" id="loginLink">Faça login aqui</a>
         </div>
     </div>
 
     <script>
-        document.getElementById('cadastroForm').addEventListener('submit', function(e) {
+        // Sistema de cadastro funcional
+        document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Simulação de tentativa de cadastro
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
             
-            // Verificar se as senhas coincidem
+            // Limpar mensagens
+            hideMessages();
+            
+            // Validações
             if (password !== confirmPassword) {
                 showError('As senhas não coincidem');
                 return;
             }
             
-            // Simulação de erro de conexão (após 1 segundo)
-            setTimeout(function() {
+            if (password.length < 6) {
+                showError('A senha deve ter pelo menos 6 caracteres');
+                return;
+            }
+            
+            if (!isValidEmail(email)) {
+                showError('Por favor, insira um e-mail válido');
+                return;
+            }
+            
+            // Mostrar loading
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<div class="loading"></div>Criando conta...';
+            
+            try {
+                // Simular delay de rede
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Verificar se o usuário já existe
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const userExists = users.find(user => user.email === email);
+                
+                if (userExists) {
+                    showError('Este e-mail já está cadastrado');
+                    return;
+                }
+                
+                // Criar novo usuário
+                const newUser = {
+                    email: email,
+                    password: password, // Em app real, isso seria criptografado
+                    createdAt: new Date().toISOString()
+                };
+                
+                users.push(newUser);
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                // Sucesso
+                showSuccess('Conta criada com sucesso!');
+                document.getElementById('cadastroForm').reset();
+                
+                // Redirecionar após 2 segundos
+                setTimeout(() => {
+                    window.location.href = 'login.html'; // Pode alterar para a página desejada
+                }, 2000);
+                
+            } catch (error) {
                 showError('❌ Erro de conexão com o servidor');
-            }, 1000);
+            } finally {
+                // Restaurar botão
+                submitBtn.disabled = false;
+                btnText.textContent = 'Criar Conta';
+            }
         });
         
+        // Função para validar e-mail
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        // Funções para mostrar/ocultar mensagens
         function showError(message) {
             const errorElement = document.getElementById('errorMessage');
-            errorElement.querySelector('span').textContent = message;
+            document.getElementById('errorText').textContent = message;
             errorElement.style.display = 'flex';
-            
-            // Rolagem suave para o erro
             errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+        
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            document.getElementById('successText').textContent = message;
+            successElement.style.display = 'flex';
+            successElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        // Link para login
+        document.getElementById('loginLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Redirecionando para página de login...');
+            // window.location.href = 'login.html';
+        });
     </script>
 </body>
 </html>
