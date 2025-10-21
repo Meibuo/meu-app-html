@@ -710,6 +710,10 @@
             }
             
             carregarUsuarios();
+            
+            // Definir data atual como padrão no modal novo usuário
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('novoUserDataContratacao').value = hoje;
         });
         
         // Carregar lista de usuários
@@ -771,12 +775,15 @@
                     'bloqueado': 'status-bloqueado'
                 };
                 
-                const statusHtml = `<span class="status-badge ${statusClass[usuario.status]}">${statusText[usuario.status]}</span>`;
+                const statusHtml = `<span class="status-badge ${statusClass[usuario.status || 'ativo']}">${statusText[usuario.status || 'ativo']}</span>`;
                 
                 // Data de contratação
                 let dataContratacao = '-';
                 if (usuario.dataContratacao) {
                     const data = new Date(usuario.dataContratacao);
+                    dataContratacao = data.toLocaleDateString('pt-BR');
+                } else if (usuario.criadoEm) {
+                    const data = new Date(usuario.criadoEm);
                     dataContratacao = data.toLocaleDateString('pt-BR');
                 }
                 
@@ -804,7 +811,7 @@
         
         // Atualizar estatísticas
         function atualizarEstatisticas(usuarios) {
-            const usuariosAtivos = usuarios.filter(u => u.status === 'ativo' && !u.isAdmin).length;
+            const usuariosAtivos = usuarios.filter(u => (u.status === 'ativo' || !u.status) && !u.isAdmin).length;
             const usuariosFerias = usuarios.filter(u => u.status === 'ferias' && !u.isAdmin).length;
             const totalRegistros = 0; // Em produção, buscar do banco de dados
             
@@ -852,15 +859,22 @@
                     
                     // Configurar status
                     const selectStatus = document.getElementById('editUserStatus');
-                    if (selectStatus && usuario.status) {
-                        selectStatus.value = usuario.status;
+                    if (selectStatus) {
+                        selectStatus.value = usuario.status || 'ativo';
                     }
                     
                     // Configurar data de contratação
                     const dataContratacao = document.getElementById('editUserDataContratacao');
-                    if (dataContratacao && usuario.dataContratacao) {
-                        const data = new Date(usuario.dataContratacao);
-                        dataContratacao.value = data.toISOString().split('T')[0];
+                    if (dataContratacao) {
+                        if (usuario.dataContratacao) {
+                            const data = new Date(usuario.dataContratacao);
+                            dataContratacao.value = data.toISOString().split('T')[0];
+                        } else if (usuario.criadoEm) {
+                            const data = new Date(usuario.criadoEm);
+                            dataContratacao.value = data.toISOString().split('T')[0];
+                        } else {
+                            dataContratacao.value = new Date().toISOString().split('T')[0];
+                        }
                     }
                 }
             }

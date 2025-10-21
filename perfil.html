@@ -216,6 +216,13 @@
             display: inline-block;
         }
         
+        .user-status {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        
         .profile-info {
             margin-bottom: 20px;
         }
@@ -683,6 +690,7 @@
                 </div>
                 <h2 id="userName">Usuário</h2>
                 <div class="user-cargo" id="userCargo">Cargo</div>
+                <div class="user-status" id="userStatus">🟢 Ativo</div>
                 <div id="adminBadge" class="admin-badge" style="display: none;">ADMIN</div>
             </div>
             
@@ -913,6 +921,15 @@
             document.getElementById('userName').textContent = currentUser.nome;
             document.getElementById('userCargo').textContent = currentUser.cargo || 'Funcionário';
             
+            // Status no menu
+            const statusText = {
+                'ativo': '🟢 Ativo',
+                'inativo': '⚪ Inativo', 
+                'ferias': '🟡 De Férias',
+                'bloqueado': '🔴 Bloqueado'
+            };
+            document.getElementById('userStatus').textContent = statusText[currentUser.status] || '🟢 Ativo';
+            
             // Informações da sidebar
             document.getElementById('infoEmail').textContent = currentUser.email;
             document.getElementById('infoTelefone').textContent = currentUser.telefone || 'Não informado';
@@ -920,6 +937,9 @@
             // Formatar data
             if (currentUser.dataContratacao) {
                 const data = new Date(currentUser.dataContratacao);
+                document.getElementById('infoCriadoEm').textContent = data.toLocaleDateString('pt-BR');
+            } else if (currentUser.criadoEm) {
+                const data = new Date(currentUser.criadoEm);
                 document.getElementById('infoCriadoEm').textContent = data.toLocaleDateString('pt-BR');
             }
             
@@ -929,16 +949,26 @@
             document.getElementById('displayCargo').textContent = currentUser.cargo || 'Funcionário';
             document.getElementById('displayTelefone').textContent = currentUser.telefone || 'Não informado';
             document.getElementById('displayUserId').textContent = currentUser.id;
-            document.getElementById('displayMembroDesde').textContent = currentUser.dataContratacao ? new Date(currentUser.dataContratacao).toLocaleDateString('pt-BR') : '-';
+            
+            // Data de membro desde
+            if (currentUser.dataContratacao) {
+                const data = new Date(currentUser.dataContratacao);
+                document.getElementById('displayMembroDesde').textContent = data.toLocaleDateString('pt-BR');
+            } else if (currentUser.criadoEm) {
+                const data = new Date(currentUser.criadoEm);
+                document.getElementById('displayMembroDesde').textContent = data.toLocaleDateString('pt-BR');
+            } else {
+                document.getElementById('displayMembroDesde').textContent = '-';
+            }
             
             // Status do usuário
-            const statusText = {
+            const statusTextDisplay = {
                 'ativo': 'Ativo',
                 'inativo': 'Inativo', 
                 'ferias': 'De Férias',
                 'bloqueado': 'Bloqueado'
             };
-            document.getElementById('displayStatusPerfil').textContent = statusText[currentUser.status] || 'Ativo';
+            document.getElementById('displayStatusPerfil').textContent = statusTextDisplay[currentUser.status] || 'Ativo';
             
             // Formulário de edição
             document.getElementById('editNome').value = currentUser.nome;
