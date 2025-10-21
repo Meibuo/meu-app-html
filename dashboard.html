@@ -59,6 +59,29 @@
             font-size: 20px;
             font-weight: bold;
             box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .user-avatar::after {
+            content: '👤';
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background: var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .user-details h2 {
@@ -69,6 +92,11 @@
         .user-details p {
             font-size: 13px;
             color: var(--gray);
+        }
+
+        .cargo {
+            color: var(--primary);
+            font-weight: 600;
         }
 
         .logout-btn {
@@ -92,6 +120,182 @@
         .logout-btn:hover {
             transform: scale(1.05);
             background: #c0392b;
+        }
+
+        /* Modal de Perfil */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            background: rgba(255,255,255,0.3);
+            transform: rotate(90deg);
+        }
+
+        .profile-avatar-large {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 0 auto 15px;
+            border: 3px solid rgba(255,255,255,0.3);
+        }
+
+        .modal-body {
+            padding: 0;
+            max-height: calc(90vh - 150px);
+            overflow-y: auto;
+        }
+
+        .profile-section {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--gray);
+            min-width: 120px;
+        }
+
+        .info-value {
+            flex: 1;
+            color: var(--dark);
+        }
+
+        .edit-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .edit-btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item:hover {
+            background: #f8f9fa;
+            padding-left: 10px;
+        }
+
+        .menu-icon {
+            width: 35px;
+            height: 35px;
+            background: var(--light);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 16px;
         }
 
         /* Container Principal */
@@ -166,7 +370,7 @@
             text-align: center;
         }
 
-        .section-title {
+        .section-title-main {
             font-size: 20px;
             font-weight: 600;
             color: var(--dark);
@@ -433,6 +637,11 @@
             .current-time {
                 font-size: 28px;
             }
+
+            .modal-content {
+                margin: 20px;
+                max-height: 85vh;
+            }
         }
 
         @media (max-width: 480px) {
@@ -452,24 +661,32 @@
             .stat-value {
                 font-size: 20px;
             }
+
+            .profile-section {
+                padding: 15px 20px;
+            }
         }
 
         /* Scrollbar personalizado */
-        .registros-list::-webkit-scrollbar {
+        .registros-list::-webkit-scrollbar,
+        .modal-body::-webkit-scrollbar {
             width: 6px;
         }
 
-        .registros-list::-webkit-scrollbar-track {
+        .registros-list::-webkit-scrollbar-track,
+        .modal-body::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 3px;
         }
 
-        .registros-list::-webkit-scrollbar-thumb {
+        .registros-list::-webkit-scrollbar-thumb,
+        .modal-body::-webkit-scrollbar-thumb {
             background: var(--primary);
             border-radius: 3px;
         }
 
-        .registros-list::-webkit-scrollbar-thumb:hover {
+        .registros-list::-webkit-scrollbar-thumb:hover,
+        .modal-body::-webkit-scrollbar-thumb:hover {
             background: #2980b9;
         }
     </style>
@@ -478,15 +695,147 @@
     <!-- Header -->
     <div class="header">
         <div class="user-info">
-            <div class="user-avatar" id="userAvatar">U</div>
+            <div class="user-avatar" id="userAvatar" onclick="openProfileModal()">U</div>
             <div class="user-details">
                 <h2 id="userName">Usuário</h2>
-                <p id="userEmail">usuario@email.com</p>
+                <p><span class="cargo">Cargo:</span> <span id="userCargo">Analista</span></p>
             </div>
         </div>
         <button class="logout-btn" onclick="logout()" title="Sair do sistema">
             <i class="fas fa-sign-out-alt"></i>
         </button>
+    </div>
+
+    <!-- Modal de Perfil -->
+    <div class="modal" id="profileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close-modal" onclick="closeProfileModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="profile-avatar-large" id="modalUserAvatar">U</div>
+                <h2 id="modalUserName">Usuário</h2>
+                <p id="modalUserCargo">Cargo: Analista</p>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Foto do Perfil -->
+                <div class="profile-section">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <button class="edit-btn" style="margin-top: 10px;">
+                            <i class="fas fa-camera"></i> Editar Foto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dados Pessoais -->
+                <div class="profile-section">
+                    <h3 class="section-title">📱 Dados Pessoais</h3>
+                    <div class="info-item">
+                        <span class="info-label">Nome:</span>
+                        <span class="info-value" id="modalUserNome">João Silva</span>
+                        <button class="edit-btn">Editar</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">E-mail:</span>
+                        <span class="info-value" id="modalUserEmail">joao@empresa.com</span>
+                        <button class="edit-btn">Editar</button>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Telefone:</span>
+                        <span class="info-value">(11) 99999-9999</span>
+                        <button class="edit-btn">Editar</button>
+                    </div>
+                </div>
+
+                <!-- Configurações -->
+                <div class="profile-section">
+                    <h3 class="section-title">⚙️ Configurações</h3>
+                    <div class="menu-item" onclick="showSection('senha')">
+                        <div class="menu-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 500;">Alterar Senha</div>
+                            <div style="font-size: 12px; color: var(--gray);">Atualize sua senha de acesso</div>
+                        </div>
+                    </div>
+                    <div class="menu-item" onclick="showSection('notificacoes')">
+                        <div class="menu-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 500;">Notificações</div>
+                            <div style="font-size: 12px; color: var(--gray);">Configure alertas e notificações</div>
+                        </div>
+                    </div>
+                    <div class="menu-item" onclick="showSection('localizacao')">
+                        <div class="menu-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 500;">Localização</div>
+                            <div style="font-size: 12px; color: var(--gray);">Permissões de geolocalização</div>
+                        </div>
+                    </div>
+                    <div class="menu-item" onclick="showSection('biometria')">
+                        <div class="menu-icon">
+                            <i class="fas fa-fingerprint"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 500;">Biometria/Facial</div>
+                            <div style="font-size: 12px; color: var(--gray);">Login com biometria</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documentos -->
+                <div class="profile-section">
+                    <h3 class="section-title">📄 Documentos</h3>
+                    <div class="menu-item" onclick="showSection('carteira')">
+                        <div class="menu-icon">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <div style="font-weight: 500;">Carteira de Trabalho</div>
+                    </div>
+                    <div class="menu-item" onclick="showSection('banco-horas')">
+                        <div class="menu-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div style="font-weight: 500;">Banco de Horas</div>
+                    </div>
+                    <div class="menu-item" onclick="showSection('folhas-ponto')">
+                        <div class="menu-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div style="font-weight: 500;">Folhas de Ponto</div>
+                    </div>
+                </div>
+
+                <!-- Ajuda -->
+                <div class="profile-section">
+                    <h3 class="section-title">🛠️ Ajuda</h3>
+                    <div class="menu-item" onclick="showSection('rh')">
+                        <div class="menu-icon">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div style="font-weight: 500;">Contatar RH</div>
+                    </div>
+                    <div class="menu-item" onclick="showSection('faq')">
+                        <div class="menu-icon">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <div style="font-weight: 500;">FAQ</div>
+                    </div>
+                    <div class="menu-item" onclick="logout()" style="color: var(--danger);">
+                        <div class="menu-icon" style="background: rgba(231, 76, 60, 0.1); color: var(--danger);">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </div>
+                        <div style="font-weight: 500;">Sair</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Alertas -->
@@ -513,7 +862,7 @@
 
         <!-- Registro de Ponto -->
         <div class="ponto-section">
-            <h2 class="section-title">
+            <h2 class="section-title-main">
                 <i class="fas fa-fingerprint"></i>
                 Registrar Ponto
             </h2>
@@ -562,11 +911,11 @@
         <!-- Registros do Dia -->
         <div class="registros-card">
             <div class="registros-header">
-                <h2 class="section-title">
+                <h2 class="section-title-main">
                     <i class="fas fa-history"></i>
                     Registros de Hoje
                 </h2>
-                <button class="btn-small" onclick="loadDashboard()" title="Atualizar">
+                <button class="edit-btn" onclick="loadDashboard()" title="Atualizar">
                     <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
@@ -598,8 +947,15 @@
                 
                 // Configurar interface
                 document.getElementById('userName').textContent = currentUser.nome;
-                document.getElementById('userEmail').textContent = currentUser.email;
                 document.getElementById('userAvatar').textContent = currentUser.nome.charAt(0).toUpperCase();
+                document.getElementById('userCargo').textContent = getCargo(currentUser.nome);
+                
+                // Configurar modal
+                document.getElementById('modalUserName').textContent = currentUser.nome;
+                document.getElementById('modalUserAvatar').textContent = currentUser.nome.charAt(0).toUpperCase();
+                document.getElementById('modalUserCargo').textContent = `Cargo: ${getCargo(currentUser.nome)}`;
+                document.getElementById('modalUserNome').textContent = currentUser.nome;
+                document.getElementById('modalUserEmail').textContent = currentUser.email;
                 
                 // Carregar dados
                 await loadDashboard();
@@ -612,10 +968,30 @@
             }
         });
 
+        function getCargo(nome) {
+            // Simulação - depois o admin vai definir os cargos
+            const cargos = ['Analista', 'Desenvolvedor', 'Gerente', 'Assistente', 'Coordenador'];
+            const hash = nome.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+            return cargos[hash % cargos.length];
+        }
+
+        function openProfileModal() {
+            document.getElementById('profileModal').style.display = 'flex';
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').style.display = 'none';
+        }
+
+        function showSection(section) {
+            alert(`Abrindo seção: ${section}`);
+            // Aqui você pode implementar a navegação para cada seção
+        }
+
         function startClock() {
             updateClock();
             setInterval(updateClock, 1000);
-            setInterval(loadDashboard, 30000); // Atualizar a cada 30 segundos
+            setInterval(loadDashboard, 30000);
         }
 
         function updateClock() {
@@ -701,7 +1077,6 @@
             document.getElementById('totalSaidas').textContent = saidas.length;
             document.getElementById('totalIntervalos').textContent = Math.max(0, Math.min(entradas.length, saidas.length) - 1);
             
-            // Calcular horas trabalhadas
             let totalMinutos = 0;
             let entradaPendente = null;
             
@@ -744,7 +1119,6 @@
 
         async function registrarPonto(tipo) {
             try {
-                // Feedback visual imediato
                 const btn = event.target.closest('.ponto-btn');
                 btn.style.transform = 'scale(0.95)';
                 
@@ -763,7 +1137,6 @@
                     showSuccess(data.message);
                     await loadDashboard();
                     
-                    // Feedback de vibração se suportado
                     if (navigator.vibrate) {
                         navigator.vibrate(50);
                     }
@@ -775,7 +1148,6 @@
                 console.error('Erro:', error);
                 showError('Erro de conexão com o servidor');
             } finally {
-                // Restaurar botão
                 setTimeout(() => {
                     const btn = event.target.closest('.ponto-btn');
                     if (btn) btn.style.transform = '';
@@ -815,12 +1187,21 @@
             }
         }
 
-        // Atalho de teclado (E para entrada, S para saída)
+        // Fechar modal ao clicar fora
+        window.addEventListener('click', function(e) {
+            if (e.target.id === 'profileModal') {
+                closeProfileModal();
+            }
+        });
+
+        // Atalhos de teclado
         document.addEventListener('keydown', function(e) {
             if (e.key === 'e' || e.key === 'E') {
                 registrarPonto('entrada');
             } else if (e.key === 's' || e.key === 'S') {
                 registrarPonto('saida');
+            } else if (e.key === 'Escape') {
+                closeProfileModal();
             }
         });
     </script>
