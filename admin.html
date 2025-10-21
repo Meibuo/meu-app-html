@@ -176,6 +176,12 @@
             font-weight: bold;
         }
         
+        .whatsapp-icon {
+            color: #25D366;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+        
         .alert {
             padding: 12px;
             border-radius: 8px;
@@ -668,6 +674,12 @@
                 const status = usuario.perfilEditado ? 'Editado' : 'Não Editado';
                 const statusClass = usuario.perfilEditado ? 'success' : 'warning';
                 
+                // WhatsApp - mostrar apenas ícone se tiver
+                let whatsappHtml = '';
+                if (usuario.whatsapp) {
+                    whatsappHtml = '<span class="whatsapp-icon">📱</span>';
+                }
+                
                 tr.innerHTML = `
                     <td>${avatarHtml}</td>
                     <td>
@@ -676,7 +688,7 @@
                     </td>
                     <td>${usuario.email}</td>
                     <td>${usuario.cargo || 'Funcionário'}</td>
-                    <td>${usuario.telefone || '-'} ${usuario.whatsapp ? '📱' : ''}</td>
+                    <td>${usuario.telefone || '-'} ${whatsappHtml}</td>
                     <td><span class="btn btn-${statusClass} btn-sm">${status}</span></td>
                     <td>
                         <button class="btn btn-primary btn-sm" onclick="editarUsuario('${usuario.id}')">

@@ -242,6 +242,10 @@
             color: #7f8c8d;
             text-align: right;
             flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5px;
         }
         
         .btn {
@@ -347,28 +351,42 @@
             padding: 12px 16px;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s;
             margin-bottom: 5px;
             display: flex;
             align-items: center;
             gap: 10px;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
         }
         
         .menu-item:hover {
             background: #f8f9fa;
+            transform: translateX(5px);
         }
         
         .menu-item.active {
             background: var(--primary-color);
             color: white;
+            transform: translateX(10px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
         
         .section {
             display: none;
+            animation: fadeIn 0.3s ease-in-out;
         }
         
         .section.active {
             display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .warning-box {
@@ -447,6 +465,15 @@
             
             .info-value {
                 text-align: left;
+                justify-content: flex-start;
+            }
+            
+            .menu-item:hover {
+                transform: none;
+            }
+            
+            .menu-item.active {
+                transform: none;
             }
         }
         
@@ -489,6 +516,12 @@
             padding: 15px;
             border-radius: 8px;
             border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
         .info-card h4 {
@@ -501,6 +534,49 @@
             color: #7f8c8d;
             margin: 5px 0;
             font-size: 14px;
+        }
+        
+        .whatsapp-icon {
+            color: #25D366;
+            font-size: 16px;
+        }
+        
+        .floating-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary-color);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        
+        .floating-section h3 {
+            margin-bottom: 20px;
+            color: var(--text-color);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .floating-section h3::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 2px;
         }
     </style>
 </head>
@@ -568,7 +644,7 @@
                 </div>
                 <div class="info-item">
                     <span class="info-label">WhatsApp:</span>
-                    <span class="info-value" id="infoWhatsapp">Não</span>
+                    <span class="info-value" id="infoWhatsapp">-</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Membro desde:</span>
@@ -577,131 +653,149 @@
             </div>
             
             <ul class="menu-list">
-                <li class="menu-item active" onclick="showSection('dados-pessoais')">
-                    <span>👤</span> Dados Pessoais
+                <li>
+                    <button class="menu-item active" onclick="showSection('dados-pessoais')">
+                        <span>👤</span> Dados Pessoais
+                    </button>
                 </li>
-                <li class="menu-item" onclick="showSection('alterar-senha')">
-                    <span>🔒</span> Alterar Senha
+                <li>
+                    <button class="menu-item" onclick="showSection('alterar-senha')">
+                        <span>🔒</span> Alterar Senha
+                    </button>
                 </li>
-                <li class="menu-item" onclick="showSection('banco-horas')">
-                    <span>⏱️</span> Banco de Horas
+                <li>
+                    <button class="menu-item" onclick="showSection('banco-horas')">
+                        <span>⏱️</span> Banco de Horas
+                    </button>
                 </li>
-                <li class="menu-item" onclick="showSection('folhas-ponto')">
-                    <span>📋</span> Folhas de Ponto
+                <li>
+                    <button class="menu-item" onclick="showSection('folhas-ponto')">
+                        <span>📋</span> Folhas de Ponto
+                    </button>
                 </li>
             </ul>
         </div>
         
         <div class="main-content">
             <!-- Seção: Dados Pessoais -->
-            <div id="dados-pessoais" class="card section active">
-                <h2>Dados Pessoais</h2>
-                
-                <div id="perfilWarning" class="warning-box" style="display: none;">
-                    ⚠️ Seu perfil já foi editado anteriormente. Para novas alterações, entre em contato com o administrador.
-                </div>
-                
-                <div class="dados-pessoais-grid">
-                    <div class="info-card">
-                        <h4>Informações Básicas</h4>
-                        <p><strong>Nome:</strong> <span id="displayNome">-</span></p>
-                        <p><strong>E-mail:</strong> <span id="displayEmail">-</span></p>
-                        <p><strong>Cargo:</strong> <span id="displayCargo">-</span></p>
+            <div id="dados-pessoais" class="section active">
+                <div class="floating-section">
+                    <h3>Informações do Perfil</h3>
+                    
+                    <div id="perfilWarning" class="warning-box" style="display: none;">
+                        ⚠️ Seu perfil já foi editado anteriormente. Para novas alterações, entre em contato com o administrador.
                     </div>
                     
-                    <div class="info-card">
-                        <h4>Contato</h4>
-                        <p><strong>Telefone:</strong> <span id="displayTelefone">-</span></p>
-                        <p><strong>WhatsApp:</strong> <span id="displayWhatsapp">-</span></p>
-                    </div>
-                    
-                    <div class="info-card">
-                        <h4>Informações da Conta</h4>
-                        <p><strong>ID do Usuário:</strong> <span id="displayUserId">-</span></p>
-                        <p><strong>Membro desde:</strong> <span id="displayMembroDesde">-</span></p>
-                        <p><strong>Status do Perfil:</strong> <span id="displayStatusPerfil">-</span></p>
-                    </div>
-                </div>
-                
-                <h3 style="margin: 25px 0 15px 0;">Editar Informações</h3>
-                
-                <form id="perfilForm">
-                    <div class="form-group">
-                        <label for="editNome">Nome completo:</label>
-                        <input type="text" id="editNome" name="nome" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="editTelefone">Telefone:</label>
-                        <input type="tel" id="editTelefone" name="telefone" placeholder="(11) 99999-9999">
-                    </div>
-                    
-                    <div class="form-group">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="editWhatsapp" name="whatsapp">
-                            <label for="editWhatsapp">Este número é WhatsApp</label>
+                    <div class="dados-pessoais-grid">
+                        <div class="info-card">
+                            <h4>Informações Básicas</h4>
+                            <p><strong>Nome:</strong> <span id="displayNome">-</span></p>
+                            <p><strong>E-mail:</strong> <span id="displayEmail">-</span></p>
+                            <p><strong>Cargo:</strong> <span id="displayCargo">-</span></p>
+                        </div>
+                        
+                        <div class="info-card">
+                            <h4>Contato</h4>
+                            <p><strong>Telefone:</strong> <span id="displayTelefone">-</span></p>
+                            <p><strong>WhatsApp:</strong> <span id="displayWhatsapp">-</span></p>
+                        </div>
+                        
+                        <div class="info-card">
+                            <h4>Informações da Conta</h4>
+                            <p><strong>ID do Usuário:</strong> <span id="displayUserId">-</span></p>
+                            <p><strong>Membro desde:</strong> <span id="displayMembroDesde">-</span></p>
+                            <p><strong>Status do Perfil:</strong> <span id="displayStatusPerfil">-</span></p>
                         </div>
                     </div>
+                </div>
+
+                <div class="floating-section">
+                    <h3>Editar Informações Pessoais</h3>
                     
-                    <div class="loading" id="loadingPerfil">
-                        <div class="spinner"></div>
-                        <span>Salvando alterações...</span>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary" id="submitPerfilBtn">
-                        Salvar Alterações
-                    </button>
-                </form>
+                    <form id="perfilForm">
+                        <div class="form-group">
+                            <label for="editNome">Nome completo:</label>
+                            <input type="text" id="editNome" name="nome" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editTelefone">Telefone:</label>
+                            <input type="tel" id="editTelefone" name="telefone" placeholder="(11) 99999-9999">
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="editWhatsapp" name="whatsapp">
+                                <label for="editWhatsapp">Este número é WhatsApp</label>
+                            </div>
+                        </div>
+                        
+                        <div class="loading" id="loadingPerfil">
+                            <div class="spinner"></div>
+                            <span>Salvando alterações...</span>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" id="submitPerfilBtn">
+                            Salvar Alterações
+                        </button>
+                    </form>
+                </div>
             </div>
             
             <!-- Seção: Alterar Senha -->
-            <div id="alterar-senha" class="card section">
-                <h2>Alterar Senha</h2>
-                
-                <form id="senhaForm">
-                    <div class="form-group">
-                        <label for="senhaAtual">Senha atual:</label>
-                        <input type="password" id="senhaAtual" name="senhaAtual" required>
-                    </div>
+            <div id="alterar-senha" class="section">
+                <div class="floating-section">
+                    <h3>Alterar Senha</h3>
                     
-                    <div class="form-group">
-                        <label for="novaSenha">Nova senha:</label>
-                        <input type="password" id="novaSenha" name="novaSenha" required minlength="6">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="confirmarNovaSenha">Confirmar nova senha:</label>
-                        <input type="password" id="confirmarNovaSenha" name="confirmarNovaSenha" required>
-                    </div>
-                    
-                    <div class="loading" id="loadingSenha">
-                        <div class="spinner"></div>
-                        <span>Alterando senha...</span>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary" id="submitSenhaBtn">
-                        Alterar Senha
-                    </button>
-                </form>
+                    <form id="senhaForm">
+                        <div class="form-group">
+                            <label for="senhaAtual">Senha atual:</label>
+                            <input type="password" id="senhaAtual" name="senhaAtual" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="novaSenha">Nova senha:</label>
+                            <input type="password" id="novaSenha" name="novaSenha" required minlength="6">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="confirmarNovaSenha">Confirmar nova senha:</label>
+                            <input type="password" id="confirmarNovaSenha" name="confirmarNovaSenha" required>
+                        </div>
+                        
+                        <div class="loading" id="loadingSenha">
+                            <div class="spinner"></div>
+                            <span>Alterando senha...</span>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" id="submitSenhaBtn">
+                            Alterar Senha
+                        </button>
+                    </form>
+                </div>
             </div>
             
             <!-- Seção: Banco de Horas -->
-            <div id="banco-horas" class="card section">
-                <h2>Banco de Horas</h2>
-                <p>Em desenvolvimento...</p>
-                <div class="empty-state">
-                    <p>Funcionalidade em desenvolvimento</p>
-                    <p>Em breve você poderá acompanhar seu banco de horas aqui.</p>
+            <div id="banco-horas" class="section">
+                <div class="floating-section">
+                    <h3>Banco de Horas</h3>
+                    <p>Em desenvolvimento...</p>
+                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <p>Funcionalidade em desenvolvimento</p>
+                        <p>Em breve você poderá acompanhar seu banco de horas aqui.</p>
+                    </div>
                 </div>
             </div>
             
             <!-- Seção: Folhas de Ponto -->
-            <div id="folhas-ponto" class="card section">
-                <h2>Folhas de Ponto</h2>
-                <p>Em desenvolvimento...</p>
-                <div class="empty-state">
-                    <p>Funcionalidade em desenvolvimento</p>
-                    <p>Em breve você poderá visualizar e baixar suas folhas de ponto aqui.</p>
+            <div id="folhas-ponto" class="section">
+                <div class="floating-section">
+                    <h3>Folhas de Ponto</h3>
+                    <p>Em desenvolvimento...</p>
+                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <p>Funcionalidade em desenvolvimento</p>
+                        <p>Em breve você poderá visualizar e baixar suas folhas de ponto aqui.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -756,7 +850,14 @@
             // Informações da sidebar
             document.getElementById('infoEmail').textContent = currentUser.email;
             document.getElementById('infoTelefone').textContent = currentUser.telefone || 'Não informado';
-            document.getElementById('infoWhatsapp').textContent = currentUser.whatsapp ? 'Sim' : 'Não';
+            
+            // WhatsApp - mostrar apenas ícone se tiver
+            const whatsappElement = document.getElementById('infoWhatsapp');
+            if (currentUser.whatsapp) {
+                whatsappElement.innerHTML = '<span class="whatsapp-icon">📱</span>';
+            } else {
+                whatsappElement.textContent = 'Não';
+            }
             
             // Formatar data
             if (currentUser.criadoEm) {
@@ -769,7 +870,15 @@
             document.getElementById('displayEmail').textContent = currentUser.email;
             document.getElementById('displayCargo').textContent = currentUser.cargo || 'Funcionário';
             document.getElementById('displayTelefone').textContent = currentUser.telefone || 'Não informado';
-            document.getElementById('displayWhatsapp').textContent = currentUser.whatsapp ? 'Sim' : 'Não';
+            
+            // WhatsApp no display - mostrar apenas ícone se tiver
+            const displayWhatsapp = document.getElementById('displayWhatsapp');
+            if (currentUser.whatsapp) {
+                displayWhatsapp.innerHTML = '<span class="whatsapp-icon">📱 Sim</span>';
+            } else {
+                displayWhatsapp.textContent = 'Não';
+            }
+            
             document.getElementById('displayUserId').textContent = currentUser.id;
             document.getElementById('displayMembroDesde').textContent = currentUser.criadoEm ? new Date(currentUser.criadoEm).toLocaleDateString('pt-BR') : '-';
             document.getElementById('displayStatusPerfil').textContent = currentUser.perfilEditado ? 'Editado' : 'Não Editado';
