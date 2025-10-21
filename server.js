@@ -80,383 +80,9 @@ const createAdminUser = async () => {
   }
 };
 
-// Rotas da API
-app.post('/api/cadastro', async (req, res) => {
-    try {
-        const { nome, email, senha, telefone } = req.body;
-        
-        // Validação básica
-        if (!nome || !email || !senha) {
-            return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios' });
-        }
-        
-        if (senha.length < 6) {
-            return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
-        }
-        
-        const userExists = users.find(user => user.email === email);
-        if (userExists) {
-            return res.status(400).json({ error: 'E-mail já cadastrado' });
-        }
-        
-        // Hash da senha
-        const hashedPassword = await bcrypt.hash(senha, 10);
-        
-        const newUser = {
-            id: Date.now().toString(),
-            nome,
-            email,
-            telefone: telefone || '',
-            senha: hashedPassword,
-            avatar: '',
-            cargo: 'Terceiro', // Cargo padrão para novos usuários
-            perfilEditado: false,
-            isAdmin: false,
-            criadoEm: new Date().toISOString(),
-            atualizadoEm: new Date().toISOString()
-        };
-        
-        users.push(newUser);
-        res.json({ 
-            success: true, 
-            message: 'Conta criada com sucesso!', 
-            user: { 
-                id: newUser.id, 
-                nome: newUser.nome, 
-                email: newUser.email,
-                telefone: newUser.telefone,
-                avatar: newUser.avatar,
-                cargo: newUser.cargo,
-                perfilEditado: newUser.perfilEditado,
-                isAdmin: newUser.isAdmin
-            } 
-        });
-    } catch (error) {
-        console.error('Erro no cadastro:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
+// Rotas da API (mantenha as rotas existentes de cadastro, login, etc.)
 
-// Cadastro por administrador
-app.post('/api/admin/cadastro', async (req, res) => {
-    try {
-        const { nome, email, senha, telefone, cargo } = req.body;
-        
-        // Validação básica
-        if (!nome || !email || !senha) {
-            return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios' });
-        }
-        
-        if (senha.length < 6) {
-            return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
-        }
-        
-        // Validar cargo
-        if (cargo && !CARGOS_DISPONIVEIS.includes(cargo)) {
-            return res.status(400).json({ error: 'Cargo inválido' });
-        }
-        
-        const userExists = users.find(user => user.email === email);
-        if (userExists) {
-            return res.status(400).json({ error: 'E-mail já cadastrado' });
-        }
-        
-        // Hash da senha
-        const hashedPassword = await bcrypt.hash(senha, 10);
-        
-        const newUser = {
-            id: Date.now().toString(),
-            nome,
-            email,
-            telefone: telefone || '',
-            senha: hashedPassword,
-            avatar: '',
-            cargo: cargo || 'Terceiro',
-            perfilEditado: false,
-            isAdmin: false,
-            criadoEm: new Date().toISOString(),
-            atualizadoEm: new Date().toISOString()
-        };
-        
-        users.push(newUser);
-        res.json({ 
-            success: true, 
-            message: 'Usuário criado com sucesso!', 
-            user: { 
-                id: newUser.id, 
-                nome: newUser.nome, 
-                email: newUser.email,
-                telefone: newUser.telefone,
-                avatar: newUser.avatar,
-                cargo: newUser.cargo,
-                perfilEditado: newUser.perfilEditado,
-                isAdmin: newUser.isAdmin
-            } 
-        });
-    } catch (error) {
-        console.error('Erro no cadastro admin:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-app.post('/api/login', async (req, res) => {
-    try {
-        const { email, senha } = req.body;
-        
-        if (!email || !senha) {
-            return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
-        }
-        
-        const user = users.find(user => user.email === email);
-        if (!user) {
-            return res.status(400).json({ error: 'E-mail ou senha incorretos' });
-        }
-        
-        // Verificar senha com bcrypt
-        const passwordMatch = await bcrypt.compare(senha, user.senha);
-        if (!passwordMatch) {
-            return res.status(400).json({ error: 'E-mail ou senha incorretos' });
-        }
-        
-        res.json({ 
-            success: true, 
-            message: 'Login realizado com sucesso!', 
-            user: { 
-                id: user.id, 
-                nome: user.nome, 
-                email: user.email,
-                telefone: user.telefone,
-                avatar: user.avatar,
-                cargo: user.cargo,
-                perfilEditado: user.perfilEditado,
-                isAdmin: user.isAdmin,
-                criadoEm: user.criadoEm
-            } 
-        });
-    } catch (error) {
-        console.error('Erro no login:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Upload de avatar
-app.post('/api/upload-avatar', upload.single('avatar'), async (req, res) => {
-    try {
-        const { usuario_id } = req.body;
-        
-        if (!req.file) {
-            return res.status(400).json({ error: 'Nenhuma imagem foi enviada' });
-        }
-        
-        const userIndex = users.findIndex(user => user.id === usuario_id);
-        if (userIndex === -1) {
-            // Deletar arquivo se usuário não existe
-            fs.unlinkSync(req.file.path);
-            return res.status(404).json({ error: 'Usuário não encontrado' });
-        }
-        
-        // Deletar avatar anterior se existir
-        if (users[userIndex].avatar && users[userIndex].avatar.startsWith('uploads/')) {
-            try {
-                fs.unlinkSync(users[userIndex].avatar);
-            } catch (error) {
-                console.log('Avatar anterior não encontrado para deletar');
-            }
-        }
-        
-        const avatarPath = req.file.path;
-        users[userIndex].avatar = avatarPath;
-        users[userIndex].atualizadoEm = new Date().toISOString();
-        
-        res.json({ 
-            success: true, 
-            message: 'Avatar atualizado com sucesso!',
-            avatar: avatarPath
-        });
-    } catch (error) {
-        console.error('Erro ao fazer upload do avatar:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Servir arquivos de upload
-app.use('/uploads', express.static('uploads'));
-
-// Atualizar perfil do usuário
-app.put('/api/perfil', async (req, res) => {
-    try {
-        const { usuario_id, nome, telefone } = req.body;
-        
-        const userIndex = users.findIndex(user => user.id === usuario_id);
-        if (userIndex === -1) {
-            return res.status(404).json({ error: 'Usuário não encontrado' });
-        }
-        
-        const user = users[userIndex];
-        
-        // Verificar se o perfil já foi editado (só permite uma edição)
-        if (user.perfilEditado && !user.isAdmin) {
-            return res.status(400).json({ 
-                error: 'Perfil já foi editado. Para novas alterações, entre em contato com o administrador.' 
-            });
-        }
-        
-        // Registrar alteração
-        const alteracao = {
-            id: Date.now().toString(),
-            usuario_id,
-            alteracoes: {
-                nome: user.nome !== nome ? { de: user.nome, para: nome } : null,
-                telefone: user.telefone !== telefone ? { de: user.telefone, para: telefone } : null,
-            },
-            data: new Date().toISOString()
-        };
-        
-        alteracoesPerfil.push(alteracao);
-        
-        // Atualizar usuário
-        users[userIndex] = {
-            ...user,
-            nome: nome || user.nome,
-            telefone: telefone || user.telefone,
-            perfilEditado: true,
-            atualizadoEm: new Date().toISOString()
-        };
-        
-        res.json({ 
-            success: true, 
-            message: 'Perfil atualizado com sucesso!',
-            user: {
-                id: users[userIndex].id,
-                nome: users[userIndex].nome,
-                email: users[userIndex].email,
-                telefone: users[userIndex].telefone,
-                avatar: users[userIndex].avatar,
-                cargo: users[userIndex].cargo,
-                perfilEditado: users[userIndex].perfilEditado,
-                isAdmin: users[userIndex].isAdmin
-            }
-        });
-    } catch (error) {
-        console.error('Erro ao atualizar perfil:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Alterar senha
-app.put('/api/alterar-senha', async (req, res) => {
-    try {
-        const { usuario_id, senhaAtual, novaSenha } = req.body;
-        
-        if (!senhaAtual || !novaSenha) {
-            return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias' });
-        }
-        
-        if (novaSenha.length < 6) {
-            return res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres' });
-        }
-        
-        const userIndex = users.findIndex(user => user.id === usuario_id);
-        if (userIndex === -1) {
-            return res.status(404).json({ error: 'Usuário não encontrado' });
-        }
-        
-        const user = users[userIndex];
-        
-        // Verificar senha atual
-        const passwordMatch = await bcrypt.compare(senhaAtual, user.senha);
-        if (!passwordMatch) {
-            return res.status(400).json({ error: 'Senha atual incorreta' });
-        }
-        
-        // Hash da nova senha
-        const hashedPassword = await bcrypt.hash(novaSenha, 10);
-        
-        users[userIndex].senha = hashedPassword;
-        users[userIndex].atualizadoEm = new Date().toISOString();
-        
-        res.json({ 
-            success: true, 
-            message: 'Senha alterada com sucesso!' 
-        });
-    } catch (error) {
-        console.error('Erro ao alterar senha:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Rotas de administração
-app.get('/api/admin/usuarios', (req, res) => {
-    try {
-        // Em produção, verificar se o usuário é admin
-        const usuarios = users.map(user => ({
-            id: user.id,
-            nome: user.nome,
-            email: user.email,
-            telefone: user.telefone,
-            cargo: user.cargo,
-            avatar: user.avatar,
-            perfilEditado: user.perfilEditado,
-            isAdmin: user.isAdmin,
-            criadoEm: user.criadoEm,
-            atualizadoEm: user.atualizadoEm
-        }));
-        
-        res.json({ success: true, usuarios });
-    } catch (error) {
-        console.error('Erro ao buscar usuários:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
-// Rota para obter cargos disponíveis
-app.get('/api/admin/cargos', (req, res) => {
-    res.json({ success: true, cargos: CARGOS_DISPONIVEIS });
-});
-
-app.put('/api/admin/usuarios/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { nome, email, telefone, cargo } = req.body;
-        
-        const userIndex = users.findIndex(user => user.id === id);
-        if (userIndex === -1) {
-            return res.status(404).json({ error: 'Usuário não encontrado' });
-        }
-        
-        // Validar cargo
-        if (cargo && !CARGOS_DISPONIVEIS.includes(cargo)) {
-            return res.status(400).json({ error: 'Cargo inválido' });
-        }
-        
-        users[userIndex] = {
-            ...users[userIndex],
-            nome: nome || users[userIndex].nome,
-            email: email || users[userIndex].email,
-            telefone: telefone || users[userIndex].telefone,
-            cargo: cargo || users[userIndex].cargo,
-            atualizadoEm: new Date().toISOString()
-        };
-        
-        res.json({ 
-            success: true, 
-            message: 'Usuário atualizado com sucesso!',
-            user: {
-                id: users[userIndex].id,
-                nome: users[userIndex].nome,
-                email: users[userIndex].email,
-                telefone: users[userIndex].telefone,
-                cargo: users[userIndex].cargo,
-                avatar: users[userIndex].avatar,
-                perfilEditado: users[userIndex].perfilEditado,
-                isAdmin: users[userIndex].isAdmin
-            }
-        });
-    } catch (error) {
-        console.error('Erro ao atualizar usuário:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
+// ... (mantenha todas as rotas existentes de cadastro, login, perfil, admin, etc.)
 
 // Rota atualizada para registrar ponto
 app.post('/api/registrar-ponto', (req, res) => {
@@ -468,7 +94,9 @@ app.post('/api/registrar-ponto', (req, res) => {
             horas_extras, 
             trabalho_sabado, 
             observacao, 
-            manual 
+            manual,
+            data_custom,
+            hora_custom
         } = req.body;
         
         if (!usuario_id || !tipo) {
@@ -481,7 +109,16 @@ app.post('/api/registrar-ponto', (req, res) => {
             return res.status(404).json({ error: 'Usuário não encontrado' });
         }
         
-        const now = new Date();
+        let now;
+        if (data_custom && hora_custom) {
+            // Usar data e hora customizadas para horas extras manuais
+            const [year, month, day] = data_custom.split('-');
+            const [hours, minutes] = hora_custom.split(':');
+            now = new Date(year, month - 1, day, hours, minutes);
+        } else {
+            now = new Date();
+        }
+        
         const novoPonto = {
             id: Date.now().toString(),
             usuario_id,
@@ -539,36 +176,6 @@ app.get('/api/registros/:usuario_id', (req, res) => {
     }
 });
 
-// Nova rota para estatísticas de horas
-app.get('/api/estatisticas/:usuario_id', (req, res) => {
-    try {
-        const { usuario_id } = req.params;
-        const { mes, ano } = req.query;
-        
-        const registrosUsuario = pontos.filter(ponto => 
-            ponto.usuario_id === usuario_id
-        );
-        
-        // Calcular horas trabalhadas, extras, etc.
-        const estatisticas = {
-            total_registros: registrosUsuario.length,
-            registros_este_mes: registrosUsuario.filter(p => {
-                const data = new Date(p.timestamp);
-                return data.getMonth() === (parseInt(mes) - 1) && data.getFullYear() === parseInt(ano);
-            }).length,
-            horas_extras: registrosUsuario.filter(p => p.horas_extras).length
-        };
-        
-        res.json({ 
-            success: true,
-            estatisticas
-        });
-    } catch (error) {
-        console.error('Erro ao buscar estatísticas:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
 // Rota de status para verificar se o servidor está online
 app.get('/api/status', (req, res) => {
     res.json({ 
@@ -580,16 +187,7 @@ app.get('/api/status', (req, res) => {
     });
 });
 
-// Rota para limpar dados (apenas para desenvolvimento)
-if (process.env.NODE_ENV === 'development') {
-    app.delete('/api/clear-data', (req, res) => {
-        users = [];
-        pontos = [];
-        alteracoesPerfil = [];
-        createAdminUser();
-        res.json({ success: true, message: 'Dados limpos com sucesso' });
-    });
-}
+// ... (mantenha o resto do servidor igual)
 
 // Servir arquivos HTML
 app.get('/', (req, res) => {
@@ -629,5 +227,5 @@ app.listen(PORT, async () => {
     console.log(`📊 Status: http://localhost:${PORT}/api/status`);
     console.log(`👑 Admin: admin@admin.com / admin123`);
     console.log(`📋 Cargos disponíveis: ${CARGOS_DISPONIVEIS.join(', ')}`);
-    console.log(`⏰ Sistema de ponto automático ativado!`);
+    console.log(`⏰ Sistema de ponto atualizado!`);
 });

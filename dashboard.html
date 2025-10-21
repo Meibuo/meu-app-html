@@ -191,8 +191,6 @@
         
         .tipo-entrada { background: #e8f5e9; color: var(--success-color); }
         .tipo-saida { background: #ffebee; color: var(--error-color); }
-        .tipo-entrada_almoco { background: #fff3e0; color: #ff9800; }
-        .tipo-saida_almoco { background: #fff3e0; color: #ff9800; }
         .tipo-entrada_extra { background: #e3f2fd; color: #2196f3; }
         .tipo-saida_extra { background: #f3e5f5; color: #9c27b0; }
         
@@ -280,26 +278,12 @@
             display: block;
         }
         
-        /* Novos estilos para o sistema automático */
-        .local-selector {
+        /* Novos estilos */
+        .local-input {
             margin: 15px 0;
         }
         
-        .local-selector select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        
-        .local-custom {
-            display: none;
-            margin-top: 10px;
-        }
-        
-        .local-custom input {
+        .local-input input {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -345,6 +329,69 @@
         .checkbox-group input[type="checkbox"] {
             width: 18px;
             height: 18px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close {
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
         }
         
         /* Responsividade */
@@ -395,6 +442,11 @@
             .card {
                 padding: 15px;
             }
+            
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+            }
         }
         
         @media (min-width: 769px) {
@@ -414,6 +466,10 @@
             
             .btn {
                 padding: 10px 15px;
+            }
+            
+            .form-buttons {
+                flex-direction: column;
             }
         }
     </style>
@@ -461,7 +517,7 @@
         <div id="alert" class="alert"></div>
         
         <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Registro de Ponto Automático</h2>
+            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Registro de Ponto</h2>
             
             <div class="horario-info">
                 <h4 style="margin-bottom: 10px;">📅 Horários Padrão</h4>
@@ -475,42 +531,28 @@
                 </div>
                 <div class="horario-item">
                     <span>Sábado/Domingo:</span>
-                    <span><strong>Folga (horas extras disponíveis)</strong></span>
+                    <span><strong>Folga</strong></span>
                 </div>
             </div>
             
-            <div class="local-selector">
+            <div class="local-input">
                 <label style="display: block; margin-bottom: 8px; font-weight: bold;">📍 Local de Trabalho:</label>
-                <select id="localTrabalho" onchange="toggleCustomLocal()">
-                    <option value="">Selecione o local...</option>
-                    <option value="escritorio">Escritório Principal</option>
-                    <option value="home_office">Home Office</option>
-                    <option value="cliente">Visita a Cliente</option>
-                    <option value="outro">Outro Local</option>
-                </select>
-                
-                <div class="local-custom" id="customLocalContainer">
-                    <input type="text" id="customLocal" placeholder="Digite o local (ex: São Paulo, Centro)">
-                </div>
+                <input type="text" id="localTrabalho" placeholder="Digite o local (ex: São Paulo, Centro)">
             </div>
             
             <div class="extra-options">
                 <div class="checkbox-group">
-                    <input type="checkbox" id="trabalhoSabado">
-                    <label for="trabalhoSabado">Trabalhando no Sábado</label>
-                </div>
-                <div class="checkbox-group">
                     <input type="checkbox" id="horasExtras">
-                    <label for="horasExtras">Horas Extras (após o horário regular)</label>
+                    <label for="horasExtras">Horas Extras</label>
                 </div>
             </div>
             
             <div class="ponto-buttons">
-                <button class="btn btn-primary" onclick="registrarPontoAutomatico()" id="btnRegistrar">
-                    ⏰ Registrar Ponto Automático
+                <button class="btn btn-primary" onclick="registrarPonto()" id="btnRegistrar">
+                    ⏰ Registrar Ponto
                 </button>
-                <button class="btn btn-warning" onclick="registrarPontoManual()" id="btnManual">
-                    ✏️ Registrar Ponto Manual
+                <button class="btn btn-warning" onclick="abrirModalHoraExtra()">
+                    ⭐ Adicionar Hora Extra
                 </button>
             </div>
             
@@ -522,22 +564,13 @@
         
         <div class="stats" id="stats">
             <div class="stat-card">
-                <div class="stat-number" id="totalRegistros">0</div>
-                <div class="stat-label">Total de Registros</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="registrosHoje">0</div>
-                <div class="stat-label">Registros Hoje</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-number" id="horasExtrasCount">0</div>
                 <div class="stat-label">Horas Extras</div>
             </div>
         </div>
         
         <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Meus Registros</h2>
-            <p style="color: #666; margin-bottom: 15px;">Histórico dos seus registros de ponto:</p>
+            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Histórico de Registros</h2>
             
             <div class="loading" id="loadingRegistros">
                 <div class="spinner"></div>
@@ -546,6 +579,41 @@
             
             <div class="registros-list" id="registrosList">
                 <!-- Registros serão carregados aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Hora Extra -->
+    <div id="modalHoraExtra" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⭐ Adicionar Hora Extra</h3>
+                <span class="close" onclick="fecharModalHoraExtra()">&times;</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="dataHoraExtra">Data:</label>
+                <input type="date" id="dataHoraExtra" value="">
+            </div>
+            
+            <div class="form-group">
+                <label for="horaEntradaExtra">Hora de Entrada:</label>
+                <input type="time" id="horaEntradaExtra">
+            </div>
+            
+            <div class="form-group">
+                <label for="horaSaidaExtra">Hora de Saída:</label>
+                <input type="time" id="horaSaidaExtra">
+            </div>
+            
+            <div class="form-group">
+                <label for="localHoraExtra">Local:</label>
+                <input type="text" id="localHoraExtra" placeholder="Digite o local">
+            </div>
+            
+            <div class="form-buttons">
+                <button class="btn btn-primary" onclick="registrarHoraExtra()">Registrar Hora Extra</button>
+                <button class="btn btn-danger" onclick="fecharModalHoraExtra()">Cancelar</button>
             </div>
         </div>
     </div>
@@ -582,40 +650,23 @@
             atualizarAvatar();
             carregarRegistros();
             atualizarInterfaceHorario();
-        });
-        
-        // Alternar campo de local personalizado
-        function toggleCustomLocal() {
-            const localSelect = document.getElementById('localTrabalho');
-            const customContainer = document.getElementById('customLocalContainer');
             
-            if (localSelect.value === 'outro') {
-                customContainer.style.display = 'block';
-            } else {
-                customContainer.style.display = 'none';
-            }
-        }
+            // Definir data atual como padrão no modal
+            document.getElementById('dataHoraExtra').value = new Date().toISOString().split('T')[0];
+        });
         
         // Atualizar interface baseada no horário atual
         function atualizarInterfaceHorario() {
             const agora = new Date();
             const diaSemana = agora.getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
             const hora = agora.getHours();
-            const minutos = agora.getMinutes();
             
             const btnRegistrar = document.getElementById('btnRegistrar');
-            let textoBotao = '⏰ Registrar Ponto Automático';
+            let textoBotao = '⏰ Registrar Entrada';
             
             // Definir texto do botão baseado no horário
-            if (diaSemana === 0 || diaSemana === 6) { // Fim de semana
-                textoBotao = '🏠 Registrar Horas Extras (Fim de Semana)';
-            } else if (hora >= 12 && hora < 13) { // Horário de almoço
-                textoBotao = '🍽️ Registrar Saída para Almoço';
-            } else if ((diaSemana >= 1 && diaSemana <= 4 && hora >= 17) || 
-                      (diaSemana === 5 && hora >= 16)) { // Após horário regular
-                textoBotao = '🌙 Registrar Horas Extras';
-            } else if (hora >= 13) {
-                textoBotao = '↩️ Registrar Retorno do Almoço';
+            if (hora >= 12) {
+                textoBotao = '🔴 Registrar Saída';
             }
             
             btnRegistrar.textContent = textoBotao;
@@ -637,38 +688,27 @@
             }
         }
         
-        // Registrar ponto automático
-        async function registrarPontoAutomatico() {
+        // Registrar ponto
+        async function registrarPonto() {
             const loading = document.getElementById('loadingPonto');
             const btnRegistrar = document.getElementById('btnRegistrar');
-            const btnManual = document.getElementById('btnManual');
             
             // Validar local
-            const localSelect = document.getElementById('localTrabalho');
-            const customLocal = document.getElementById('customLocal');
-            let local = localSelect.value;
-            
-            if (local === 'outro') {
-                local = customLocal.value.trim();
-                if (!local) {
-                    showAlert('Por favor, informe o local de trabalho.', 'error');
-                    return;
-                }
-            }
+            const localInput = document.getElementById('localTrabalho');
+            const local = localInput.value.trim();
             
             if (!local) {
-                showAlert('Por favor, selecione o local de trabalho.', 'error');
+                showAlert('Por favor, informe o local de trabalho.', 'error');
                 return;
             }
             
             // Desabilitar botões
             btnRegistrar.disabled = true;
-            btnManual.disabled = true;
             loading.style.display = 'block';
             
             try {
                 const agora = new Date();
-                const tipoPonto = calcularTipoPontoAutomatico(agora);
+                const tipoPonto = calcularTipoPonto(agora);
                 
                 const response = await fetch('/api/registrar-ponto', {
                     method: 'POST',
@@ -680,7 +720,6 @@
                         tipo: tipoPonto.tipo,
                         local: local,
                         horas_extras: document.getElementById('horasExtras').checked,
-                        trabalho_sabado: document.getElementById('trabalhoSabado').checked,
                         observacao: tipoPonto.observacao
                     })
                 });
@@ -691,9 +730,8 @@
                     showAlert(`Ponto registrado com sucesso! (${tipoPonto.tipo})`, 'success');
                     carregarRegistros();
                     
-                    // Resetar checkboxes
+                    // Resetar checkbox
                     document.getElementById('horasExtras').checked = false;
-                    document.getElementById('trabalhoSabado').checked = false;
                     
                 } else {
                     showAlert(data.error, 'error');
@@ -703,105 +741,116 @@
                 showAlert('Erro de conexão. Tente novamente.', 'error');
             } finally {
                 btnRegistrar.disabled = false;
-                btnManual.disabled = false;
                 loading.style.display = 'none';
             }
         }
         
-        // Calcular tipo de ponto automático baseado no horário
-        function calcularTipoPontoAutomatico(data) {
-            const diaSemana = data.getDay();
+        // Calcular tipo de ponto baseado no horário
+        function calcularTipoPonto(data) {
             const hora = data.getHours();
-            const minutos = data.getMinutes();
             const horasExtras = document.getElementById('horasExtras').checked;
-            const trabalhaSabado = document.getElementById('trabalhoSabado').checked;
             
             let tipo = 'entrada';
             let observacao = '';
             
-            // Fim de semana
-            if (diaSemana === 0 || diaSemana === 6) {
-                if (trabalhaSabado && diaSemana === 6) {
-                    tipo = horasExtras ? 'entrada_extra' : 'entrada';
-                    observacao = 'Trabalho no sábado';
-                } else {
-                    tipo = 'entrada_extra';
-                    observacao = 'Horas extras - fim de semana';
-                }
-            }
-            // Dias úteis
-            else {
-                if (hora >= 12 && hora < 13) {
-                    tipo = 'saida_almoco';
-                    observacao = 'Saída para almoço';
-                } else if (hora >= 13 && hora < 14) {
-                    tipo = 'entrada_almoco';
-                    observacao = 'Retorno do almoço';
-                } else if ((diaSemana >= 1 && diaSemana <= 4 && hora >= 17) || 
-                          (diaSemana === 5 && hora >= 16)) {
-                    tipo = horasExtras ? 'saida_extra' : 'saida';
-                    observacao = horasExtras ? 'Saída com horas extras' : 'Saída regular';
-                } else {
-                    tipo = 'entrada';
-                    observacao = 'Entrada regular';
-                }
+            if (hora >= 12) {
+                tipo = horasExtras ? 'saida_extra' : 'saida';
+                observacao = horasExtras ? 'Saída com horas extras' : 'Saída regular';
+            } else {
+                tipo = horasExtras ? 'entrada_extra' : 'entrada';
+                observacao = horasExtras ? 'Entrada com horas extras' : 'Entrada regular';
             }
             
             return { tipo, observacao };
         }
         
-        // Registrar ponto manual (para situações especiais)
-        async function registrarPontoManual() {
-            const tipo = prompt('Digite o tipo de ponto (entrada, saida, entrada_almoco, saida_almoco, entrada_extra, saida_extra):');
+        // Abrir modal para hora extra
+        function abrirModalHoraExtra() {
+            document.getElementById('modalHoraExtra').style.display = 'block';
+        }
+        
+        // Fechar modal para hora extra
+        function fecharModalHoraExtra() {
+            document.getElementById('modalHoraExtra').style.display = 'none';
+        }
+        
+        // Registrar hora extra
+        async function registrarHoraExtra() {
+            const data = document.getElementById('dataHoraExtra').value;
+            const horaEntrada = document.getElementById('horaEntradaExtra').value;
+            const horaSaida = document.getElementById('horaSaidaExtra').value;
+            const local = document.getElementById('localHoraExtra').value.trim();
             
-            if (!tipo) return;
-            
-            const localSelect = document.getElementById('localTrabalho');
-            const customLocal = document.getElementById('customLocal');
-            let local = localSelect.value;
-            
-            if (local === 'outro') {
-                local = customLocal.value.trim();
-                if (!local) {
-                    showAlert('Por favor, informe o local de trabalho.', 'error');
-                    return;
-                }
-            }
-            
-            if (!local) {
-                showAlert('Por favor, selecione o local de trabalho.', 'error');
+            if (!data || !horaEntrada || !horaSaida || !local) {
+                showAlert('Por favor, preencha todos os campos.', 'error');
                 return;
             }
             
-            const observacao = prompt('Observação (opcional):') || '';
-            const horasExtras = confirm('São horas extras?');
-            const trabalhoSabado = confirm('É trabalho no sábado?');
+            if (horaEntrada >= horaSaida) {
+                showAlert('A hora de entrada deve ser anterior à hora de saída.', 'error');
+                return;
+            }
             
             try {
-                const response = await fetch('/api/registrar-ponto', {
+                // Registrar entrada extra
+                const responseEntrada = await fetch('/api/registrar-ponto', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         usuario_id: currentUser.id,
-                        tipo: tipo,
+                        tipo: 'entrada_extra',
                         local: local,
-                        horas_extras: horasExtras,
-                        trabalho_sabado: trabalhoSabado,
-                        observacao: observacao,
+                        horas_extras: true,
+                        observacao: 'Hora extra - entrada',
+                        data_custom: data,
+                        hora_custom: horaEntrada,
                         manual: true
                     })
                 });
                 
-                const data = await response.json();
+                const dataEntrada = await responseEntrada.json();
                 
-                if (data.success) {
-                    showAlert('Ponto manual registrado com sucesso!', 'success');
-                    carregarRegistros();
-                } else {
-                    showAlert(data.error, 'error');
+                if (!dataEntrada.success) {
+                    showAlert(dataEntrada.error, 'error');
+                    return;
                 }
+                
+                // Registrar saída extra
+                const responseSaida = await fetch('/api/registrar-ponto', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        usuario_id: currentUser.id,
+                        tipo: 'saida_extra',
+                        local: local,
+                        horas_extras: true,
+                        observacao: 'Hora extra - saída',
+                        data_custom: data,
+                        hora_custom: horaSaida,
+                        manual: true
+                    })
+                });
+                
+                const dataSaida = await responseSaida.json();
+                
+                if (dataSaida.success) {
+                    showAlert('Hora extra registrada com sucesso!', 'success');
+                    fecharModalHoraExtra();
+                    carregarRegistros();
+                    
+                    // Limpar campos do modal
+                    document.getElementById('horaEntradaExtra').value = '';
+                    document.getElementById('horaSaidaExtra').value = '';
+                    document.getElementById('localHoraExtra').value = '';
+                    
+                } else {
+                    showAlert(dataSaida.error, 'error');
+                }
+                
             } catch (error) {
                 console.error('Erro:', error);
                 showAlert('Erro de conexão. Tente novamente.', 'error');
@@ -835,14 +884,11 @@
                             const tipoDisplay = {
                                 'entrada': '🟢 Entrada',
                                 'saida': '🔴 Saída',
-                                'entrada_almoco': '🟡 Retorno Almoço',
-                                'saida_almoco': '🟠 Saída Almoço',
                                 'entrada_extra': '🔵 Entrada Extra',
                                 'saida_extra': '🟣 Saída Extra'
                             }[registro.tipo] || registro.tipo;
                             
-                            const tipoClass = registro.tipo.includes('entrada') ? 'entrada' : 
-                                            registro.tipo.includes('saida') ? 'saida' : registro.tipo;
+                            const tipoClass = registro.tipo.includes('entrada') ? 'entrada' : 'saida';
                             
                             const registroElement = document.createElement('div');
                             registroElement.className = 'registro-item';
@@ -877,12 +923,7 @@
         
         // Atualizar estatísticas
         function atualizarEstatisticas(registros) {
-            const hoje = new Date().toISOString().split('T')[0];
-            const registrosHoje = registros.filter(r => r.data === hoje).length;
             const horasExtrasCount = registros.filter(r => r.horas_extras).length;
-            
-            document.getElementById('totalRegistros').textContent = registros.length;
-            document.getElementById('registrosHoje').textContent = registrosHoje;
             document.getElementById('horasExtrasCount').textContent = horasExtrasCount;
         }
         
@@ -903,6 +944,14 @@
         function logout() {
             localStorage.removeItem('currentUser');
             window.location.href = '/';
+        }
+        
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalHoraExtra');
+            if (event.target === modal) {
+                fecharModalHoraExtra();
+            }
         }
     </script>
 </body>
