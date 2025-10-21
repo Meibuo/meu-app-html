@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,10 +13,62 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('.'));
 
+// Configuração do multer para upload de arquivos
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB
+  },
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas!'));
+    }
+  }
+});
+
 // "Database" em memória (para demonstração - em produção use um banco real)
 let users = [];
 let pontos = [];
 let alteracoesPerfil = []; // Registrar alterações de perfil
+
+// Criar usuário admin padrão
+const createAdminUser = async () => {
+  const adminExists = users.find(user => user.email === 'admin@admin.com');
+  if (!adminExists) {
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    users.push({
+      id: 'admin',
+      nome: 'Administrador',
+      email: 'admin@admin.com',
+      telefone: '',
+      whatsapp: false,
+      senha: hashedPassword,
+      avatar: '',
+      cargo: 'Administrador',
+      perfilEditado: false,
+      isAdmin: true,
+      criadoEm: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString()
+    });
+    console.log('👑 Usuário admin criado: admin@admin.com / admin123');
+  }
+};
 
 // Rotas da API
 app.post('/api/cadastro', async (req, res) => {
@@ -46,7 +100,9 @@ app.post('/api/cadastro', async (req, res) => {
             whatsapp: whatsapp || false,
             senha: hashedPassword,
             avatar: '',
+            cargo: 'Funcionário', // Cargo padrão
             perfilEditado: false,
+            isAdmin: false,
             criadoEm: new Date().toISOString(),
             atualizadoEm: new Date().toISOString()
         };
@@ -62,7 +118,9 @@ app.post('/api/cadastro', async (req, res) => {
                 telefone: newUser.telefone,
                 whatsapp: newUser.whatsapp,
                 avatar: newUser.avatar,
-                perfilEditado: newUser.perfilEditado
+                cargo: newUser.cargo,
+                perfilEditado: newUser.perfilEditado,
+                isAdmin: newUser.isAdmin
             } 
         });
     } catch (error) {
@@ -100,7 +158,9 @@ app.post('/api/login', async (req, res) => {
                 telefone: user.telefone,
                 whatsapp: user.whatsapp,
                 avatar: user.avatar,
+                cargo: user.cargo,
                 perfilEditado: user.perfilEditado,
+                isAdmin: user.isAdmin,
                 criadoEm: user.criadoEm
             } 
         });
@@ -110,10 +170,53 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// Upload de avatar
+app.post('/api/upload-avatar', upload.single('avatar'), async (req, res) => {
+    try {
+        const { usuario_id } = req.body;
+        
+        if (!req.file) {
+            return res.status(400).json({ error: 'Nenhuma imagem foi enviada' });
+        }
+        
+        const userIndex = users.findIndex(user => user.id === usuario_id);
+        if (userIndex === -1) {
+            // Deletar arquivo se usuário não existe
+            fs.unlinkSync(req.file.path);
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        
+        // Deletar avatar anterior se existir
+        if (users[userIndex].avatar && users[userIndex].avatar.startsWith('uploads/')) {
+            try {
+                fs.unlinkSync(users[userIndex].avatar);
+            } catch (error) {
+                console.log('Avatar anterior não encontrado para deletar');
+            }
+        }
+        
+        const avatarPath = req.file.path;
+        users[userIndex].avatar = avatarPath;
+        users[userIndex].atualizadoEm = new Date().toISOString();
+        
+        res.json({ 
+            success: true, 
+            message: 'Avatar atualizado com sucesso!',
+            avatar: avatarPath
+        });
+    } catch (error) {
+        console.error('Erro ao fazer upload do avatar:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Servir arquivos de upload
+app.use('/uploads', express.static('uploads'));
+
 // Atualizar perfil do usuário
 app.put('/api/perfil', async (req, res) => {
     try {
-        const { usuario_id, nome, telefone, whatsapp, avatar } = req.body;
+        const { usuario_id, nome, telefone, whatsapp } = req.body;
         
         const userIndex = users.findIndex(user => user.id === usuario_id);
         if (userIndex === -1) {
@@ -123,7 +226,7 @@ app.put('/api/perfil', async (req, res) => {
         const user = users[userIndex];
         
         // Verificar se o perfil já foi editado (só permite uma edição)
-        if (user.perfilEditado) {
+        if (user.perfilEditado && !user.isAdmin) {
             return res.status(400).json({ 
                 error: 'Perfil já foi editado. Para novas alterações, entre em contato com o administrador.' 
             });
@@ -149,7 +252,6 @@ app.put('/api/perfil', async (req, res) => {
             nome: nome || user.nome,
             telefone: telefone || user.telefone,
             whatsapp: whatsapp !== undefined ? whatsapp : user.whatsapp,
-            avatar: avatar || user.avatar,
             perfilEditado: true,
             atualizadoEm: new Date().toISOString()
         };
@@ -164,7 +266,9 @@ app.put('/api/perfil', async (req, res) => {
                 telefone: users[userIndex].telefone,
                 whatsapp: users[userIndex].whatsapp,
                 avatar: users[userIndex].avatar,
-                perfilEditado: users[userIndex].perfilEditado
+                cargo: users[userIndex].cargo,
+                perfilEditado: users[userIndex].perfilEditado,
+                isAdmin: users[userIndex].isAdmin
             }
         });
     } catch (error) {
@@ -211,6 +315,72 @@ app.put('/api/alterar-senha', async (req, res) => {
         });
     } catch (error) {
         console.error('Erro ao alterar senha:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Rotas de administração
+app.get('/api/admin/usuarios', (req, res) => {
+    try {
+        // Em produção, verificar se o usuário é admin
+        const usuarios = users.map(user => ({
+            id: user.id,
+            nome: user.nome,
+            email: user.email,
+            telefone: user.telefone,
+            whatsapp: user.whatsapp,
+            cargo: user.cargo,
+            avatar: user.avatar,
+            perfilEditado: user.perfilEditado,
+            isAdmin: user.isAdmin,
+            criadoEm: user.criadoEm,
+            atualizadoEm: user.atualizadoEm
+        }));
+        
+        res.json({ success: true, usuarios });
+    } catch (error) {
+        console.error('Erro ao buscar usuários:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+app.put('/api/admin/usuarios/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nome, email, telefone, whatsapp, cargo } = req.body;
+        
+        const userIndex = users.findIndex(user => user.id === id);
+        if (userIndex === -1) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        
+        users[userIndex] = {
+            ...users[userIndex],
+            nome: nome || users[userIndex].nome,
+            email: email || users[userIndex].email,
+            telefone: telefone || users[userIndex].telefone,
+            whatsapp: whatsapp !== undefined ? whatsapp : users[userIndex].whatsapp,
+            cargo: cargo || users[userIndex].cargo,
+            atualizadoEm: new Date().toISOString()
+        };
+        
+        res.json({ 
+            success: true, 
+            message: 'Usuário atualizado com sucesso!',
+            user: {
+                id: users[userIndex].id,
+                nome: users[userIndex].nome,
+                email: users[userIndex].email,
+                telefone: users[userIndex].telefone,
+                whatsapp: users[userIndex].whatsapp,
+                cargo: users[userIndex].cargo,
+                avatar: users[userIndex].avatar,
+                perfilEditado: users[userIndex].perfilEditado,
+                isAdmin: users[userIndex].isAdmin
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao atualizar usuário:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
@@ -277,30 +447,6 @@ app.get('/api/registros/:usuario_id', (req, res) => {
     }
 });
 
-// Rota para upload de avatar (simulado)
-app.post('/api/upload-avatar', (req, res) => {
-    try {
-        const { usuario_id, avatar } = req.body;
-        
-        const userIndex = users.findIndex(user => user.id === usuario_id);
-        if (userIndex === -1) {
-            return res.status(404).json({ error: 'Usuário não encontrado' });
-        }
-        
-        users[userIndex].avatar = avatar;
-        users[userIndex].atualizadoEm = new Date().toISOString();
-        
-        res.json({ 
-            success: true, 
-            message: 'Avatar atualizado com sucesso!',
-            avatar: avatar
-        });
-    } catch (error) {
-        console.error('Erro ao fazer upload do avatar:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-});
-
 // Rota de status para verificar se o servidor está online
 app.get('/api/status', (req, res) => {
     res.json({ 
@@ -318,6 +464,7 @@ if (process.env.NODE_ENV === 'development') {
         users = [];
         pontos = [];
         alteracoesPerfil = [];
+        createAdminUser();
         res.json({ success: true, message: 'Dados limpos com sucesso' });
     });
 }
@@ -343,13 +490,20 @@ app.get('/perfil', (req, res) => {
     res.sendFile(path.join(__dirname, 'perfil.html'));
 });
 
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
 // Middleware de tratamento de erro 404
 app.use((req, res) => {
     res.status(404).json({ error: 'Rota não encontrada' });
 });
 
-app.listen(PORT, () => {
+// Inicializar servidor
+app.listen(PORT, async () => {
+    await createAdminUser();
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
     console.log(`👉 Acesse: http://localhost:${PORT}`);
     console.log(`📊 Status: http://localhost:${PORT}/api/status`);
+    console.log(`👑 Admin: admin@admin.com / admin123`);
 });
