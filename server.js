@@ -68,7 +68,6 @@ const createAdminUser = async () => {
       nome: 'Administrador',
       email: 'admin@admin.com',
       telefone: '',
-      whatsapp: false,
       senha: hashedPassword,
       avatar: '',
       cargo: 'CEO Administrativo',
@@ -84,7 +83,7 @@ const createAdminUser = async () => {
 // Rotas da API
 app.post('/api/cadastro', async (req, res) => {
     try {
-        const { nome, email, senha, telefone, whatsapp } = req.body;
+        const { nome, email, senha, telefone } = req.body;
         
         // Validação básica
         if (!nome || !email || !senha) {
@@ -108,7 +107,6 @@ app.post('/api/cadastro', async (req, res) => {
             nome,
             email,
             telefone: telefone || '',
-            whatsapp: whatsapp || false,
             senha: hashedPassword,
             avatar: '',
             cargo: 'Terceiro', // Cargo padrão para novos usuários
@@ -127,7 +125,6 @@ app.post('/api/cadastro', async (req, res) => {
                 nome: newUser.nome, 
                 email: newUser.email,
                 telefone: newUser.telefone,
-                whatsapp: newUser.whatsapp,
                 avatar: newUser.avatar,
                 cargo: newUser.cargo,
                 perfilEditado: newUser.perfilEditado,
@@ -136,6 +133,68 @@ app.post('/api/cadastro', async (req, res) => {
         });
     } catch (error) {
         console.error('Erro no cadastro:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Cadastro por administrador
+app.post('/api/admin/cadastro', async (req, res) => {
+    try {
+        const { nome, email, senha, telefone, cargo } = req.body;
+        
+        // Validação básica
+        if (!nome || !email || !senha) {
+            return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios' });
+        }
+        
+        if (senha.length < 6) {
+            return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
+        }
+        
+        // Validar cargo
+        if (cargo && !CARGOS_DISPONIVEIS.includes(cargo)) {
+            return res.status(400).json({ error: 'Cargo inválido' });
+        }
+        
+        const userExists = users.find(user => user.email === email);
+        if (userExists) {
+            return res.status(400).json({ error: 'E-mail já cadastrado' });
+        }
+        
+        // Hash da senha
+        const hashedPassword = await bcrypt.hash(senha, 10);
+        
+        const newUser = {
+            id: Date.now().toString(),
+            nome,
+            email,
+            telefone: telefone || '',
+            senha: hashedPassword,
+            avatar: '',
+            cargo: cargo || 'Terceiro',
+            perfilEditado: false,
+            isAdmin: false,
+            criadoEm: new Date().toISOString(),
+            atualizadoEm: new Date().toISOString()
+        };
+        
+        users.push(newUser);
+        res.json({ 
+            success: true, 
+            message: 'Usuário criado com sucesso!', 
+            user: { 
+                id: newUser.id, 
+                nome: newUser.nome, 
+                email: newUser.email,
+                telefone: newUser.telefone,
+                avatar: newUser.avatar,
+                cargo: newUser.cargo,
+                perfilEditado: newUser.perfilEditado,
+                isAdmin: newUser.isAdmin
+            } 
+        });
+    } catch (error) {
+        console.error('Erro no cadastro admin:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
@@ -167,7 +226,6 @@ app.post('/api/login', async (req, res) => {
                 nome: user.nome, 
                 email: user.email,
                 telefone: user.telefone,
-                whatsapp: user.whatsapp,
                 avatar: user.avatar,
                 cargo: user.cargo,
                 perfilEditado: user.perfilEditado,
@@ -227,7 +285,7 @@ app.use('/uploads', express.static('uploads'));
 // Atualizar perfil do usuário
 app.put('/api/perfil', async (req, res) => {
     try {
-        const { usuario_id, nome, telefone, whatsapp } = req.body;
+        const { usuario_id, nome, telefone } = req.body;
         
         const userIndex = users.findIndex(user => user.id === usuario_id);
         if (userIndex === -1) {
@@ -250,7 +308,6 @@ app.put('/api/perfil', async (req, res) => {
             alteracoes: {
                 nome: user.nome !== nome ? { de: user.nome, para: nome } : null,
                 telefone: user.telefone !== telefone ? { de: user.telefone, para: telefone } : null,
-                whatsapp: user.whatsapp !== whatsapp ? { de: user.whatsapp, para: whatsapp } : null
             },
             data: new Date().toISOString()
         };
@@ -262,7 +319,6 @@ app.put('/api/perfil', async (req, res) => {
             ...user,
             nome: nome || user.nome,
             telefone: telefone || user.telefone,
-            whatsapp: whatsapp !== undefined ? whatsapp : user.whatsapp,
             perfilEditado: true,
             atualizadoEm: new Date().toISOString()
         };
@@ -275,7 +331,6 @@ app.put('/api/perfil', async (req, res) => {
                 nome: users[userIndex].nome,
                 email: users[userIndex].email,
                 telefone: users[userIndex].telefone,
-                whatsapp: users[userIndex].whatsapp,
                 avatar: users[userIndex].avatar,
                 cargo: users[userIndex].cargo,
                 perfilEditado: users[userIndex].perfilEditado,
@@ -339,7 +394,6 @@ app.get('/api/admin/usuarios', (req, res) => {
             nome: user.nome,
             email: user.email,
             telefone: user.telefone,
-            whatsapp: user.whatsapp,
             cargo: user.cargo,
             avatar: user.avatar,
             perfilEditado: user.perfilEditado,
@@ -363,7 +417,7 @@ app.get('/api/admin/cargos', (req, res) => {
 app.put('/api/admin/usuarios/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { nome, email, telefone, whatsapp, cargo } = req.body;
+        const { nome, email, telefone, cargo } = req.body;
         
         const userIndex = users.findIndex(user => user.id === id);
         if (userIndex === -1) {
@@ -380,7 +434,6 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
             nome: nome || users[userIndex].nome,
             email: email || users[userIndex].email,
             telefone: telefone || users[userIndex].telefone,
-            whatsapp: whatsapp !== undefined ? whatsapp : users[userIndex].whatsapp,
             cargo: cargo || users[userIndex].cargo,
             atualizadoEm: new Date().toISOString()
         };
@@ -393,7 +446,6 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
                 nome: users[userIndex].nome,
                 email: users[userIndex].email,
                 telefone: users[userIndex].telefone,
-                whatsapp: users[userIndex].whatsapp,
                 cargo: users[userIndex].cargo,
                 avatar: users[userIndex].avatar,
                 perfilEditado: users[userIndex].perfilEditado,

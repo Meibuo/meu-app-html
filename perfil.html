@@ -300,17 +300,6 @@
             outline: none; 
         }
         
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .checkbox-group input {
-            width: auto;
-        }
-        
         .alert {
             padding: 12px;
             border-radius: 8px;
@@ -536,11 +525,6 @@
             font-size: 14px;
         }
         
-        .whatsapp-icon {
-            color: #25D366;
-            font-size: 16px;
-        }
-        
         .floating-section {
             background: white;
             border-radius: 10px;
@@ -643,10 +627,6 @@
                     <span class="info-value" id="infoTelefone">-</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">WhatsApp:</span>
-                    <span class="info-value" id="infoWhatsapp">-</span>
-                </div>
-                <div class="info-item">
                     <span class="info-label">Membro desde:</span>
                     <span class="info-value" id="infoCriadoEm">-</span>
                 </div>
@@ -697,7 +677,6 @@
                         <div class="info-card">
                             <h4>Contato</h4>
                             <p><strong>Telefone:</strong> <span id="displayTelefone">-</span></p>
-                            <p><strong>WhatsApp:</strong> <span id="displayWhatsapp">-</span></p>
                         </div>
                         
                         <div class="info-card">
@@ -721,13 +700,6 @@
                         <div class="form-group">
                             <label for="editTelefone">Telefone:</label>
                             <input type="tel" id="editTelefone" name="telefone" placeholder="(11) 99999-9999">
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="editWhatsapp" name="whatsapp">
-                                <label for="editWhatsapp">Este número é WhatsApp</label>
-                            </div>
                         </div>
                         
                         <div class="loading" id="loadingPerfil">
@@ -851,14 +823,6 @@
             document.getElementById('infoEmail').textContent = currentUser.email;
             document.getElementById('infoTelefone').textContent = currentUser.telefone || 'Não informado';
             
-            // WhatsApp - mostrar apenas ícone se tiver
-            const whatsappElement = document.getElementById('infoWhatsapp');
-            if (currentUser.whatsapp) {
-                whatsappElement.innerHTML = '<span class="whatsapp-icon">📱</span>';
-            } else {
-                whatsappElement.textContent = 'Não';
-            }
-            
             // Formatar data
             if (currentUser.criadoEm) {
                 const data = new Date(currentUser.criadoEm);
@@ -870,15 +834,6 @@
             document.getElementById('displayEmail').textContent = currentUser.email;
             document.getElementById('displayCargo').textContent = currentUser.cargo || 'Funcionário';
             document.getElementById('displayTelefone').textContent = currentUser.telefone || 'Não informado';
-            
-            // WhatsApp no display - mostrar apenas ícone se tiver
-            const displayWhatsapp = document.getElementById('displayWhatsapp');
-            if (currentUser.whatsapp) {
-                displayWhatsapp.innerHTML = '<span class="whatsapp-icon">📱 Sim</span>';
-            } else {
-                displayWhatsapp.textContent = 'Não';
-            }
-            
             document.getElementById('displayUserId').textContent = currentUser.id;
             document.getElementById('displayMembroDesde').textContent = currentUser.criadoEm ? new Date(currentUser.criadoEm).toLocaleDateString('pt-BR') : '-';
             document.getElementById('displayStatusPerfil').textContent = currentUser.perfilEditado ? 'Editado' : 'Não Editado';
@@ -886,14 +841,12 @@
             // Formulário de edição
             document.getElementById('editNome').value = currentUser.nome;
             document.getElementById('editTelefone').value = currentUser.telefone || '';
-            document.getElementById('editWhatsapp').checked = currentUser.whatsapp || false;
             
             // Verificar se perfil já foi editado
             if (currentUser.perfilEditado && !currentUser.isAdmin) {
                 document.getElementById('perfilWarning').style.display = 'block';
                 document.getElementById('editNome').readOnly = true;
                 document.getElementById('editTelefone').readOnly = true;
-                document.getElementById('editWhatsapp').disabled = true;
                 document.getElementById('submitPerfilBtn').disabled = true;
             }
             
@@ -1035,8 +988,7 @@
             const formData = {
                 usuario_id: currentUser.id,
                 nome: document.getElementById('editNome').value,
-                telefone: document.getElementById('editTelefone').value,
-                whatsapp: document.getElementById('editWhatsapp').checked
+                telefone: document.getElementById('editTelefone').value
             };
             
             try {

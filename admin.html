@@ -176,12 +176,6 @@
             font-weight: bold;
         }
         
-        .whatsapp-icon {
-            color: #25D366;
-            font-size: 14px;
-            margin-left: 5px;
-        }
-        
         .alert {
             padding: 12px;
             border-radius: 8px;
@@ -496,7 +490,7 @@
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                 <h2 style="font-size: clamp(18px, 4vw, 24px);">Gerenciar Usuários</h2>
-                <button class="btn btn-primary" onclick="abrirModalEditar()">
+                <button class="btn btn-primary" onclick="abrirModalNovoUsuario()">
                     + Novo Usuário
                 </button>
             </div>
@@ -527,11 +521,67 @@
         </div>
     </div>
 
+    <!-- Modal Novo Usuário -->
+    <div id="modalNovoUsuario" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Usuário</h3>
+                <button class="close" onclick="fecharModalNovoUsuario()">&times;</button>
+            </div>
+            
+            <form id="formNovoUsuario">
+                <div class="form-group">
+                    <label for="novoUserNome">Nome completo:</label>
+                    <input type="text" id="novoUserNome" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="novoUserEmail">E-mail:</label>
+                    <input type="email" id="novoUserEmail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="novoUserSenha">Senha:</label>
+                    <input type="password" id="novoUserSenha" required minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label for="novoUserCargo">Cargo:</label>
+                    <select id="novoUserCargo" required>
+                        <option value="">Selecione um cargo</option>
+                        <option value="CEO Administrativo">CEO Administrativo</option>
+                        <option value="CEO Operações">CEO Operações</option>
+                        <option value="Engenharia">Engenharia</option>
+                        <option value="Topógrafo">Topógrafo</option>
+                        <option value="Nivelador">Nivelador</option>
+                        <option value="Aux. Topografia">Aux. Topografia</option>
+                        <option value="Terceiro">Terceiro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="novoUserTelefone">Telefone:</label>
+                    <input type="tel" id="novoUserTelefone" placeholder="(11) 99999-9999">
+                </div>
+                
+                <div class="loading" id="loadingNovoUsuario">
+                    <div class="spinner"></div>
+                    <span>Criando usuário...</span>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                    <button type="button" class="btn" onclick="fecharModalNovoUsuario()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Usuário</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Editar Usuário -->
     <div id="modalEditar" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title" id="modalTitulo">Editar Usuário</h3>
+                <h3 class="modal-title">Editar Usuário</h3>
                 <button class="close" onclick="fecharModalEditar()">&times;</button>
             </div>
             
@@ -565,20 +615,6 @@
                 <div class="form-group">
                     <label for="editUserTelefone">Telefone:</label>
                     <input type="tel" id="editUserTelefone" placeholder="(11) 99999-9999">
-                </div>
-                
-                <div class="form-group">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="editUserWhatsapp">
-                        <label for="editUserWhatsapp">Número é WhatsApp</label>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="editUserAdmin">
-                        <label for="editUserAdmin">Usuário Administrador</label>
-                    </div>
                 </div>
                 
                 <div class="loading" id="loadingModal">
@@ -674,12 +710,6 @@
                 const status = usuario.perfilEditado ? 'Editado' : 'Não Editado';
                 const statusClass = usuario.perfilEditado ? 'success' : 'warning';
                 
-                // WhatsApp - mostrar apenas ícone se tiver
-                let whatsappHtml = '';
-                if (usuario.whatsapp) {
-                    whatsappHtml = '<span class="whatsapp-icon">📱</span>';
-                }
-                
                 tr.innerHTML = `
                     <td>${avatarHtml}</td>
                     <td>
@@ -688,7 +718,7 @@
                     </td>
                     <td>${usuario.email}</td>
                     <td>${usuario.cargo || 'Funcionário'}</td>
-                    <td>${usuario.telefone || '-'} ${whatsappHtml}</td>
+                    <td>${usuario.telefone || '-'}</td>
                     <td><span class="btn btn-${statusClass} btn-sm">${status}</span></td>
                     <td>
                         <button class="btn btn-primary btn-sm" onclick="editarUsuario('${usuario.id}')">
@@ -711,14 +741,23 @@
             document.getElementById('totalRegistros').textContent = totalRegistros;
         }
         
+        // Abrir modal para novo usuário
+        function abrirModalNovoUsuario() {
+            const modal = document.getElementById('modalNovoUsuario');
+            document.getElementById('formNovoUsuario').reset();
+            modal.style.display = 'block';
+        }
+        
+        // Fechar modal novo usuário
+        function fecharModalNovoUsuario() {
+            document.getElementById('modalNovoUsuario').style.display = 'none';
+        }
+        
         // Abrir modal para editar usuário
         function abrirModalEditar(usuarioId = null) {
             const modal = document.getElementById('modalEditar');
-            const titulo = document.getElementById('modalTitulo');
             
             if (usuarioId) {
-                // Editar usuário existente
-                titulo.textContent = 'Editar Usuário';
                 const usuario = usuarios.find(u => u.id === usuarioId);
                 if (usuario) {
                     document.getElementById('editUserId').value = usuario.id;
@@ -732,26 +771,22 @@
                     }
                     
                     document.getElementById('editUserTelefone').value = usuario.telefone || '';
-                    document.getElementById('editUserWhatsapp').checked = usuario.whatsapp || false;
-                    document.getElementById('editUserAdmin').checked = usuario.isAdmin || false;
                 }
-            } else {
-                // Novo usuário
-                titulo.textContent = 'Novo Usuário';
-                document.getElementById('formEditarUsuario').reset();
-                document.getElementById('editUserId').value = '';
             }
             
             modal.style.display = 'block';
         }
         
-        // Fechar modal
+        // Fechar modal editar
         function fecharModalEditar() {
             document.getElementById('modalEditar').style.display = 'none';
         }
         
-        // Formatação do telefone no modal
-        document.getElementById('editUserTelefone').addEventListener('input', function(e) {
+        // Formatação do telefone nos modais
+        document.getElementById('novoUserTelefone').addEventListener('input', formatarTelefone);
+        document.getElementById('editUserTelefone').addEventListener('input', formatarTelefone);
+        
+        function formatarTelefone(e) {
             let value = e.target.value.replace(/\D/g, '');
             if (value.length > 11) value = value.substring(0, 11);
             
@@ -766,9 +801,54 @@
             }
             
             e.target.value = value;
+        }
+        
+        // Criar novo usuário
+        document.getElementById('formNovoUsuario').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loadingNovoUsuario');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            const formData = {
+                nome: document.getElementById('novoUserNome').value,
+                email: document.getElementById('novoUserEmail').value,
+                senha: document.getElementById('novoUserSenha').value,
+                cargo: document.getElementById('novoUserCargo').value,
+                telefone: document.getElementById('novoUserTelefone').value
+            };
+            
+            try {
+                const response = await fetch('/api/admin/cadastro', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('Usuário criado com sucesso!', 'success');
+                    fecharModalNovoUsuario();
+                    carregarUsuarios();
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showAlert('Erro de conexão. Tente novamente.', 'error');
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
         });
         
-        // Salvar usuário
+        // Salvar edição de usuário
         document.getElementById('formEditarUsuario').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -783,26 +863,17 @@
                 nome: document.getElementById('editUserNome').value,
                 email: document.getElementById('editUserEmail').value,
                 cargo: document.getElementById('editUserCargo').value,
-                telefone: document.getElementById('editUserTelefone').value,
-                whatsapp: document.getElementById('editUserWhatsapp').checked
+                telefone: document.getElementById('editUserTelefone').value
             };
             
             try {
-                let response;
-                if (usuarioId) {
-                    // Editar usuário existente
-                    response = await fetch(`/api/admin/usuarios/${usuarioId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
-                    });
-                } else {
-                    // Criar novo usuário - em produção, implementar criação
-                    showAlert('Funcionalidade de criar usuário em desenvolvimento', 'warning');
-                    return;
-                }
+                const response = await fetch(`/api/admin/usuarios/${usuarioId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
                 
                 const data = await response.json();
                 
@@ -848,8 +919,13 @@
         
         // Fechar modal ao clicar fora
         window.onclick = function(event) {
-            const modal = document.getElementById('modalEditar');
-            if (event.target === modal) {
+            const modalNovo = document.getElementById('modalNovoUsuario');
+            const modalEditar = document.getElementById('modalEditar');
+            
+            if (event.target === modalNovo) {
+                fecharModalNovoUsuario();
+            }
+            if (event.target === modalEditar) {
                 fecharModalEditar();
             }
         }
