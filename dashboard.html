@@ -3,76 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Ponto</title>
+    <title>Meu Ponto - Registro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
         
         :root {
             --primary: #3498db;
             --success: #2ecc71;
             --danger: #e74c3c;
+            --warning: #f39c12;
             --dark: #2c3e50;
             --gray: #7f8c8d;
             --light: #ecf0f1;
+            --border: #e0e0e0;
         }
 
-        body { background: #f8f9fa; min-height: 100vh; padding: 0; }
+        body { 
+            background: #f8f9fa; 
+            min-height: 100vh;
+            color: var(--dark);
+        }
         
+        /* Header */
         .header {
             background: white;
-            padding: 15px;
+            padding: 15px 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
             z-index: 100;
+            border-bottom: 3px solid var(--primary);
         }
 
         .user-info {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
         }
 
         .user-avatar {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             background: linear-gradient(135deg, var(--primary), #2980b9);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        .user-details h2 {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .user-details p {
+            font-size: 13px;
+            color: var(--gray);
         }
 
         .logout-btn {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 20px;
+            right: 20px;
             background: var(--danger);
             color: white;
             border: none;
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
         }
 
+        .logout-btn:hover {
+            transform: scale(1.05);
+            background: #c0392b;
+        }
+
+        /* Container Principal */
         .container {
-            padding: 15px;
-            padding-bottom: 80px;
+            padding: 20px;
+            padding-bottom: 100px;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
+        /* Cartão de Status */
         .status-card {
             background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 5px solid var(--primary);
             text-align: center;
         }
 
@@ -80,51 +117,87 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 15px;
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
 
-        .status-dot.ativo { background: var(--success); }
-        .status-dot.inativo { background: var(--gray); }
+        .status-dot.ativo { 
+            background: var(--success); 
+            box-shadow: 0 0 10px var(--success);
+        }
+        .status-dot.inativo { 
+            background: var(--gray); 
+        }
+
+        .status-text {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--dark);
+        }
 
         .current-time {
-            font-size: 24px;
+            font-size: 32px;
             font-weight: bold;
             color: var(--dark);
             margin: 10px 0;
+            font-family: 'Courier New', monospace;
         }
 
         .current-date {
-            font-size: 14px;
+            font-size: 16px;
             color: var(--gray);
+            font-weight: 500;
+        }
+
+        /* Botões de Registro */
+        .ponto-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .ponto-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         .ponto-btn {
-            padding: 20px;
+            padding: 25px 20px;
             border: none;
             border-radius: 12px;
             font-size: 18px;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            gap: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .entrada-btn {
@@ -137,57 +210,91 @@
             color: white;
         }
 
-        .stats {
+        .ponto-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .ponto-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-icon {
+            font-size: 28px;
+        }
+
+        /* Estatísticas */
+        .stats-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
             margin-bottom: 20px;
         }
 
         .stat-card {
             background: white;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 20px;
+            border-radius: 12px;
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            transition: transform 0.3s;
+            border-top: 4px solid var(--primary);
         }
 
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card.entradas { border-top-color: var(--success); }
+        .stat-card.saidas { border-top-color: var(--danger); }
+        .stat-card.horas { border-top-color: var(--warning); }
+        .stat-card.intervalos { border-top-color: var(--primary); }
+
         .stat-value {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             color: var(--dark);
             margin-bottom: 5px;
         }
 
         .stat-label {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--gray);
+            font-weight: 500;
         }
 
+        /* Registros */
         .registros-card {
             background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
 
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 15px;
+        .registros-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .registros-list {
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .registro-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f1f1f1;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.3s;
+        }
+
+        .registro-item:hover {
+            background: #f8f9fa;
         }
 
         .registro-item:last-child {
@@ -197,17 +304,17 @@
         .registro-info {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
         }
 
         .registro-icon {
-            width: 32px;
-            height: 32px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .entrada-icon {
@@ -220,20 +327,39 @@
             color: var(--danger);
         }
 
-        .registro-hora {
-            font-weight: 700;
-            font-size: 16px;
+        .registro-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .registro-tipo {
+            font-weight: 600;
+            font-size: 15px;
             color: var(--dark);
         }
 
+        .registro-data {
+            color: var(--gray);
+            font-size: 13px;
+        }
+
+        .registro-hora {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--dark);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Alertas */
         .alert {
-            padding: 15px;
+            padding: 15px 20px;
             border-radius: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             display: none;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             font-size: 14px;
+            animation: slideIn 0.3s ease-out;
         }
 
         .alert-success {
@@ -242,107 +368,223 @@
             border-left: 4px solid var(--success);
         }
 
+        .alert-error {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
+            border-left: 4px solid var(--danger);
+        }
+
+        /* Estados Vazios */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+        }
+
+        /* Animações */
         @keyframes pulse {
             0% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.6; }
             100% { opacity: 1; }
         }
 
-        @media (min-width: 768px) {
+        @keyframes slideIn {
+            from { 
+                transform: translateY(-20px); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateY(0); 
+                opacity: 1; 
+            }
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
             .container {
-                max-width: 600px;
-                margin: 0 auto;
+                padding: 15px;
+                padding-bottom: 80px;
             }
             
             .ponto-buttons {
-                flex-direction: row;
+                grid-template-columns: 1fr;
             }
             
-            .stats {
-                grid-template-columns: repeat(4, 1fr);
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
+            
+            .header {
+                padding: 15px;
+            }
+            
+            .user-avatar {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
+            
+            .current-time {
+                font-size: 28px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ponto-btn {
+                padding: 20px 15px;
+                font-size: 16px;
+            }
+            
+            .btn-icon {
+                font-size: 24px;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 20px;
+            }
+        }
+
+        /* Scrollbar personalizado */
+        .registros-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .registros-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .registros-list::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        .registros-list::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
         }
     </style>
 </head>
 <body>
+    <!-- Header -->
     <div class="header">
         <div class="user-info">
             <div class="user-avatar" id="userAvatar">U</div>
-            <div>
+            <div class="user-details">
                 <h2 id="userName">Usuário</h2>
                 <p id="userEmail">usuario@email.com</p>
             </div>
         </div>
-        <button class="logout-btn" onclick="logout()">
+        <button class="logout-btn" onclick="logout()" title="Sair do sistema">
             <i class="fas fa-sign-out-alt"></i>
         </button>
     </div>
 
-    <div class="alert alert-success" id="successAlert">
-        <i class="fas fa-check-circle"></i>
-        <span id="successText"></span>
-    </div>
-
+    <!-- Alertas -->
     <div class="container">
+        <div class="alert alert-success" id="successAlert">
+            <i class="fas fa-check-circle"></i>
+            <span id="successText"></span>
+        </div>
+
+        <div class="alert alert-error" id="errorAlert">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="errorText"></span>
+        </div>
+
+        <!-- Status Atual -->
         <div class="status-card">
             <div class="status-indicator">
                 <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Carregando...</span>
+                <span class="status-text" id="statusText">Carregando...</span>
             </div>
             <div class="current-time" id="currentTime">--:--</div>
             <div class="current-date" id="currentDate">--/--/----</div>
         </div>
 
-        <div class="ponto-buttons">
-            <button class="ponto-btn entrada-btn" onclick="registrarPonto('entrada')">
-                <i class="fas fa-sign-in-alt"></i>
-                Registrar Entrada
-            </button>
-            <button class="ponto-btn saida-btn" onclick="registrarPonto('saida')">
-                <i class="fas fa-sign-out-alt"></i>
-                Registrar Saída
-            </button>
+        <!-- Registro de Ponto -->
+        <div class="ponto-section">
+            <h2 class="section-title">
+                <i class="fas fa-fingerprint"></i>
+                Registrar Ponto
+            </h2>
+            <div class="ponto-buttons">
+                <button class="ponto-btn entrada-btn" onclick="registrarPonto('entrada')">
+                    <i class="fas fa-sign-in-alt btn-icon"></i>
+                    Entrada
+                    <small style="font-size: 12px; opacity: 0.9;">Registrar chegada</small>
+                </button>
+                <button class="ponto-btn saida-btn" onclick="registrarPonto('saida')">
+                    <i class="fas fa-sign-out-alt btn-icon"></i>
+                    Saída
+                    <small style="font-size: 12px; opacity: 0.9;">Registrar saída</small>
+                </button>
+            </div>
         </div>
 
-        <div class="stats">
-            <div class="stat-card">
+        <!-- Estatísticas -->
+        <div class="stats-grid">
+            <div class="stat-card entradas">
                 <div class="stat-value" id="totalEntradas">0</div>
-                <div class="stat-label">Entradas Hoje</div>
+                <div class="stat-label">
+                    <i class="fas fa-sign-in-alt"></i> Entradas Hoje
+                </div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card saidas">
                 <div class="stat-value" id="totalSaidas">0</div>
-                <div class="stat-label">Saídas Hoje</div>
+                <div class="stat-label">
+                    <i class="fas fa-sign-out-alt"></i> Saídas Hoje
+                </div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card horas">
                 <div class="stat-value" id="horasTrabalhadas">0h 00m</div>
-                <div class="stat-label">Horas Trabalhadas</div>
+                <div class="stat-label">
+                    <i class="fas fa-clock"></i> Horas Trabalhadas
+                </div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card intervalos">
                 <div class="stat-value" id="totalIntervalos">0</div>
-                <div class="stat-label">Intervalos</div>
+                <div class="stat-label">
+                    <i class="fas fa-coffee"></i> Intervalos
+                </div>
             </div>
         </div>
 
+        <!-- Registros do Dia -->
         <div class="registros-card">
-            <h3 class="section-title">
-                <i class="fas fa-history"></i>
-                Meus Registros de Hoje
-            </h3>
-            <div id="registrosList">
-                <div style="text-align: center; color: var(--gray); padding: 20px;">
-                    <i class="fas fa-clock" style="font-size: 24px; margin-bottom: 10px;"></i>
-                    <p>Nenhum registro hoje</p>
+            <div class="registros-header">
+                <h2 class="section-title">
+                    <i class="fas fa-history"></i>
+                    Registros de Hoje
+                </h2>
+                <button class="btn-small" onclick="loadDashboard()" title="Atualizar">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <div class="registros-list" id="registrosList">
+                <div class="empty-state">
+                    <i class="fas fa-clock"></i>
+                    <h3>Nenhum registro hoje</h3>
+                    <p>Seus registros de ponto aparecerão aqui</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script>
         let currentUser = null;
         let registrosHoje = [];
 
-        // Verificar se está logado
+        // Inicialização
         document.addEventListener('DOMContentLoaded', async function() {
             const userData = sessionStorage.getItem('currentUser');
             
@@ -354,27 +596,26 @@
             try {
                 currentUser = JSON.parse(userData);
                 
-                // Configurar interface do usuário
+                // Configurar interface
                 document.getElementById('userName').textContent = currentUser.nome;
                 document.getElementById('userEmail').textContent = currentUser.email;
                 document.getElementById('userAvatar').textContent = currentUser.nome.charAt(0).toUpperCase();
                 
                 // Carregar dados
                 await loadDashboard();
-                updateClock();
-                setInterval(updateClock, 1000);
-                setInterval(loadDashboard, 30000);
+                startClock();
                 
             } catch (error) {
                 console.error('Erro:', error);
-                window.location.href = '/login';
+                showError('Erro ao carregar dados');
+                setTimeout(() => window.location.href = '/login', 2000);
             }
         });
 
-        async function loadDashboard() {
-            await loadRegistros();
-            updateStats();
-            updateStatus();
+        function startClock() {
+            updateClock();
+            setInterval(updateClock, 1000);
+            setInterval(loadDashboard, 30000); // Atualizar a cada 30 segundos
         }
 
         function updateClock() {
@@ -382,7 +623,22 @@
             document.getElementById('currentTime').textContent = 
                 now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             document.getElementById('currentDate').textContent = 
-                now.toLocaleDateString('pt-BR');
+                now.toLocaleDateString('pt-BR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+        }
+
+        async function loadDashboard() {
+            try {
+                await loadRegistros();
+                updateStats();
+                updateStatus();
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+            }
         }
 
         async function loadRegistros() {
@@ -391,13 +647,15 @@
                 const data = await response.json();
                 
                 const hoje = new Date().toISOString().split('T')[0];
-                registrosHoje = data.registros.filter(registro => registro.data === hoje)
+                registrosHoje = data.registros
+                    .filter(registro => registro.data === hoje)
                     .sort((a, b) => b.timestamp - a.timestamp);
                 
                 updateRegistrosList();
                 
             } catch (error) {
                 console.error('Erro ao carregar registros:', error);
+                showError('Erro ao carregar registros');
             }
         }
 
@@ -406,9 +664,10 @@
             
             if (registrosHoje.length === 0) {
                 registrosList.innerHTML = `
-                    <div style="text-align: center; color: var(--gray); padding: 20px;">
-                        <i class="fas fa-clock" style="font-size: 24px; margin-bottom: 10px;"></i>
-                        <p>Nenhum registro hoje</p>
+                    <div class="empty-state">
+                        <i class="fas fa-clock"></i>
+                        <h3>Nenhum registro hoje</h3>
+                        <p>Seus registros de ponto aparecerão aqui</p>
                     </div>
                 `;
                 return;
@@ -420,9 +679,13 @@
                         <div class="registro-icon ${registro.tipo === 'entrada' ? 'entrada-icon' : 'saida-icon'}">
                             <i class="fas fa-${registro.tipo === 'entrada' ? 'sign-in-alt' : 'sign-out-alt'}"></i>
                         </div>
-                        <div>
-                            <div style="font-weight: 600;">${registro.tipo === 'entrada' ? 'Entrada' : 'Saída'}</div>
-                            <div style="font-size: 12px; color: var(--gray);">${registro.data.split('-').reverse().join('/')}</div>
+                        <div class="registro-details">
+                            <span class="registro-tipo">
+                                ${registro.tipo === 'entrada' ? 'Entrada Registrada' : 'Saída Registrada'}
+                            </span>
+                            <span class="registro-data">
+                                ${formatarData(registro.data)}
+                            </span>
                         </div>
                     </div>
                     <div class="registro-hora">${registro.hora}</div>
@@ -442,15 +705,17 @@
             let totalMinutos = 0;
             let entradaPendente = null;
             
-            registrosHoje.sort((a, b) => a.timestamp - b.timestamp).forEach(registro => {
-                if (registro.tipo === 'entrada') {
-                    entradaPendente = registro;
-                } else if (registro.tipo === 'saida' && entradaPendente) {
-                    const diffMs = registro.timestamp - entradaPendente.timestamp;
-                    totalMinutos += Math.floor(diffMs / (1000 * 60));
-                    entradaPendente = null;
-                }
-            });
+            registrosHoje
+                .sort((a, b) => a.timestamp - b.timestamp)
+                .forEach(registro => {
+                    if (registro.tipo === 'entrada') {
+                        entradaPendente = registro;
+                    } else if (registro.tipo === 'saida' && entradaPendente) {
+                        const diffMs = registro.timestamp - entradaPendente.timestamp;
+                        totalMinutos += Math.floor(diffMs / (1000 * 60));
+                        entradaPendente = null;
+                    }
+                });
             
             const horas = Math.floor(totalMinutos / 60);
             const minutos = totalMinutos % 60;
@@ -470,15 +735,19 @@
             const ultimoRegistro = registrosHoje[0];
             if (ultimoRegistro.tipo === 'entrada') {
                 statusDot.className = 'status-dot ativo';
-                statusText.textContent = 'Trabalhando';
+                statusText.textContent = `Trabalhando desde ${ultimoRegistro.hora}`;
             } else {
                 statusDot.className = 'status-dot inativo';
-                statusText.textContent = 'Fora';
+                statusText.textContent = `Fora desde ${ultimoRegistro.hora}`;
             }
         }
 
         async function registrarPonto(tipo) {
             try {
+                // Feedback visual imediato
+                const btn = event.target.closest('.ponto-btn');
+                btn.style.transform = 'scale(0.95)';
+                
                 const response = await fetch('/api/registrar-ponto', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -491,32 +760,69 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showAlert(data.message);
+                    showSuccess(data.message);
                     await loadDashboard();
+                    
+                    // Feedback de vibração se suportado
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
                 } else {
-                    showAlert('Erro ao registrar ponto');
+                    showError(data.error || 'Erro ao registrar ponto');
                 }
                 
             } catch (error) {
                 console.error('Erro:', error);
-                showAlert('Erro de conexão');
+                showError('Erro de conexão com o servidor');
+            } finally {
+                // Restaurar botão
+                setTimeout(() => {
+                    const btn = event.target.closest('.ponto-btn');
+                    if (btn) btn.style.transform = '';
+                }, 300);
             }
         }
 
-        function showAlert(message) {
+        function formatarData(data) {
+            const [ano, mes, dia] = data.split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        function showSuccess(message) {
             const alert = document.getElementById('successAlert');
             document.getElementById('successText').textContent = message;
             alert.style.display = 'flex';
             
             setTimeout(() => {
                 alert.style.display = 'none';
-            }, 4000);
+            }, 5000);
+        }
+
+        function showError(message) {
+            const alert = document.getElementById('errorAlert');
+            document.getElementById('errorText').textContent = message;
+            alert.style.display = 'flex';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
         }
 
         function logout() {
-            sessionStorage.removeItem('currentUser');
-            window.location.href = '/';
+            if (confirm('Deseja realmente sair do sistema?')) {
+                sessionStorage.removeItem('currentUser');
+                window.location.href = '/';
+            }
         }
+
+        // Atalho de teclado (E para entrada, S para saída)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'e' || e.key === 'E') {
+                registrarPonto('entrada');
+            } else if (e.key === 's' || e.key === 'S') {
+                registrarPonto('saida');
+            }
+        });
     </script>
 </body>
 </html>
