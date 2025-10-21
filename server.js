@@ -6,21 +6,54 @@ const multer = require('multer');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configurações do PostgreSQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://sistema_ponto_db_user:PhJDSEgZ9jVyq9S0FzxgFF1fguQbVIaG@dpg-d3rao6umcj7s73egt7hg-a/sistema_ponto_db',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Testar conexão com o banco
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('❌ Erro ao conectar com o PostgreSQL:', err.stack);
+  } else {
+    console.log('✅ Conectado ao PostgreSQL com sucesso!');
+    release();
+  }
+});
 
 // Configurações de segurança
 const JWT_SECRET = process.env.JWT_SECRET || 'seu_jwt_secret_super_seguro_aqui_mude_em_producao';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Middleware de segurança CORS corrigido
+// Middleware de segurança CORS
 app.use(cors({
-  origin: process.env.FRONTEND_URL || ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001'],
+  origin: function (origin, callback) {
+    // Permitir requests sem origin (como mobile apps ou curl)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = process.env.FRONTEND_URL 
+      ? process.env.FRONTEND_URL.split(',') 
+      : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001'];
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Não permitido por CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Headers de segurança
 app.use((req, res, next) => {
@@ -98,15 +131,13 @@ const CARGOS_DISPONIVEIS = [
   'Terceiro'
 ];
 
-// "Database" em memória (para demonstração - em produção use um banco real)
-let users = [];
-let pontos = [];
-let alteracoesPerfil = []; // Registrar alterações de perfil
-
 // Middleware de autenticação JWT
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  console.log('🔐 Debug Auth Header:', authHeader);
+  console.log('🔐 Debug Token:', token ? 'Token presente' : 'Token ausente');
 
   if (!token) {
     return res.status(401).json({ error: 'Token de acesso requerido' });
@@ -114,12 +145,14 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
+      console.log('🔐 Erro na verificação do token:', err.message);
       if (err.name === 'TokenExpiredError') {
         return res.status(403).json({ error: 'Token expirado' });
       }
       return res.status(403).json({ error: 'Token inválido' });
     }
     req.user = user;
+    console.log('🔐 Usuário autenticado:', user.email);
     next();
   });
 };
@@ -180,40 +213,141 @@ const isValidPhone = (phone) => {
   return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10;
 };
 
-// Criar usuário admin padrão
-const createAdminUser = async () => {
-  const adminExists = users.find(user => user.email === 'admin@admin.com');
-  if (!adminExists) {
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    users.push({
-      id: 'admin-' + Date.now().toString(),
-      nome: 'Administrador',
-      email: 'admin@admin.com',
-      telefone: '',
-      senha: hashedPassword,
-      avatar: '',
-      cargo: 'CEO Administrativo',
-      perfilEditado: false,
-      isAdmin: true,
-      criadoEm: new Date().toISOString(),
-      atualizadoEm: new Date().toISOString()
-    });
-    console.log('👑 Usuário admin criado: admin@admin.com / admin123');
+// Inicializar banco de dados
+const initializeDatabase = async () => {
+  try {
+    // Criar tabela de usuários se não existir
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(100) PRIMARY KEY,
+        nome VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        telefone VARCHAR(20),
+        senha VARCHAR(255) NOT NULL,
+        avatar VARCHAR(255),
+        cargo VARCHAR(50) DEFAULT 'Terceiro',
+        perfil_editado BOOLEAN DEFAULT FALSE,
+        is_admin BOOLEAN DEFAULT FALSE,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Criar tabela de pontos se não existir
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pontos (
+        id VARCHAR(100) PRIMARY KEY,
+        usuario_id VARCHAR(100) REFERENCES users(id),
+        tipo VARCHAR(50) NOT NULL,
+        data DATE NOT NULL,
+        hora TIME NOT NULL,
+        timestamp BIGINT NOT NULL,
+        dia_semana VARCHAR(20),
+        local VARCHAR(100),
+        horas_extras BOOLEAN DEFAULT FALSE,
+        trabalho_sabado BOOLEAN DEFAULT FALSE,
+        observacao TEXT,
+        manual BOOLEAN DEFAULT FALSE,
+        registrado_por VARCHAR(100),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Criar tabela de alterações de perfil se não existir
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS alteracoes_perfil (
+        id VARCHAR(100) PRIMARY KEY,
+        usuario_id VARCHAR(100) REFERENCES users(id),
+        alteracoes JSONB,
+        data TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        alterado_por VARCHAR(100)
+      )
+    `);
+
+    // Verificar se usuário admin existe
+    const adminResult = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@admin.com']);
+    
+    if (adminResult.rows.length === 0) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const adminId = 'admin-' + Date.now().toString();
+      
+      await pool.query(
+        `INSERT INTO users (id, nome, email, senha, cargo, is_admin) 
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [adminId, 'Administrador', 'admin@admin.com', hashedPassword, 'CEO Administrativo', true]
+      );
+      
+      console.log('👑 Usuário admin criado: admin@admin.com / admin123');
+    } else {
+      console.log('👑 Usuário admin já existe');
+    }
+
+    console.log('✅ Banco de dados inicializado com sucesso!');
+  } catch (error) {
+    console.error('❌ Erro ao inicializar banco de dados:', error);
   }
 };
 
 // Rotas da API
 
 // Rota pública de status
-app.get('/api/status', (req, res) => {
+app.get('/api/status', async (req, res) => {
+  try {
+    const usersCount = await pool.query('SELECT COUNT(*) FROM users');
+    const pontosCount = await pool.query('SELECT COUNT(*) FROM pontos');
+    
+    res.json({ 
+      status: 'online', 
+      timestamp: new Date().toISOString(),
+      environment: NODE_ENV,
+      database: 'PostgreSQL',
+      usersCount: parseInt(usersCount.rows[0].count),
+      pontosCount: parseInt(pontosCount.rows[0].count),
+      version: '1.0.0'
+    });
+  } catch (error) {
+    console.error('Erro no status:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Rota para verificar token
+app.get('/api/verify-token', authenticateToken, (req, res) => {
   res.json({ 
-    status: 'online', 
-    timestamp: new Date().toISOString(),
-    environment: NODE_ENV,
-    usersCount: users.length,
-    pontosCount: pontos.length,
-    version: '1.0.0'
+    success: true, 
+    message: 'Token válido',
+    user: req.user 
   });
+});
+
+// Rota pública para obter informações do usuário atual
+app.get('/api/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    const user = result.rows[0];
+    
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        telefone: user.telefone,
+        avatar: user.avatar,
+        cargo: user.cargo,
+        perfilEditado: user.perfil_editado,
+        isAdmin: user.is_admin
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao obter dados do usuário:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
 // Rota de cadastro
@@ -247,8 +381,9 @@ app.post('/api/cadastro', async (req, res) => {
       return res.status(400).json({ error: 'Nome deve ter pelo menos 2 caracteres' });
     }
     
-    const userExists = users.find(user => user.email === email);
-    if (userExists) {
+    // Verificar se email já existe
+    const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userExists.rows.length > 0) {
       return res.status(400).json({ error: 'E-mail já cadastrado' });
     }
     
@@ -261,15 +396,15 @@ app.post('/api/cadastro', async (req, res) => {
       email,
       telefone: telefone || '',
       senha: hashedPassword,
-      avatar: '',
-      cargo: 'Terceiro', // Cargo padrão para novos usuários
-      perfilEditado: false,
-      isAdmin: false,
-      criadoEm: new Date().toISOString(),
-      atualizadoEm: new Date().toISOString()
+      cargo: 'Terceiro'
     };
     
-    users.push(newUser);
+    // Inserir no banco
+    await pool.query(
+      `INSERT INTO users (id, nome, email, telefone, senha, cargo) 
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [newUser.id, newUser.nome, newUser.email, newUser.telefone, newUser.senha, newUser.cargo]
+    );
     
     // Gerar token JWT
     const token = generateToken(newUser);
@@ -283,10 +418,10 @@ app.post('/api/cadastro', async (req, res) => {
         nome: newUser.nome, 
         email: newUser.email,
         telefone: newUser.telefone,
-        avatar: newUser.avatar,
+        avatar: '',
         cargo: newUser.cargo,
-        perfilEditado: newUser.perfilEditado,
-        isAdmin: newUser.isAdmin
+        perfilEditado: false,
+        isAdmin: false
       } 
     });
   } catch (error) {
@@ -328,8 +463,9 @@ app.post('/api/admin/cadastro', authenticateToken, requireAdmin, async (req, res
       return res.status(400).json({ error: 'Cargo inválido' });
     }
     
-    const userExists = users.find(user => user.email === email);
-    if (userExists) {
+    // Verificar se email já existe
+    const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userExists.rows.length > 0) {
       return res.status(400).json({ error: 'E-mail já cadastrado' });
     }
     
@@ -342,15 +478,15 @@ app.post('/api/admin/cadastro', authenticateToken, requireAdmin, async (req, res
       email,
       telefone: telefone || '',
       senha: hashedPassword,
-      avatar: '',
-      cargo: cargo || 'Terceiro',
-      perfilEditado: false,
-      isAdmin: false,
-      criadoEm: new Date().toISOString(),
-      atualizadoEm: new Date().toISOString()
+      cargo: cargo || 'Terceiro'
     };
     
-    users.push(newUser);
+    // Inserir no banco
+    await pool.query(
+      `INSERT INTO users (id, nome, email, telefone, senha, cargo) 
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [newUser.id, newUser.nome, newUser.email, newUser.telefone, newUser.senha, newUser.cargo]
+    );
     
     res.status(201).json({ 
       success: true, 
@@ -360,10 +496,10 @@ app.post('/api/admin/cadastro', authenticateToken, requireAdmin, async (req, res
         nome: newUser.nome, 
         email: newUser.email,
         telefone: newUser.telefone,
-        avatar: newUser.avatar,
+        avatar: '',
         cargo: newUser.cargo,
-        perfilEditado: newUser.perfilEditado,
-        isAdmin: newUser.isAdmin
+        perfilEditado: false,
+        isAdmin: false
       } 
     });
   } catch (error) {
@@ -384,10 +520,13 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
     }
     
-    const user = users.find(user => user.email === email);
-    if (!user) {
+    // Buscar usuário no banco
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) {
       return res.status(400).json({ error: 'E-mail ou senha incorretos' });
     }
+    
+    const user = result.rows[0];
     
     // Verificar senha com bcrypt
     const passwordMatch = await bcrypt.compare(senha, user.senha);
@@ -396,7 +535,11 @@ app.post('/api/login', async (req, res) => {
     }
     
     // Gerar token JWT
-    const token = generateToken(user);
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      isAdmin: user.is_admin
+    });
     
     res.json({ 
       success: true, 
@@ -409,9 +552,9 @@ app.post('/api/login', async (req, res) => {
         telefone: user.telefone,
         avatar: user.avatar,
         cargo: user.cargo,
-        perfilEditado: user.perfilEditado,
-        isAdmin: user.isAdmin,
-        criadoEm: user.criadoEm
+        perfilEditado: user.perfil_editado,
+        isAdmin: user.is_admin,
+        criadoEm: user.criado_em
       } 
     });
   } catch (error) {
@@ -438,25 +581,32 @@ app.post('/api/upload-avatar', authenticateToken, upload.single('avatar'), async
       return res.status(400).json({ error: 'Nenhuma imagem foi enviada' });
     }
     
-    const userIndex = users.findIndex(user => user.id === usuario_id);
-    if (userIndex === -1) {
+    // Verificar se usuário existe
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userResult.rows.length === 0) {
       // Deletar arquivo se usuário não existe
       fs.unlinkSync(req.file.path);
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
+    const user = userResult.rows[0];
+    
     // Deletar avatar anterior se existir
-    if (users[userIndex].avatar && users[userIndex].avatar.startsWith('uploads/')) {
+    if (user.avatar && user.avatar.startsWith('uploads/')) {
       try {
-        fs.unlinkSync(users[userIndex].avatar);
+        fs.unlinkSync(user.avatar);
       } catch (error) {
         console.log('Avatar anterior não encontrado para deletar');
       }
     }
     
     const avatarPath = req.file.path;
-    users[userIndex].avatar = avatarPath;
-    users[userIndex].atualizadoEm = new Date().toISOString();
+    
+    // Atualizar no banco
+    await pool.query(
+      'UPDATE users SET avatar = $1, atualizado_em = CURRENT_TIMESTAMP WHERE id = $2',
+      [avatarPath, usuario_id]
+    );
     
     res.json({ 
       success: true, 
@@ -496,15 +646,16 @@ app.put('/api/perfil', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Sem permissão para atualizar este perfil' });
     }
     
-    const userIndex = users.findIndex(user => user.id === usuario_id);
-    if (userIndex === -1) {
+    // Buscar usuário atual
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
-    const user = users[userIndex];
+    const user = userResult.rows[0];
     
     // Verificar se o perfil já foi editado (só permite uma edição para não-admins)
-    if (user.perfilEditado && !req.user.isAdmin) {
+    if (user.perfil_editado && !req.user.isAdmin) {
       return res.status(400).json({ 
         error: 'Perfil já foi editado. Para novas alterações, entre em contato com o administrador.' 
       });
@@ -535,29 +686,33 @@ app.put('/api/perfil', authenticateToken, async (req, res) => {
       alteradoPor: req.user.id
     };
     
-    alteracoesPerfil.push(alteracao);
+    await pool.query(
+      'INSERT INTO alteracoes_perfil (id, usuario_id, alteracoes, alterado_por) VALUES ($1, $2, $3, $4)',
+      [alteracao.id, alteracao.usuario_id, alteracao.alteracoes, alteracao.alteradoPor]
+    );
     
     // Atualizar usuário
-    users[userIndex] = {
-      ...user,
-      nome: nomeSanitizado || user.nome,
-      telefone: telefoneSanitizado || user.telefone,
-      perfilEditado: true,
-      atualizadoEm: new Date().toISOString()
-    };
+    await pool.query(
+      'UPDATE users SET nome = $1, telefone = $2, perfil_editado = true, atualizado_em = CURRENT_TIMESTAMP WHERE id = $3',
+      [nomeSanitizado || user.nome, telefoneSanitizado || user.telefone, usuario_id]
+    );
+    
+    // Buscar usuário atualizado
+    const updatedUserResult = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    const updatedUser = updatedUserResult.rows[0];
     
     res.json({ 
       success: true, 
       message: 'Perfil atualizado com sucesso!',
       user: {
-        id: users[userIndex].id,
-        nome: users[userIndex].nome,
-        email: users[userIndex].email,
-        telefone: users[userIndex].telefone,
-        avatar: users[userIndex].avatar,
-        cargo: users[userIndex].cargo,
-        perfilEditado: users[userIndex].perfilEditado,
-        isAdmin: users[userIndex].isAdmin
+        id: updatedUser.id,
+        nome: updatedUser.nome,
+        email: updatedUser.email,
+        telefone: updatedUser.telefone,
+        avatar: updatedUser.avatar,
+        cargo: updatedUser.cargo,
+        perfilEditado: updatedUser.perfil_editado,
+        isAdmin: updatedUser.is_admin
       }
     });
   } catch (error) {
@@ -584,12 +739,13 @@ app.put('/api/alterar-senha', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres' });
     }
     
-    const userIndex = users.findIndex(user => user.id === usuario_id);
-    if (userIndex === -1) {
+    // Buscar usuário
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
-    const user = users[userIndex];
+    const user = userResult.rows[0];
     
     // Se não for admin, verificar senha atual
     if (!req.user.isAdmin) {
@@ -605,8 +761,11 @@ app.put('/api/alterar-senha', authenticateToken, async (req, res) => {
     // Hash da nova senha
     const hashedPassword = await bcrypt.hash(novaSenha, 10);
     
-    users[userIndex].senha = hashedPassword;
-    users[userIndex].atualizadoEm = new Date().toISOString();
+    // Atualizar senha
+    await pool.query(
+      'UPDATE users SET senha = $1, atualizado_em = CURRENT_TIMESTAMP WHERE id = $2',
+      [hashedPassword, usuario_id]
+    );
     
     res.json({ 
       success: true, 
@@ -627,10 +786,13 @@ app.post('/api/admin/redefinir-senha', authenticateToken, requireAdmin, async (r
       return res.status(400).json({ error: 'ID do usuário é obrigatório' });
     }
     
-    const userIndex = users.findIndex(user => user.id === usuario_id);
-    if (userIndex === -1) {
+    // Buscar usuário
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+    
+    const user = userResult.rows[0];
     
     // Não permitir que admin redefina sua própria senha por esta rota
     if (usuario_id === req.user.id) {
@@ -644,8 +806,10 @@ app.post('/api/admin/redefinir-senha', authenticateToken, requireAdmin, async (r
     const hashedPassword = await bcrypt.hash(novaSenha, 10);
     
     // Atualizar senha do usuário
-    users[userIndex].senha = hashedPassword;
-    users[userIndex].atualizadoEm = new Date().toISOString();
+    await pool.query(
+      'UPDATE users SET senha = $1, atualizado_em = CURRENT_TIMESTAMP WHERE id = $2',
+      [hashedPassword, usuario_id]
+    );
     
     // Registrar a ação de redefinição
     const redefinicaoSenha = {
@@ -656,18 +820,21 @@ app.post('/api/admin/redefinir-senha', authenticateToken, requireAdmin, async (r
       tipo: 'redefinicao_senha'
     };
     
-    alteracoesPerfil.push(redefinicaoSenha);
+    await pool.query(
+      'INSERT INTO alteracoes_perfil (id, usuario_id, alterado_por) VALUES ($1, $2, $3)',
+      [redefinicaoSenha.id, redefinicaoSenha.usuario_id, redefinicaoSenha.administrador_id]
+    );
     
-    console.log(`🔑 Senha redefinida para usuário: ${users[userIndex].nome} - Nova senha: ${novaSenha}`);
+    console.log(`🔑 Senha redefinida para usuário: ${user.nome} - Nova senha: ${novaSenha}`);
     
     res.json({ 
       success: true, 
       message: 'Senha redefinida com sucesso!',
       novaSenha: novaSenha, // Enviar a senha em texto claro para o admin poder enviar ao usuário
       usuario: {
-        id: users[userIndex].id,
-        nome: users[userIndex].nome,
-        email: users[userIndex].email
+        id: user.id,
+        nome: user.nome,
+        email: user.email
       }
     });
   } catch (error) {
@@ -677,19 +844,21 @@ app.post('/api/admin/redefinir-senha', authenticateToken, requireAdmin, async (r
 });
 
 // Rotas de administração
-app.get('/api/admin/usuarios', authenticateToken, requireAdmin, (req, res) => {
+app.get('/api/admin/usuarios', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const usuarios = users.map(user => ({
+    const result = await pool.query('SELECT * FROM users ORDER BY criado_em DESC');
+    
+    const usuarios = result.rows.map(user => ({
       id: user.id,
       nome: user.nome,
       email: user.email,
       telefone: user.telefone,
       cargo: user.cargo,
       avatar: user.avatar,
-      perfilEditado: user.perfilEditado,
-      isAdmin: user.isAdmin,
-      criadoEm: user.criadoEm,
-      atualizadoEm: user.atualizadoEm
+      perfilEditado: user.perfil_editado,
+      isAdmin: user.is_admin,
+      criadoEm: user.criado_em,
+      atualizadoEm: user.atualizado_em
     }));
     
     res.json({ success: true, usuarios });
@@ -716,8 +885,9 @@ app.put('/api/admin/usuarios/:id', authenticateToken, requireAdmin, async (req, 
     telefone = sanitizeUserInput(telefone);
     cargo = sanitizeUserInput(cargo);
     
-    const userIndex = users.findIndex(user => user.id === id);
-    if (userIndex === -1) {
+    // Verificar se usuário existe
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
@@ -737,32 +907,33 @@ app.put('/api/admin/usuarios/:id', authenticateToken, requireAdmin, async (req, 
     }
     
     // Verificar se email já existe (excluindo o próprio usuário)
-    const emailExists = users.find(user => user.email === email && user.id !== id);
-    if (emailExists) {
+    const emailExists = await pool.query('SELECT * FROM users WHERE email = $1 AND id != $2', [email, id]);
+    if (emailExists.rows.length > 0) {
       return res.status(400).json({ error: 'E-mail já está em uso por outro usuário' });
     }
     
-    users[userIndex] = {
-      ...users[userIndex],
-      nome: nome || users[userIndex].nome,
-      email: email || users[userIndex].email,
-      telefone: telefone || users[userIndex].telefone,
-      cargo: cargo || users[userIndex].cargo,
-      atualizadoEm: new Date().toISOString()
-    };
+    // Atualizar usuário
+    await pool.query(
+      'UPDATE users SET nome = $1, email = $2, telefone = $3, cargo = $4, atualizado_em = CURRENT_TIMESTAMP WHERE id = $5',
+      [nome || userResult.rows[0].nome, email || userResult.rows[0].email, telefone || userResult.rows[0].telefone, cargo || userResult.rows[0].cargo, id]
+    );
+    
+    // Buscar usuário atualizado
+    const updatedUserResult = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    const updatedUser = updatedUserResult.rows[0];
     
     res.json({ 
       success: true, 
       message: 'Usuário atualizado com sucesso!',
       user: {
-        id: users[userIndex].id,
-        nome: users[userIndex].nome,
-        email: users[userIndex].email,
-        telefone: users[userIndex].telefone,
-        cargo: users[userIndex].cargo,
-        avatar: users[userIndex].avatar,
-        perfilEditado: users[userIndex].perfilEditado,
-        isAdmin: users[userIndex].isAdmin
+        id: updatedUser.id,
+        nome: updatedUser.nome,
+        email: updatedUser.email,
+        telefone: updatedUser.telefone,
+        cargo: updatedUser.cargo,
+        avatar: updatedUser.avatar,
+        perfilEditado: updatedUser.perfil_editado,
+        isAdmin: updatedUser.is_admin
       }
     });
   } catch (error) {
@@ -772,7 +943,7 @@ app.put('/api/admin/usuarios/:id', authenticateToken, requireAdmin, async (req, 
 });
 
 // Registrar ponto
-app.post('/api/registrar-ponto', authenticateToken, (req, res) => {
+app.post('/api/registrar-ponto', authenticateToken, async (req, res) => {
   try {
     const { 
       usuario_id, 
@@ -796,10 +967,12 @@ app.post('/api/registrar-ponto', authenticateToken, (req, res) => {
     }
     
     // Verificar se usuário existe
-    const userExists = users.find(user => user.id === usuario_id);
-    if (!userExists) {
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+    
+    const user = userResult.rows[0];
     
     let now;
     if (data_custom && hora_custom) {
@@ -827,9 +1000,18 @@ app.post('/api/registrar-ponto', authenticateToken, (req, res) => {
       registradoPor: req.user.id
     };
     
-    pontos.push(novoPonto);
+    // Inserir no banco
+    await pool.query(
+      `INSERT INTO pontos (id, usuario_id, tipo, data, hora, timestamp, dia_semana, local, horas_extras, trabalho_sabado, observacao, manual, registrado_por) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [
+        novoPonto.id, novoPonto.usuario_id, novoPonto.tipo, novoPonto.data, novoPonto.hora, 
+        novoPonto.timestamp, novoPonto.diaSemana, novoPonto.local, novoPonto.horas_extras, 
+        novoPonto.trabalho_sabado, novoPonto.observacao, novoPonto.manual, novoPonto.registradoPor
+      ]
+    );
     
-    console.log(`📝 Ponto registrado: ${userExists.nome} - ${tipo} - ${local} - ${horas_extras ? 'Horas Extras' : ''}`);
+    console.log(`📝 Ponto registrado: ${user.nome} - ${tipo} - ${local} - ${horas_extras ? 'Horas Extras' : ''}`);
     
     res.status(201).json({ 
       success: true, 
@@ -843,7 +1025,7 @@ app.post('/api/registrar-ponto', authenticateToken, (req, res) => {
 });
 
 // Obter registros do usuário
-app.get('/api/registros/:usuario_id', authenticateToken, (req, res) => {
+app.get('/api/registros/:usuario_id', authenticateToken, async (req, res) => {
   try {
     const { usuario_id } = req.params;
     
@@ -853,14 +1035,32 @@ app.get('/api/registros/:usuario_id', authenticateToken, (req, res) => {
     }
     
     // Verificar se usuário existe
-    const userExists = users.find(user => user.id === usuario_id);
-    if (!userExists) {
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
     
-    const registrosUsuario = pontos
-      .filter(ponto => ponto.usuario_id === usuario_id)
-      .sort((a, b) => b.timestamp - a.timestamp);
+    // Buscar registros
+    const registrosResult = await pool.query(
+      'SELECT * FROM pontos WHERE usuario_id = $1 ORDER BY timestamp DESC',
+      [usuario_id]
+    );
+    
+    const registrosUsuario = registrosResult.rows.map(ponto => ({
+      id: ponto.id,
+      usuario_id: ponto.usuario_id,
+      tipo: ponto.tipo,
+      data: ponto.data,
+      hora: ponto.hora,
+      timestamp: ponto.timestamp,
+      diaSemana: ponto.dia_semana,
+      local: ponto.local,
+      horas_extras: ponto.horas_extras,
+      trabalho_sabado: ponto.trabalho_sabado,
+      observacao: ponto.observacao,
+      manual: ponto.manual,
+      registradoPor: ponto.registrado_por
+    }));
     
     res.json({ 
       success: true,
@@ -875,12 +1075,17 @@ app.get('/api/registros/:usuario_id', authenticateToken, (req, res) => {
 
 // Rota para limpar dados (apenas para desenvolvimento)
 if (process.env.NODE_ENV === 'development') {
-  app.delete('/api/clear-data', (req, res) => {
-    users = [];
-    pontos = [];
-    alteracoesPerfil = [];
-    createAdminUser();
-    res.json({ success: true, message: 'Dados limpos com sucesso' });
+  app.delete('/api/clear-data', async (req, res) => {
+    try {
+      await pool.query('DELETE FROM pontos');
+      await pool.query('DELETE FROM alteracoes_perfil');
+      await pool.query('DELETE FROM users WHERE email != $1', ['admin@admin.com']);
+      await initializeDatabase();
+      res.json({ success: true, message: 'Dados limpos com sucesso' });
+    } catch (error) {
+      console.error('Erro ao limpar dados:', error);
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
   });
 }
 
@@ -937,20 +1142,30 @@ app.use((error, req, res, next) => {
 
 // Inicializar servidor
 app.listen(PORT, async () => {
-  await createAdminUser();
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📱 Acesse: http://localhost:${PORT}`);
-  console.log(`👑 Usuário admin: admin@admin.com / admin123`);
-  console.log(`🌍 Ambiente: ${NODE_ENV}`);
+  console.log(`🚀 Inicializando servidor na porta ${PORT}...`);
+  
+  try {
+    await initializeDatabase();
+    console.log(`✅ Servidor rodando na porta ${PORT}`);
+    console.log(`📱 Acesse: http://localhost:${PORT}`);
+    console.log(`👑 Usuário admin: admin@admin.com / admin123`);
+    console.log(`🌍 Ambiente: ${NODE_ENV}`);
+    console.log(`🗄️  Banco de dados: PostgreSQL`);
+    console.log(`⏰ Sistema de ponto funcionando!`);
+  } catch (error) {
+    console.error('❌ Erro ao inicializar servidor:', error);
+  }
 });
 
 // Graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n🛑 Servidor sendo encerrado...');
+  pool.end();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Servidor sendo encerrado...');
+  pool.end();
   process.exit(0);
 });
