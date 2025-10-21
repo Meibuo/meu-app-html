@@ -1,14 +1,22 @@
 {
-  "name": "sistema-ponto-render",
-  "version": "1.0.0",
-  "description": "Sistema de ponto online",
+  "name": "sistema-ponto-eletronico",
+  "version": "2.0.0",
+  "description": "Sistema de ponto eletrônico online",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
+  "keywords": ["ponto", "eletronico", "registro", "horarios"],
+  "author": "Seu Nome",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "bcrypt": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=14.0.0"

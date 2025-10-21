@@ -3,1727 +3,394 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Ponto - Registro</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Dashboard - Sistema de Ponto</title>
     <style>
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        }
-        
         :root {
-            --primary: #3498db;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --dark: #2c3e50;
-            --gray: #7f8c8d;
-            --light: #ecf0f1;
-            --border: #e0e0e0;
-        }
-
-        body { 
-            background: #f8f9fa; 
-            min-height: 100vh;
-            color: var(--dark);
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --error-color: #e74c3c;
+            --text-color: #2c3e50;
+            --bg-color: #f8f9fa;
         }
         
-        /* Header */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: var(--bg-color); 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+        
         .header {
             background: white;
-            padding: 15px 20px;
+            padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 3px solid var(--primary);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-avatar {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--primary), #2980b9);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .user-avatar:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.4);
-        }
-
-        .user-avatar::after {
-            content: '👤';
-            position: absolute;
-            bottom: -5px;
-            right: -5px;
-            background: var(--primary);
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .user-details h2 {
-            font-size: 18px;
-            margin-bottom: 4px;
-        }
-
-        .user-details p {
-            font-size: 13px;
-            color: var(--gray);
-        }
-
-        .cargo {
-            color: var(--primary);
-            font-weight: 600;
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .notification-btn {
-            background: var(--warning);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
-            position: relative;
-        }
-
-        .notification-btn:hover {
-            transform: scale(1.05);
-            background: #e67e22;
-        }
-
-        .notification-badge {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: var(--danger);
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .logout-btn {
-            background: var(--danger);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
-        }
-
-        .logout-btn:hover {
-            transform: scale(1.05);
-            background: #c0392b;
-        }
-
-        /* Modal de Perfil */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-content {
+        
+        .logo { font-size: 24px; color: var(--text-color); font-weight: bold; }
+        
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        
+        .card {
             background: white;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            animation: modalSlideIn 0.3s ease-out;
-        }
-
-        @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-50px) scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, var(--primary), #2980b9);
-            color: white;
             padding: 25px;
-            text-align: center;
-            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
-
-        .close-modal {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(255,255,255,0.2);
+        
+        .btn {
+            padding: 12px 24px;
             border: none;
-            color: white;
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .close-modal:hover {
-            background: rgba(255,255,255,0.3);
-            transform: rotate(90deg);
-        }
-
-        .profile-avatar-large {
-            width: 80px;
-            height: 80px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            font-weight: bold;
-            margin: 0 auto 15px;
-            border: 3px solid rgba(255,255,255,0.3);
-            overflow: hidden;
-        }
-
-        .profile-avatar-large img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .modal-body {
-            padding: 0;
-            max-height: calc(90vh - 150px);
-            overflow-y: auto;
-        }
-
-        .profile-section {
-            padding: 20px 25px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .profile-section:last-child {
-            border-bottom: none;
-        }
-
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f5f5f5;
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-weight: 500;
-            color: var(--gray);
-            min-width: 120px;
-        }
-
-        .info-value {
-            flex: 1;
-            color: var(--dark);
-            margin: 0 10px;
-        }
-
-        .edit-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .edit-btn:hover {
-            background: #2980b9;
-            transform: translateY(-1px);
-        }
-
-        .save-btn {
-            background: var(--success);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: none;
-        }
-
-        .save-btn:hover {
-            background: #27ae60;
-        }
-
-        .cancel-btn {
-            background: var(--gray);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: none;
-            margin-right: 5px;
-        }
-
-        .cancel-btn:hover {
-            background: #636e72;
-        }
-
-        .edit-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .edit-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 15px 0;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-bottom: 1px solid #f5f5f5;
-        }
-
-        .menu-item:last-child {
-            border-bottom: none;
-        }
-
-        .menu-item:hover {
-            background: #f8f9fa;
-            padding-left: 10px;
-        }
-
-        .menu-icon {
-            width: 35px;
-            height: 35px;
-            background: var(--light);
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
             font-size: 16px;
-        }
-
-        /* Container Principal */
-        .container {
-            padding: 20px;
-            padding-bottom: 100px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        /* Cartão de Status */
-        .status-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            border-left: 5px solid var(--primary);
-            text-align: center;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.ativo { 
-            background: var(--success); 
-            box-shadow: 0 0 10px var(--success);
-        }
-        .status-dot.inativo { 
-            background: var(--gray); 
-        }
-
-        .status-text {
-            font-weight: 600;
-            font-size: 16px;
-            color: var(--dark);
-        }
-
-        .current-time {
-            font-size: 32px;
             font-weight: bold;
-            color: var(--dark);
-            margin: 10px 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .current-date {
-            font-size: 16px;
-            color: var(--gray);
-            font-weight: 500;
-        }
-
-        /* Botões de Registro */
-        .ponto-section {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
             text-align: center;
         }
-
-        .section-title-main {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
+        
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        
+        .btn-success { background: var(--success-color); color: white; }
+        .btn-success:hover { background: #27ae60; }
+        
+        .btn-warning { background: var(--warning-color); color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        
+        .btn-danger { background: var(--error-color); color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        
+        .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+        
         .ponto-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
-            max-width: 500px;
-            margin: 0 auto;
+            margin: 20px 0;
         }
-
-        .ponto-btn {
-            padding: 25px 20px;
-            border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .entrada-btn {
-            background: linear-gradient(135deg, var(--success), #27ae60);
-            color: white;
-        }
-
-        .saida-btn {
-            background: linear-gradient(135deg, var(--danger), #c0392b);
-            color: white;
-        }
-
-        .ponto-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-
-        .ponto-btn:active {
-            transform: translateY(-1px);
-        }
-
-        .btn-icon {
-            font-size: 28px;
-        }
-
-        /* Estatísticas */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-            transition: transform 0.3s;
-            border-top: 4px solid var(--primary);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .stat-card.entradas { border-top-color: var(--success); }
-        .stat-card.saidas { border-top-color: var(--danger); }
-        .stat-card.horas { border-top-color: var(--warning); }
-        .stat-card.intervalos { border-top-color: var(--primary); }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: var(--gray);
-            font-weight: 500;
-        }
-
-        /* Registros */
-        .registros-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-
-        .registros-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
+        
         .registros-list {
-            max-height: 400px;
-            overflow-y: auto;
+            margin-top: 20px;
         }
-
+        
         .registro-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            transition: background 0.3s;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
         }
-
-        .registro-item:hover {
-            background: #f8f9fa;
-        }
-
+        
         .registro-item:last-child {
             border-bottom: none;
         }
-
-        .registro-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        
+        .registro-info h4 {
+            margin-bottom: 5px;
+            color: var(--text-color);
         }
-
-        .registro-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
+        
+        .registro-meta {
+            color: #7f8c8d;
+            font-size: 14px;
         }
-
-        .entrada-icon {
-            background: rgba(46, 204, 113, 0.1);
-            color: var(--success);
-        }
-
-        .saida-icon {
-            background: rgba(231, 76, 60, 0.1);
-            color: var(--danger);
-        }
-
-        .registro-details {
-            display: flex;
-            flex-direction: column;
-        }
-
+        
         .registro-tipo {
-            font-weight: 600;
-            font-size: 15px;
-            color: var(--dark);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
         }
-
-        .registro-data {
-            color: var(--gray);
-            font-size: 13px;
-        }
-
-        .registro-hora {
-            font-weight: 700;
-            font-size: 18px;
-            color: var(--dark);
-            font-family: 'Courier New', monospace;
-        }
-
-        /* Alertas */
+        
+        .tipo-entrada { background: #e8f5e9; color: var(--success-color); }
+        .tipo-saida { background: #ffebee; color: var(--error-color); }
+        
         .alert {
-            padding: 15px 20px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 20px;
             display: none;
-            align-items: center;
-            gap: 12px;
-            font-size: 14px;
-            animation: slideIn 0.3s ease-out;
         }
-
-        .alert-success {
-            background: rgba(46, 204, 113, 0.1);
-            color: var(--success);
-            border-left: 4px solid var(--success);
+        
+        .alert-success { background: #e8f5e9; color: var(--success-color); border: 1px solid #c8e6c9; }
+        .alert-error { background: #ffeaea; color: var(--error-color); border: 1px solid #ffcdd2; }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
         }
-
-        .alert-error {
-            background: rgba(231, 76, 60, 0.1);
-            color: var(--danger);
-            border-left: 4px solid var(--danger);
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
         }
-
-        /* Estados Vazios */
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
-            color: var(--gray);
+            padding: 40px;
+            color: #7f8c8d;
         }
-
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 15px;
-            color: #bdc3c7;
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
         }
-
-        /* Modal de Alterar Senha */
-        .password-form {
-            display: none;
-            padding: 15px 0;
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
-        .password-input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
             font-size: 14px;
-            margin-bottom: 10px;
+            color: #7f8c8d;
+            margin-top: 5px;
         }
-
-        .password-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
-        }
-
-        .password-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        /* Animações */
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
-
-        @keyframes slideIn {
-            from { 
-                transform: translateY(-20px); 
-                opacity: 0; 
-            }
-            to { 
-                transform: translateY(0); 
-                opacity: 1; 
-            }
-        }
-
-        /* Responsivo */
+        
         @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-                padding-bottom: 80px;
-            }
-            
             .ponto-buttons {
                 grid-template-columns: 1fr;
             }
             
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
             .header {
-                padding: 15px;
-            }
-            
-            .user-avatar {
-                width: 45px;
-                height: 45px;
-                font-size: 18px;
-            }
-            
-            .current-time {
-                font-size: 28px;
-            }
-
-            .modal-content {
-                margin: 20px;
-                max-height: 85vh;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .ponto-btn {
-                padding: 20px 15px;
-                font-size: 16px;
-            }
-            
-            .btn-icon {
-                font-size: 24px;
-            }
-            
-            .stat-card {
-                padding: 15px;
-            }
-            
-            .stat-value {
-                font-size: 20px;
-            }
-
-            .profile-section {
-                padding: 15px 20px;
-            }
-
-            .info-item {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
+                gap: 15px;
+                text-align: center;
             }
-
-            .info-label {
-                min-width: auto;
+            
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
             }
-
-            .info-value, .edit-input {
-                width: 100%;
-                margin: 0;
-            }
-        }
-
-        /* Scrollbar personalizado */
-        .registros-list::-webkit-scrollbar,
-        .modal-body::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .registros-list::-webkit-scrollbar-track,
-        .modal-body::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 3px;
-        }
-
-        .registros-list::-webkit-scrollbar-thumb,
-        .modal-body::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 3px;
-        }
-
-        .registros-list::-webkit-scrollbar-thumb:hover,
-        .modal-body::-webkit-scrollbar-thumb:hover {
-            background: #2980b9;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
     <div class="header">
+        <div class="logo">⏰ Sistema de Ponto</div>
         <div class="user-info">
-            <div class="user-avatar" id="userAvatar" onclick="openProfileModal()">
-                <img id="userAvatarImg" style="display: none;">
-                <span id="userAvatarText">U</span>
-            </div>
-            <div class="user-details">
-                <h2 id="userName">Usuário</h2>
-                <p><span class="cargo">Cargo:</span> <span id="userCargo">Analista</span></p>
-            </div>
-        </div>
-        <div class="header-actions">
-            <button class="notification-btn" id="notificationBtn" onclick="toggleNotifications()" title="Notificações">
-                <i class="fas fa-bell"></i>
-                <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
-            </button>
-            <button class="logout-btn" onclick="openProfileModal()" title="Perfil">
-                <i class="fas fa-user"></i>
-            </button>
+            <span id="userName">Usuário</span>
+            <button class="btn btn-danger" onclick="logout()">Sair</button>
         </div>
     </div>
-
-    <!-- Modal de Perfil -->
-    <div class="modal" id="profileModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button class="close-modal" onclick="closeProfileModal()">
-                    <i class="fas fa-times"></i>
+    
+    <div class="container">
+        <div id="alert" class="alert"></div>
+        
+        <div class="card">
+            <h2>Registrar Ponto</h2>
+            <p>Registre sua entrada ou saída:</p>
+            
+            <div class="ponto-buttons">
+                <button class="btn btn-success" onclick="registrarPonto('entrada')" id="btnEntrada">
+                    🟢 Entrada
                 </button>
-                <div class="profile-avatar-large" id="modalUserAvatar">
-                    <img id="modalUserAvatarImg" style="display: none;">
-                    <span id="modalUserAvatarText">U</span>
-                </div>
-                <h2 id="modalUserName">Usuário</h2>
-                <p id="modalUserCargo">Cargo: Analista</p>
+                <button class="btn btn-warning" onclick="registrarPonto('saida')" id="btnSaida">
+                    🔴 Saída
+                </button>
             </div>
             
-            <div class="modal-body">
-                <!-- Foto do Perfil -->
-                <div class="profile-section">
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
-                        <button class="edit-btn" onclick="document.getElementById('photoInput').click()">
-                            <i class="fas fa-camera"></i> Editar Foto
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Dados Pessoais -->
-                <div class="profile-section">
-                    <h3 class="section-title">📱 Dados Pessoais</h3>
-                    
-                    <!-- Nome -->
-                    <div class="info-item" id="nomeItem">
-                        <span class="info-label">Nome:</span>
-                        <span class="info-value" id="displayNome">João Silva</span>
-                        <input type="text" class="edit-input" id="editNome" placeholder="Digite seu nome">
-                        <div class="edit-buttons">
-                            <button class="cancel-btn" onclick="cancelEdit('nome')">Cancelar</button>
-                            <button class="save-btn" onclick="saveNome()">Salvar</button>
-                        </div>
-                        <button class="edit-btn" onclick="startEdit('nome')">Editar</button>
-                    </div>
-                    
-                    <!-- E-mail -->
-                    <div class="info-item" id="emailItem">
-                        <span class="info-label">E-mail:</span>
-                        <span class="info-value" id="displayEmail">joao@empresa.com</span>
-                        <input type="email" class="edit-input" id="editEmail" placeholder="Digite seu e-mail">
-                        <div class="edit-buttons">
-                            <button class="cancel-btn" onclick="cancelEdit('email')">Cancelar</button>
-                            <button class="save-btn" onclick="saveEmail()">Salvar</button>
-                        </div>
-                        <button class="edit-btn" onclick="startEdit('email')">Editar</button>
-                    </div>
-                    
-                    <!-- Telefone -->
-                    <div class="info-item" id="telefoneItem">
-                        <span class="info-label">Telefone:</span>
-                        <span class="info-value" id="displayTelefone">(11) 99999-9999</span>
-                        <input type="tel" class="edit-input" id="editTelefone" placeholder="(11) 99999-9999">
-                        <div class="edit-buttons">
-                            <button class="cancel-btn" onclick="cancelEdit('telefone')">Cancelar</button>
-                            <button class="save-btn" onclick="saveTelefone()">Salvar</button>
-                        </div>
-                        <button class="edit-btn" onclick="startEdit('telefone')">Editar</button>
-                    </div>
-                </div>
-
-                <!-- Configurações -->
-                <div class="profile-section">
-                    <h3 class="section-title">⚙️ Configurações</h3>
-                    <div class="menu-item" onclick="togglePasswordForm()">
-                        <div class="menu-icon">
-                            <i class="fas fa-lock"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight: 500;">Alterar Senha</div>
-                            <div style="font-size: 12px; color: var(--gray);">Atualize sua senha de acesso</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Formulário de Alteração de Senha -->
-                    <div class="password-form" id="passwordForm">
-                        <input type="password" class="password-input" id="currentPassword" placeholder="Senha atual">
-                        <input type="password" class="password-input" id="newPassword" placeholder="Nova senha">
-                        <input type="password" class="password-input" id="confirmPassword" placeholder="Confirmar nova senha">
-                        <div class="password-buttons">
-                            <button class="cancel-btn" onclick="togglePasswordForm()">Cancelar</button>
-                            <button class="save-btn" onclick="changePassword()">Salvar</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Banco de Horas e Folhas de Ponto -->
-                <div class="profile-section">
-                    <h3 class="section-title">📊 Relatórios</h3>
-                    <div class="menu-item" onclick="showSection('banco-horas')">
-                        <div class="menu-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div style="font-weight: 500;">Banco de Horas</div>
-                    </div>
-                    <div class="menu-item" onclick="showSection('folhas-ponto')">
-                        <div class="menu-icon">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <div style="font-weight: 500;">Folhas de Ponto</div>
-                    </div>
-                </div>
-
-                <!-- Sair -->
-                <div class="profile-section">
-                    <div class="menu-item" onclick="logout()" style="color: var(--danger);">
-                        <div class="menu-icon" style="background: rgba(231, 76, 60, 0.1); color: var(--danger);">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </div>
-                        <div style="font-weight: 500;">Sair</div>
-                    </div>
-                </div>
+            <div class="loading" id="loadingPonto">
+                <div class="spinner"></div>
+                <span>Registrando ponto...</span>
             </div>
         </div>
-    </div>
-
-    <!-- Alertas -->
-    <div class="container">
-        <div class="alert alert-success" id="successAlert">
-            <i class="fas fa-check-circle"></i>
-            <span id="successText"></span>
-        </div>
-
-        <div class="alert alert-error" id="errorAlert">
-            <i class="fas fa-exclamation-circle"></i>
-            <span id="errorText"></span>
-        </div>
-
-        <!-- Status Atual -->
-        <div class="status-card">
-            <div class="status-indicator">
-                <div class="status-dot" id="statusDot"></div>
-                <span class="status-text" id="statusText">Carregando...</span>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalRegistros">0</div>
+                <div class="stat-label">Total de Registros</div>
             </div>
-            <div class="current-time" id="currentTime">--:--</div>
-            <div class="current-date" id="currentDate">--/--/----</div>
-        </div>
-
-        <!-- Registro de Ponto -->
-        <div class="ponto-section">
-            <h2 class="section-title-main">
-                <i class="fas fa-fingerprint"></i>
-                Registrar Ponto
-            </h2>
-            <div class="ponto-buttons">
-                <button class="ponto-btn entrada-btn" onclick="registrarPonto('entrada')">
-                    <i class="fas fa-sign-in-alt btn-icon"></i>
-                    Entrada
-                    <small style="font-size: 12px; opacity: 0.9;">Registrar chegada</small>
-                </button>
-                <button class="ponto-btn saida-btn" onclick="registrarPonto('saida')">
-                    <i class="fas fa-sign-out-alt btn-icon"></i>
-                    Saída
-                    <small style="font-size: 12px; opacity: 0.9;">Registrar saída</small>
-                </button>
+            <div class="stat-card">
+                <div class="stat-number" id="registrosHoje">0</div>
+                <div class="stat-label">Registros Hoje</div>
             </div>
         </div>
-
-        <!-- Estatísticas -->
-        <div class="stats-grid">
-            <div class="stat-card entradas">
-                <div class="stat-value" id="totalEntradas">0</div>
-                <div class="stat-label">
-                    <i class="fas fa-sign-in-alt"></i> Entradas Hoje
-                </div>
+        
+        <div class="card">
+            <h2>Meus Registros</h2>
+            <p>Histórico dos seus registros de ponto:</p>
+            
+            <div class="loading" id="loadingRegistros">
+                <div class="spinner"></div>
+                <span>Carregando registros...</span>
             </div>
-            <div class="stat-card saidas">
-                <div class="stat-value" id="totalSaidas">0</div>
-                <div class="stat-label">
-                    <i class="fas fa-sign-out-alt"></i> Saídas Hoje
-                </div>
-            </div>
-            <div class="stat-card horas">
-                <div class="stat-value" id="horasTrabalhadas">0h 00m</div>
-                <div class="stat-label">
-                    <i class="fas fa-clock"></i> Horas Trabalhadas
-                </div>
-            </div>
-            <div class="stat-card intervalos">
-                <div class="stat-value" id="totalIntervalos">0</div>
-                <div class="stat-label">
-                    <i class="fas fa-coffee"></i> Intervalos
-                </div>
-            </div>
-        </div>
-
-        <!-- Registros do Dia -->
-        <div class="registros-card">
-            <div class="registros-header">
-                <h2 class="section-title-main">
-                    <i class="fas fa-history"></i>
-                    Registros de Hoje
-                </h2>
-                <button class="edit-btn" onclick="loadDashboard()" title="Atualizar">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
+            
             <div class="registros-list" id="registrosList">
-                <div class="empty-state">
-                    <i class="fas fa-clock"></i>
-                    <h3>Nenhum registro hoje</h3>
-                    <p>Seus registros de ponto aparecerão aqui</p>
-                </div>
+                <!-- Registros serão carregados aqui -->
             </div>
         </div>
     </div>
 
     <script>
         let currentUser = null;
-        let registrosHoje = [];
-        let userProfileData = {
-            nome: '',
-            email: '',
-            telefone: '(11) 99999-9999',
-            cargo: 'Analista',
-            foto: null
-        };
-
-        // Inicialização
-        document.addEventListener('DOMContentLoaded', async function() {
-            const userData = sessionStorage.getItem('currentUser');
+        
+        // Verificar autenticação
+        document.addEventListener('DOMContentLoaded', function() {
+            const userData = localStorage.getItem('currentUser');
             
             if (!userData) {
                 window.location.href = '/login';
                 return;
             }
             
-            try {
-                currentUser = JSON.parse(userData);
-                
-                // Carregar dados do perfil
-                await loadUserProfile();
-                
-                // Configurar interface
-                updateUserInterface();
-                
-                // Carregar dados
-                await loadDashboard();
-                startClock();
-                
-                // Verificar notificações
-                checkNotifications();
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                showError('Erro ao carregar dados');
-                setTimeout(() => window.location.href = '/login', 2000);
-            }
+            currentUser = JSON.parse(userData);
+            document.getElementById('userName').textContent = currentUser.nome;
+            
+            carregarRegistros();
         });
-
-        async function loadUserProfile() {
-            // Simular carregamento do servidor
-            // Na prática, você faria uma requisição para a API
-            userProfileData = {
-                nome: currentUser.nome,
-                email: currentUser.email,
-                telefone: userProfileData.telefone,
-                cargo: userProfileData.cargo,
-                foto: localStorage.getItem('userPhoto')
-            };
-        }
-
-        function updateUserInterface() {
-            // Atualizar header
-            document.getElementById('userName').textContent = userProfileData.nome;
-            document.getElementById('userCargo').textContent = userProfileData.cargo;
+        
+        // Registrar ponto
+        async function registrarPonto(tipo) {
+            const loading = document.getElementById('loadingPonto');
+            const btnEntrada = document.getElementById('btnEntrada');
+            const btnSaida = document.getElementById('btnSaida');
             
-            // Atualizar modal
-            document.getElementById('modalUserName').textContent = userProfileData.nome;
-            document.getElementById('modalUserCargo').textContent = `Cargo: ${userProfileData.cargo}`;
-            document.getElementById('displayNome').textContent = userProfileData.nome;
-            document.getElementById('displayEmail').textContent = userProfileData.email;
-            document.getElementById('displayTelefone').textContent = userProfileData.telefone;
+            // Desabilitar botões
+            btnEntrada.disabled = true;
+            btnSaida.disabled = true;
+            loading.style.display = 'block';
             
-            // Atualizar avatar
-            updateAvatar();
-        }
-
-        function updateAvatar() {
-            const avatarImg = document.getElementById('userAvatarImg');
-            const avatarText = document.getElementById('userAvatarText');
-            const modalAvatarImg = document.getElementById('modalUserAvatarImg');
-            const modalAvatarText = document.getElementById('modalUserAvatarText');
-            
-            if (userProfileData.foto) {
-                avatarImg.src = userProfileData.foto;
-                avatarImg.style.display = 'block';
-                avatarText.style.display = 'none';
-                
-                modalAvatarImg.src = userProfileData.foto;
-                modalAvatarImg.style.display = 'block';
-                modalAvatarText.style.display = 'none';
-            } else {
-                avatarImg.style.display = 'none';
-                avatarText.style.display = 'block';
-                avatarText.textContent = userProfileData.nome.charAt(0).toUpperCase();
-                
-                modalAvatarImg.style.display = 'none';
-                modalAvatarText.style.display = 'block';
-                modalAvatarText.textContent = userProfileData.nome.charAt(0).toUpperCase();
-            }
-        }
-
-        // Funções do Relógio
-        function startClock() {
-            updateClock();
-            setInterval(updateClock, 1000);
-        }
-
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('currentTime').textContent = 
-                now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('currentDate').textContent = 
-                now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-        }
-
-        // Funções do Dashboard
-        async function loadDashboard() {
             try {
-                // Simular carregamento de dados
-                const response = await fetch('/api/registros/hoje', {
-                    headers: { 'Authorization': `Bearer ${currentUser.token}` }
+                const response = await fetch('/api/registrar-ponto', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        usuario_id: currentUser.id,
+                        tipo: tipo
+                    })
                 });
-                
-                if (!response.ok) throw new Error('Erro ao carregar registros');
                 
                 const data = await response.json();
-                registrosHoje = data.registros;
                 
-                updateRegistrosList();
-                updateStats();
-                updateStatus();
-                
+                if (data.success) {
+                    showAlert(`Ponto de ${tipo} registrado com sucesso!`, 'success');
+                    carregarRegistros(); // Recarregar lista
+                } else {
+                    showAlert(data.error, 'error');
+                }
             } catch (error) {
                 console.error('Erro:', error);
-                // Simular dados para demonstração
-                registrosHoje = [
-                    { tipo: 'entrada', horario: '08:00', data: new Date().toISOString() },
-                    { tipo: 'saida', horario: '12:00', data: new Date().toISOString() },
-                    { tipo: 'entrada', horario: '13:00', data: new Date().toISOString() }
-                ];
-                
-                updateRegistrosList();
-                updateStats();
-                updateStatus();
+                showAlert('Erro de conexão. Tente novamente.', 'error');
+            } finally {
+                btnEntrada.disabled = false;
+                btnSaida.disabled = false;
+                loading.style.display = 'none';
             }
         }
-
-        function updateRegistrosList() {
+        
+        // Carregar registros do usuário
+        async function carregarRegistros() {
+            const loading = document.getElementById('loadingRegistros');
             const registrosList = document.getElementById('registrosList');
             
-            if (registrosHoje.length === 0) {
-                registrosList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-clock"></i>
-                        <h3>Nenhum registro hoje</h3>
-                        <p>Seus registros de ponto aparecerão aqui</p>
-                    </div>
-                `;
-                return;
-            }
+            loading.style.display = 'block';
+            registrosList.innerHTML = '';
             
-            registrosList.innerHTML = registrosHoje.map(registro => `
-                <div class="registro-item">
-                    <div class="registro-info">
-                        <div class="registro-icon ${registro.tipo}-icon">
-                            <i class="fas fa-${registro.tipo === 'entrada' ? 'sign-in-alt' : 'sign-out-alt'}"></i>
-                        </div>
-                        <div class="registro-details">
-                            <div class="registro-tipo">${registro.tipo === 'entrada' ? 'Entrada' : 'Saída'}</div>
-                            <div class="registro-data">${new Date(registro.data).toLocaleDateString('pt-BR')}</div>
-                        </div>
-                    </div>
-                    <div class="registro-hora">${registro.horario}</div>
-                </div>
-            `).join('');
-        }
-
-        function updateStats() {
-            const entradas = registrosHoje.filter(r => r.tipo === 'entrada').length;
-            const saidas = registrosHoje.filter(r => r.tipo === 'saida').length;
-            
-            document.getElementById('totalEntradas').textContent = entradas;
-            document.getElementById('totalSaidas').textContent = saidas;
-            document.getElementById('totalIntervalos').textContent = Math.min(entradas, saidas);
-            
-            // Calcular horas trabalhadas (simulação)
-            const horasTrabalhadas = calcularHorasTrabalhadas();
-            document.getElementById('horasTrabalhadas').textContent = horasTrabalhadas;
-        }
-
-        function calcularHorasTrabalhadas() {
-            // Simulação de cálculo de horas
-            if (registrosHoje.length < 2) return '0h 00m';
-            
-            let totalMinutos = 0;
-            let entradaAtual = null;
-            
-            for (const registro of registrosHoje) {
-                if (registro.tipo === 'entrada') {
-                    entradaAtual = registro;
-                } else if (registro.tipo === 'saida' && entradaAtual) {
-                    const entrada = new Date(entradaAtual.data);
-                    const saida = new Date(registro.data);
-                    totalMinutos += (saida - entrada) / (1000 * 60);
-                    entradaAtual = null;
-                }
-            }
-            
-            const horas = Math.floor(totalMinutos / 60);
-            const minutos = Math.floor(totalMinutos % 60);
-            
-            return `${horas}h ${minutos.toString().padStart(2, '0')}m`;
-        }
-
-        function updateStatus() {
-            const statusDot = document.getElementById('statusDot');
-            const statusText = document.getElementById('statusText');
-            
-            if (registrosHoje.length === 0) {
-                statusDot.className = 'status-dot inativo';
-                statusText.textContent = 'Aguardando primeiro registro';
-                return;
-            }
-            
-            const ultimoRegistro = registrosHoje[registrosHoje.length - 1];
-            
-            if (ultimoRegistro.tipo === 'entrada') {
-                statusDot.className = 'status-dot ativo';
-                statusText.textContent = 'Trabalhando';
-            } else {
-                statusDot.className = 'status-dot inativo';
-                statusText.textContent = 'Fora do trabalho';
-            }
-        }
-
-        // Funções de Registro de Ponto
-        async function registrarPonto(tipo) {
             try {
-                // Verificar permissão de localização
-                if (!await checkLocationPermission()) {
-                    showError('Permissão de localização necessária para registrar ponto');
-                    return;
-                }
+                const response = await fetch(`/api/registros/${currentUser.id}`);
+                const data = await response.json();
                 
-                // Obter localização
-                const location = await getCurrentLocation();
-                
-                // Registrar ponto
-                const response = await fetch('/api/registros', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentUser.token}`
-                    },
-                    body: JSON.stringify({
-                        tipo: tipo,
-                        localizacao: location
-                    })
-                });
-                
-                if (!response.ok) throw new Error('Erro ao registrar ponto');
-                
-                const resultado = await response.json();
-                
-                showSuccess(`Ponto registrado com sucesso às ${resultado.horario}`);
-                await loadDashboard();
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                showError('Erro ao registrar ponto. Tente novamente.');
-            }
-        }
-
-        async function checkLocationPermission() {
-            return new Promise((resolve) => {
-                if (!navigator.geolocation) {
-                    resolve(false);
-                    return;
-                }
-                
-                navigator.geolocation.getCurrentPosition(
-                    () => resolve(true),
-                    () => resolve(false),
-                    { timeout: 5000 }
-                );
-            });
-        }
-
-        async function getCurrentLocation() {
-            return new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(
-                    position => resolve({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    }),
-                    error => reject(error),
-                    { 
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 60000
-                    }
-                );
-            });
-        }
-
-        // Funções do Modal de Perfil
-        function openProfileModal() {
-            document.getElementById('profileModal').style.display = 'flex';
-        }
-
-        function closeProfileModal() {
-            document.getElementById('profileModal').style.display = 'none';
-            // Resetar formulários de edição
-            cancelAllEdits();
-            document.getElementById('passwordForm').style.display = 'none';
-        }
-
-        // Funções de Edição de Perfil
-        function startEdit(campo) {
-            // Cancelar outras edições
-            cancelAllEdits();
-            
-            const item = document.getElementById(`${campo}Item`);
-            const display = document.getElementById(`display${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
-            const input = document.getElementById(`edit${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
-            const editBtn = item.querySelector('.edit-btn');
-            const saveBtn = item.querySelector('.save-btn');
-            const cancelBtn = item.querySelector('.cancel-btn');
-            
-            // Configurar valor do input
-            input.value = display.textContent;
-            
-            // Mostrar/ocultar elementos
-            display.style.display = 'none';
-            input.style.display = 'block';
-            editBtn.style.display = 'none';
-            saveBtn.style.display = 'inline-block';
-            cancelBtn.style.display = 'inline-block';
-            
-            // Focar no input
-            input.focus();
-        }
-
-        function cancelEdit(campo) {
-            const item = document.getElementById(`${campo}Item`);
-            const display = document.getElementById(`display${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
-            const input = document.getElementById(`edit${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
-            const editBtn = item.querySelector('.edit-btn');
-            const saveBtn = item.querySelector('.save-btn');
-            const cancelBtn = item.querySelector('.cancel-btn');
-            
-            // Restaurar estado
-            display.style.display = 'block';
-            input.style.display = 'none';
-            editBtn.style.display = 'inline-block';
-            saveBtn.style.display = 'none';
-            cancelBtn.style.display = 'none';
-        }
-
-        function cancelAllEdits() {
-            ['nome', 'email', 'telefone'].forEach(campo => {
-                const item = document.getElementById(`${campo}Item`);
-                if (item) {
-                    const display = document.getElementById(`display${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
-                    const input = document.getElementById(`edit${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
-                    const editBtn = item.querySelector('.edit-btn');
-                    const saveBtn = item.querySelector('.save-btn');
-                    const cancelBtn = item.querySelector('.cancel-btn');
+                if (data.success) {
+                    atualizarEstatisticas(data.registros);
                     
-                    if (display && input && editBtn && saveBtn && cancelBtn) {
-                        display.style.display = 'block';
-                        input.style.display = 'none';
-                        editBtn.style.display = 'inline-block';
-                        saveBtn.style.display = 'none';
-                        cancelBtn.style.display = 'none';
-                    }
-                }
-            });
-        }
-
-        async function saveNome() {
-            const novoNome = document.getElementById('editNome').value.trim();
-            
-            if (!novoNome) {
-                showError('Nome não pode estar vazio');
-                return;
-            }
-            
-            try {
-                // Simular salvamento no servidor
-                userProfileData.nome = novoNome;
-                localStorage.setItem('userProfile', JSON.stringify(userProfileData));
-                
-                // Atualizar interface
-                document.getElementById('displayNome').textContent = novoNome;
-                document.getElementById('userName').textContent = novoNome;
-                document.getElementById('modalUserName').textContent = novoNome;
-                updateAvatar();
-                
-                cancelEdit('nome');
-                showSuccess('Nome atualizado com sucesso');
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                showError('Erro ao atualizar nome');
-            }
-        }
-
-        async function saveEmail() {
-            const novoEmail = document.getElementById('editEmail').value.trim();
-            
-            if (!novoEmail || !isValidEmail(novoEmail)) {
-                showError('E-mail inválido');
-                return;
-            }
-            
-            try {
-                // Simular salvamento no servidor
-                userProfileData.email = novoEmail;
-                localStorage.setItem('userProfile', JSON.stringify(userProfileData));
-                
-                // Atualizar interface
-                document.getElementById('displayEmail').textContent = novoEmail;
-                
-                cancelEdit('email');
-                showSuccess('E-mail atualizado com sucesso');
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                showError('Erro ao atualizar e-mail');
-            }
-        }
-
-        async function saveTelefone() {
-            const novoTelefone = document.getElementById('editTelefone').value.trim();
-            
-            if (!novoTelefone) {
-                showError('Telefone não pode estar vazio');
-                return;
-            }
-            
-            try {
-                // Simular salvamento no servidor
-                userProfileData.telefone = novoTelefone;
-                localStorage.setItem('userProfile', JSON.stringify(userProfileData));
-                
-                // Atualizar interface
-                document.getElementById('displayTelefone').textContent = novoTelefone;
-                
-                cancelEdit('telefone');
-                showSuccess('Telefone atualizado com sucesso');
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                showError('Erro ao atualizar telefone');
-            }
-        }
-
-        function isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
-        }
-
-        // Funções de Alteração de Senha
-        function togglePasswordForm() {
-            const form = document.getElementById('passwordForm');
-            form.style.display = form.style.display === 'block' ? 'none' : 'block';
-        }
-
-        async function changePassword() {
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            if (!currentPassword || !newPassword || !confirmPassword) {
-                showError('Preencha todos os campos');
-                return;
-            }
-            
-            if (newPassword !== confirmPassword) {
-                showError('As senhas não coincidem');
-                return;
-            }
-            
-            if (newPassword.length < 6) {
-                showError('A nova senha deve ter pelo menos 6 caracteres');
-                return;
-            }
-            
-            try {
-                // Simular alteração de senha
-                const response = await fetch('/api/alterar-senha', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${currentUser.token}`
-                    },
-                    body: JSON.stringify({
-                        senhaAtual: currentPassword,
-                        novaSenha: newPassword
-                    })
-                });
-                
-                if (!response.ok) throw new Error('Erro ao alterar senha');
-                
-                // Limpar formulário
-                document.getElementById('currentPassword').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('confirmPassword').value = '';
-                
-                togglePasswordForm();
-                showSuccess('Senha alterada com sucesso');
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                showError('Erro ao alterar senha. Verifique a senha atual.');
-            }
-        }
-
-        // Upload de Foto
-        function handlePhotoUpload(event) {
-            const file = event.target.files[0];
-            
-            if (!file) return;
-            
-            if (!file.type.startsWith('image/')) {
-                showError('Por favor, selecione uma imagem');
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) { // 5MB
-                showError('A imagem deve ter no máximo 5MB');
-                return;
-            }
-            
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                // Criar canvas para redimensionar a imagem
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Definir tamanho máximo
-                    const maxSize = 300;
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    if (width > height) {
-                        if (width > maxSize) {
-                            height = Math.round((height * maxSize) / width);
-                            width = maxSize;
-                        }
+                    if (data.registros.length === 0) {
+                        registrosList.innerHTML = `
+                            <div class="empty-state">
+                                <p>Nenhum registro encontrado.</p>
+                                <p>Registre seu primeiro ponto acima!</p>
+                            </div>
+                        `;
                     } else {
-                        if (height > maxSize) {
-                            width = Math.round((width * maxSize) / height);
-                            height = maxSize;
-                        }
+                        data.registros.forEach(registro => {
+                            const registroElement = document.createElement('div');
+                            registroElement.className = 'registro-item';
+                            registroElement.innerHTML = `
+                                <div class="registro-info">
+                                    <h4>Ponto de ${registro.tipo}</h4>
+                                    <div class="registro-meta">
+                                        ${registro.data} às ${registro.hora} - ${registro.diaSemana}
+                                    </div>
+                                </div>
+                                <div class="registro-tipo tipo-${registro.tipo}">
+                                    ${registro.tipo.toUpperCase()}
+                                </div>
+                            `;
+                            registrosList.appendChild(registroElement);
+                        });
                     }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    // Desenhar imagem redimensionada
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // Obter URL da imagem redimensionada
-                    const resizedImageUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    
-                    // Salvar imagem
-                    userProfileData.foto = resizedImageUrl;
-                    localStorage.setItem('userPhoto', resizedImageUrl);
-                    localStorage.setItem('userProfile', JSON.stringify(userProfileData));
-                    
-                    // Atualizar avatares
-                    updateAvatar();
-                    
-                    showSuccess('Foto atualizada com sucesso');
-                };
-                
-                img.src = e.target.result;
-            };
-            
-            reader.readAsDataURL(file);
-        }
-
-        // Funções de Notificação
-        async function checkNotifications() {
-            try {
-                const response = await fetch('/api/notificacoes', {
-                    headers: { 'Authorization': `Bearer ${currentUser.token}` }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const notificacoesNaoLidas = data.filter(n => !n.lida).length;
-                    
-                    if (notificacoesNaoLidas > 0) {
-                        document.getElementById('notificationBadge').textContent = notificacoesNaoLidas;
-                        document.getElementById('notificationBadge').style.display = 'flex';
-                    } else {
-                        document.getElementById('notificationBadge').style.display = 'none';
-                    }
+                } else {
+                    showAlert(data.error, 'error');
                 }
             } catch (error) {
-                console.error('Erro ao verificar notificações:', error);
+                console.error('Erro:', error);
+                showAlert('Erro ao carregar registros.', 'error');
+            } finally {
+                loading.style.display = 'none';
             }
         }
-
-        function toggleNotifications() {
-            // Simular abertura de notificações
-            showSuccess('Notificações carregadas');
-            // Aqui você implementaria a lógica para mostrar as notificações
+        
+        // Atualizar estatísticas
+        function atualizarEstatisticas(registros) {
+            const hoje = new Date().toISOString().split('T')[0];
+            const registrosHoje = registros.filter(r => r.data === hoje).length;
+            
+            document.getElementById('totalRegistros').textContent = registros.length;
+            document.getElementById('registrosHoje').textContent = registrosHoje;
         }
-
-        // Funções Auxiliares
-        function showSection(section) {
-            showSuccess(`Abrindo ${section}`);
-            // Implementar navegação para as seções
+        
+        // Mostrar alertas
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
+            
+            // Auto-esconder após 5 segundos
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
         }
-
+        
+        // Logout
         function logout() {
-            sessionStorage.removeItem('currentUser');
-            window.location.href = '/login';
-        }
-
-        function showSuccess(message) {
-            const alert = document.getElementById('successAlert');
-            document.getElementById('successText').textContent = message;
-            alert.style.display = 'flex';
-            
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
-        }
-
-        function showError(message) {
-            const alert = document.getElementById('errorAlert');
-            document.getElementById('errorText').textContent = message;
-            alert.style.display = 'flex';
-            
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
-        }
-
-        // Fechar modal ao clicar fora
-        window.onclick = function(event) {
-            const modal = document.getElementById('profileModal');
-            if (event.target === modal) {
-                closeProfileModal();
-            }
+            localStorage.removeItem('currentUser');
+            window.location.href = '/';
         }
     </script>
 </body>

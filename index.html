@@ -161,9 +161,34 @@
             padding-top: 15px;
         }
         
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: rgba(46, 204, 113, 0.1);
+            border-radius: 20px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
         
         @media (max-width: 480px) {
@@ -184,6 +209,12 @@
                 <span class="logo-icon">⏰</span>
                 Sistema de Ponto
             </h1>
+            
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span>Sistema Online</span>
+            </div>
+            
             <p class="tagline">Controle seus horários de trabalho de forma simples</p>
             
             <div class="features">
@@ -198,6 +229,10 @@
                 <div class="feature">
                     <span class="feature-icon">✓</span>
                     <span>Histórico completo de seus registros</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">✓</span>
+                    <span>Dados protegidos e seguros</span>
                 </div>
             </div>
             
@@ -219,40 +254,40 @@
     </main>
 
     <script>
-        // Adicionar estados de loading nos botões quando clicados
+        // Verificar status do servidor
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Servidor está online:', data);
+                }
+            } catch (error) {
+                console.log('Servidor offline ou em inicialização');
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
-            const buttons = document.querySelectorAll('.btn');
+            // Verificar status do servidor após carregamento
+            setTimeout(checkServerStatus, 1000);
+            
+            // Adicionar estados de loading nos botões quando clicados
+            const buttons = document.querySelectorAll('.btn[href]');
             
             buttons.forEach(button => {
                 button.addEventListener('click', function(e) {
-                    // Simular loading apenas para demonstração
-                    if (!this.getAttribute('href')) return;
+                    const originalHTML = this.innerHTML;
                     
-                    const originalText = this.innerHTML;
+                    // Mostrar estado de loading
                     this.innerHTML = '<span>Carregando...</span>';
                     this.disabled = true;
                     
-                    // Em um caso real, isso seria controlado pela navegação
+                    // Timeout de fallback caso a navegação falhe
                     setTimeout(() => {
-                        this.innerHTML = originalText;
+                        this.innerHTML = originalHTML;
                         this.disabled = false;
-                    }, 1500);
+                    }, 5000);
                 });
-            });
-            
-            // Pré-carregar as páginas importantes
-            if ('connection' in navigator && navigator.connection.saveData) {
-                // Não pré-carregar se o usuário tem modo de economia de dados ativado
-                return;
-            }
-            
-            const links = ['/login', '/cadastro'];
-            links.forEach(link => {
-                const preloadLink = document.createElement('link');
-                preloadLink.rel = 'prefetch';
-                preloadLink.href = link;
-                preloadLink.as = 'document';
-                document.head.appendChild(preloadLink);
             });
         });
     </script>
