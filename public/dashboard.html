@@ -299,7 +299,7 @@
         </div>
 
         <div class="card">
-            <h2 class="card-title">Registros de Hoje</h2>
+            <h2 class="card-title">Meus Registros de Hoje</h2>
             <div class="registros-list" id="registrosList">
                 <div class="empty-state">
                     <i class="fas fa-clock"></i>
@@ -310,9 +310,11 @@
     </div>
 
     <script>
+        let currentUser = null;
+
         // Verificar se usuário está logado
         document.addEventListener('DOMContentLoaded', function() {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
             if (!currentUser) {
                 alert('Você precisa fazer login primeiro!');
@@ -327,7 +329,7 @@
             // Atualizar data atual
             updateCurrentDate();
             
-            // Carregar registros
+            // Carregar registros do usuário
             loadRegistros();
         });
 
@@ -349,13 +351,18 @@
                 tipo: tipo,
                 data: now.toISOString().split('T')[0],
                 hora: now.toTimeString().split(' ')[0],
-                timestamp: now.getTime()
+                timestamp: now.getTime(),
+                userId: currentUser.email // Identificar o usuário pelo email
             };
 
+            // Buscar todos os registros
+            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
+            
+            // Adicionar novo registro
+            todosRegistros.push(registro);
+            
             // Salvar no localStorage
-            const registros = JSON.parse(localStorage.getItem('pontos') || '[]');
-            registros.push(registro);
-            localStorage.setItem('pontos', JSON.stringify(registros));
+            localStorage.setItem('pontos', JSON.stringify(todosRegistros));
 
             // Mostrar mensagem de sucesso
             showSuccess(`Ponto de ${tipo === 'entrada' ? 'entrada' : 'saída'} registrado com sucesso!`);
@@ -366,19 +373,25 @@
 
         function loadRegistros() {
             const hoje = new Date().toISOString().split('T')[0];
-            const registros = JSON.parse(localStorage.getItem('pontos') || '[]');
-            const registrosHoje = registros.filter(r => r.data === hoje);
+            
+            // Buscar todos os registros
+            const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
+            
+            // Filtrar apenas registros do usuário atual e de hoje
+            const registrosUsuario = todosRegistros.filter(r => 
+                r.userId === currentUser.email && r.data === hoje
+            );
             
             // Atualizar estatísticas
             document.getElementById('totalEntradas').textContent = 
-                registrosHoje.filter(r => r.tipo === 'entrada').length;
+                registrosUsuario.filter(r => r.tipo === 'entrada').length;
             document.getElementById('totalSaidas').textContent = 
-                registrosHoje.filter(r => r.tipo === 'saida').length;
+                registrosUsuario.filter(r => r.tipo === 'saida').length;
             
             // Atualizar lista
             const registrosList = document.getElementById('registrosList');
             
-            if (registrosHoje.length === 0) {
+            if (registrosUsuario.length === 0) {
                 registrosList.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-clock"></i>
@@ -389,9 +402,9 @@
             }
             
             // Ordenar por timestamp (mais recente primeiro)
-            registrosHoje.sort((a, b) => b.timestamp - a.timestamp);
+            registrosUsuario.sort((a, b) => b.timestamp - a.timestamp);
             
-            registrosList.innerHTML = registrosHoje.map(registro => `
+            registrosList.innerHTML = registrosUsuario.map(registro => `
                 <div class="registro-item">
                     <div class="registro-info">
                         <span class="registro-tipo ${registro.tipo === 'entrada' ? 'registro-entrada' : 'registro-saida'}">
