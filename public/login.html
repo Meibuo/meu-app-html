@@ -127,21 +127,21 @@
             box-shadow: none;
         }
 
-        .register-link {
+        .back-link {
             text-align: center;
             margin-top: 20px;
             color: #7f8c8d;
             font-size: 14px;
         }
 
-        .register-link a {
+        .back-link a {
             color: #3498db;
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s;
         }
 
-        .register-link a:hover {
+        .back-link a:hover {
             text-decoration: underline;
             color: #2980b9;
         }
@@ -246,13 +246,13 @@
             </button>
         </form>
         
-        <div class="register-link">
-            Não tem conta? <a href="cadastro.html">Crie uma conta aqui</a>
+        <div class="back-link">
+            <a href="index.html">← Voltar para página inicial</a>
         </div>
     </div>
 
     <script>
-        // Sistema de login funcional
+        // Sistema de login funcional - MOBILE FIXED
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -281,7 +281,7 @@
             
             try {
                 // Simular delay de rede
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
                 // Buscar usuários do localStorage
                 const users = JSON.parse(localStorage.getItem('users') || '[]');
@@ -295,13 +295,14 @@
                 // Login bem-sucedido
                 showSuccess('Login realizado com sucesso!');
                 
-                // Salvar usuário logado na sessão
+                // Salvar usuário logado - MOBILE FIX
                 localStorage.setItem('currentUser', JSON.stringify(user));
                 
-                // Redirecionar para página principal após 2 segundos
+                // Redirecionar para página principal - MOBILE COMPATIBLE
                 setTimeout(() => {
-                    window.location.href = 'dashboard.html';
-                }, 2000);
+                    // Forçar recarregamento completo para mobile
+                    window.location.href = 'dashboard.html?t=' + new Date().getTime();
+                }, 1500);
                 
             } catch (error) {
                 showError('❌ Erro de conexão com o servidor');

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Ponto - Mobile</title>
+    <title>Registro de Pontos</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -88,7 +88,7 @@
         /* CONTEÚDO PRINCIPAL */
         .mobile-container {
             padding: 15px;
-            padding-bottom: 80px; /* Espaço para o bottom nav */
+            padding-bottom: 80px;
         }
 
         /* STATUS ATUAL MOBILE */
@@ -321,58 +321,6 @@
             font-size: 18px;
         }
 
-        /* MODAL DE HISTÓRICO */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow: hidden;
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #f1f1f1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: var(--gray);
-        }
-
-        .modal-body {
-            padding: 20px;
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
         /* MENSAGENS MOBILE */
         .alert-mobile {
             padding: 15px;
@@ -412,21 +360,22 @@
             animation: slideIn 0.3s ease-out;
         }
 
-        /* SCROLL PERSONALIZADO */
-        .modal-body::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .modal-body::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        .modal-body::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 2px;
-        }
-
         /* RESPONSIVIDADE EXTRA */
+        @media (min-width: 768px) {
+            .mobile-container {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+            
+            .ponto-buttons-mobile {
+                flex-direction: row;
+            }
+            
+            .stats-mobile {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
         @media (max-width: 360px) {
             .mobile-container {
                 padding: 10px;
@@ -440,22 +389,6 @@
             
             .stat-value-mobile {
                 font-size: 18px;
-            }
-        }
-
-        /* ORIENTAÇÃO LANDSCAPE */
-        @media (max-height: 500px) and (orientation: landscape) {
-            .mobile-header {
-                position: relative;
-            }
-            
-            .bottom-nav {
-                position: relative;
-                margin-top: 20px;
-            }
-            
-            .mobile-container {
-                padding-bottom: 20px;
             }
         }
     </style>
@@ -479,11 +412,6 @@
     <div class="alert-mobile alert-success" id="successAlert">
         <i class="fas fa-check-circle"></i>
         <span id="successTextMobile"></span>
-    </div>
-
-    <div class="alert-mobile alert-warning" id="warningAlert">
-        <i class="fas fa-exclamation-triangle"></i>
-        <span id="warningTextMobile"></span>
     </div>
 
     <!-- CONTEÚDO PRINCIPAL -->
@@ -551,74 +479,26 @@
             <i class="fas fa-home nav-icon"></i>
             Início
         </button>
-        <button class="nav-item" onclick="showSection('history')">
+        <button class="nav-item" onclick="showHistory()">
             <i class="fas fa-calendar nav-icon"></i>
             Histórico
         </button>
-        <button class="nav-item" onclick="showSection('profile')">
-            <i class="fas fa-user nav-icon"></i>
-            Perfil
-        </button>
-        <button class="nav-item" onclick="showModal('helpModal')">
+        <button class="nav-item" onclick="showHelp()">
             <i class="fas fa-question-circle nav-icon"></i>
             Ajuda
         </button>
     </div>
 
-    <!-- MODAL DE HISTÓRICO -->
-    <div class="modal" id="historyModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Histórico Completo</h3>
-                <button class="close-modal" onclick="closeModal('historyModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="historyModalBody">
-                <!-- Conteúdo do histórico -->
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL DE AJUDA -->
-    <div class="modal" id="helpModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Como Usar</h3>
-                <button class="close-modal" onclick="closeModal('helpModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div style="margin-bottom: 15px;">
-                    <strong>📱 Registrar Ponto:</strong><br>
-                    Toque em "Registrar Entrada" ao chegar e "Registrar Saída" ao sair.
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <strong>⏰ Horas Trabalhadas:</strong><br>
-                    O sistema calcula automaticamente suas horas trabalhadas.
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <strong>📊 Estatísticas:</strong><br>
-                    Veja quantas entradas, saídas e intervalos você fez.
-                </div>
-                <div>
-                    <strong>🔍 Histórico:</strong><br>
-                    Acesse o histórico completo pelos ícones inferiores.
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
         let currentUser = null;
-        let currentSection = 'home';
 
-        // INICIALIZAÇÃO
+        // INICIALIZAÇÃO - MOBILE FIXED
         document.addEventListener('DOMContentLoaded', function() {
+            // Verificar se usuário está logado
             currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
             if (!currentUser) {
+                alert('Sessão expirada. Faça login novamente.');
                 window.location.href = 'login.html';
                 return;
             }
@@ -781,8 +661,8 @@
         }
 
         function showAlert(type, message) {
-            const alert = document.getElementById(type === 'success' ? 'successAlert' : 'warningAlert');
-            const text = document.getElementById(type === 'success' ? 'successTextMobile' : 'warningTextMobile');
+            const alert = document.getElementById('successAlert');
+            const text = document.getElementById('successTextMobile');
             
             text.textContent = message;
             alert.style.display = 'flex';
@@ -793,85 +673,54 @@
         }
 
         function showSection(section) {
-            currentSection = section;
-            
-            // Atualizar navegação
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            if (section === 'history') {
-                showModal('historyModal');
-                loadHistory();
-            } else if (section === 'profile') {
-                // Futura implementação do perfil
-                showAlert('warning', 'Perfil em desenvolvimento');
-            }
+            // Implementação futura para múltiplas seções
+            showAlert('success', 'Recarregando dados...');
+            loadMobileDashboard();
         }
 
-        function showModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            // Voltar para a seção home
-            document.querySelectorAll('.nav-item').forEach((item, index) => {
-                item.classList.toggle('active', index === 0);
-            });
-        }
-
-        function loadHistory() {
-            // Implementação simplificada do histórico
+        function showHistory() {
+            const hoje = new Date().toISOString().split('T')[0];
             const todosRegistros = JSON.parse(localStorage.getItem('pontos') || '[]');
             const registrosUsuario = todosRegistros.filter(r => r.userId === currentUser.email)
-                .sort((a, b) => b.timestamp - a.timestamp);
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 10); // Últimos 10 registros
 
-            const historyBody = document.getElementById('historyModalBody');
-            
             if (registrosUsuario.length === 0) {
-                historyBody.innerHTML = '<p style="text-align: center; color: var(--gray);">Nenhum registro encontrado</p>';
+                showAlert('warning', 'Nenhum registro encontrado');
                 return;
             }
 
-            // Agrupar por data
-            const registrosPorData = {};
+            let historicoText = '📅 Últimos Registros:\n\n';
             registrosUsuario.forEach(registro => {
-                if (!registrosPorData[registro.data]) {
-                    registrosPorData[registro.data] = [];
-                }
-                registrosPorData[registro.data].push(registro);
+                const data = new Date(registro.timestamp).toLocaleDateString('pt-BR');
+                historicoText += `${data} - ${registro.hora} - ${registro.tipo === 'entrada' ? '🟢 Entrada' : '🔴 Saída'}\n`;
             });
 
-            historyBody.innerHTML = Object.entries(registrosPorData).map(([data, registros]) => `
-                <div style="margin-bottom: 20px;">
-                    <div style="font-weight: 600; color: var(--dark); margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                        ${new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                    </div>
-                    ${registros.sort((a, b) => b.timestamp - a.timestamp).map(registro => `
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f1f1;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${registro.tipo === 'entrada' ? '#2ecc71' : '#e74c3c'};"></div>
-                                <span>${registro.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span>
-                            </div>
-                            <span style="font-weight: 600;">${registro.hora}</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
+            alert(historicoText);
+        }
+
+        function showHelp() {
+            alert(`📱 AJUDA - SISTEMA DE PONTO
+
+🎯 COMO USAR:
+• Toque em "Registrar Entrada" ao chegar
+• Toque em "Registrar Saída" ao sair
+• O sistema calcula horas automaticamente
+
+📊 ESTATÍSTICAS:
+• Entradas/Saídas: Quantidade do dia
+• Horas Trabalhadas: Tempo total
+• Intervalos: Quantidade de idas/vindas
+
+💡 DICAS:
+• Registre sempre entrada e saída
+• Verifique seus registros no histórico
+• Mantenha o app atualizado`);
         }
 
         function logout() {
             localStorage.removeItem('currentUser');
             window.location.href = 'index.html';
-        }
-
-        // Fechar modal ao clicar fora
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
-            }
         }
     </script>
 </body>
