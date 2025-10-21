@@ -21,23 +21,33 @@
             background: var(--bg-color); 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
+            min-height: 100vh;
         }
         
         .header {
             background: white;
-            padding: 20px;
+            padding: 15px 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
-        .logo { font-size: 24px; color: var(--text-color); font-weight: bold; }
+        .logo { 
+            font-size: clamp(18px, 4vw, 24px); 
+            color: var(--text-color); 
+            font-weight: bold; 
+        }
         
         .user-info { 
             display: flex; 
             align-items: center; 
-            gap: 15px; 
+            gap: 12px; 
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
         
         .user-avatar {
@@ -51,6 +61,7 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
+            flex-shrink: 0;
         }
         
         .user-avatar img {
@@ -62,16 +73,19 @@
         
         .nav-links {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .nav-link {
             color: var(--text-color);
             text-decoration: none;
-            padding: 8px 16px;
+            padding: 8px 12px;
             border-radius: 6px;
             transition: background 0.3s;
+            font-size: 14px;
+            white-space: nowrap;
         }
         
         .nav-link:hover {
@@ -83,27 +97,33 @@
             color: white;
         }
         
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+            width: 100%;
+        }
         
         .card {
             background: white;
-            padding: 25px;
+            padding: clamp(20px, 4vw, 25px);
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
         
         .btn {
-            padding: 12px 24px;
+            padding: 12px 20px;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: clamp(14px, 2vw, 16px);
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
             text-decoration: none;
             display: inline-block;
             text-align: center;
+            width: 100%;
         }
         
         .btn-primary { background: var(--primary-color); color: white; }
@@ -123,7 +143,7 @@
         .ponto-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
             margin: 20px 0;
         }
         
@@ -137,15 +157,23 @@
             align-items: center;
             padding: 15px;
             border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .registro-item:last-child {
             border-bottom: none;
         }
         
+        .registro-info {
+            flex: 1;
+            min-width: 200px;
+        }
+        
         .registro-info h4 {
             margin-bottom: 5px;
             color: var(--text-color);
+            font-size: 16px;
         }
         
         .registro-meta {
@@ -154,10 +182,11 @@
         }
         
         .registro-tipo {
-            padding: 5px 10px;
+            padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
+            white-space: nowrap;
         }
         
         .tipo-entrada { background: #e8f5e9; color: var(--success-color); }
@@ -216,7 +245,7 @@
         }
         
         .stat-number {
-            font-size: 24px;
+            font-size: clamp(20px, 4vw, 24px);
             font-weight: bold;
             color: var(--primary-color);
         }
@@ -227,25 +256,93 @@
             margin-top: 5px;
         }
         
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .mobile-nav {
+            display: none;
+            background: white;
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .mobile-nav.active {
+            display: block;
+        }
+        
+        /* Responsividade */
         @media (max-width: 768px) {
-            .ponto-buttons {
-                grid-template-columns: 1fr;
-            }
-            
             .header {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-            
-            .user-info {
-                flex-direction: column;
+                flex-wrap: wrap;
                 gap: 10px;
             }
             
             .nav-links {
-                flex-wrap: wrap;
+                display: none;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .user-info {
+                order: 3;
+                width: 100%;
                 justify-content: center;
+                margin-top: 10px;
+                display: none;
+            }
+            
+            .user-info.active {
+                display: flex;
+            }
+            
+            .ponto-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .registro-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .registro-info {
+                min-width: auto;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-nav {
+                display: none !important;
+            }
+            
+            .nav-links {
+                display: flex !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                padding: 10px 15px;
             }
         }
     </style>
@@ -253,15 +350,39 @@
 <body>
     <div class="header">
         <div class="logo">⏰ Sistema de Ponto</div>
-        <div class="user-info">
-            <div class="nav-links">
-                <a href="/dashboard" class="nav-link active">Dashboard</a>
-                <a href="/perfil" class="nav-link">Meu Perfil</a>
-            </div>
+        
+        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+        
+        <div class="nav-links" id="desktopNav">
+            <a href="/dashboard" class="nav-link active">Dashboard</a>
+            <a href="/perfil" class="nav-link">Meu Perfil</a>
+            <span id="adminLink" style="display: none;">
+                <a href="/admin" class="nav-link">👑 Administração</a>
+            </span>
+        </div>
+        
+        <div class="user-info" id="desktopUserInfo">
             <div class="user-avatar" onclick="window.location.href='/perfil'" id="userAvatar">
                 <!-- Avatar será carregado aqui -->
             </div>
-            <button class="btn btn-danger" onclick="logout()">Sair</button>
+            <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 8px 16px;">Sair</button>
+        </div>
+    </div>
+    
+    <!-- Menu Mobile -->
+    <div class="mobile-nav" id="mobileNav">
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="/dashboard" class="nav-link active">Dashboard</a>
+            <a href="/perfil" class="nav-link">Meu Perfil</a>
+            <span id="mobileAdminLink" style="display: none;">
+                <a href="/admin" class="nav-link">👑 Administração</a>
+            </span>
+        </div>
+        <div class="user-info" style="justify-content: center; margin-top: 15px;">
+            <div class="user-avatar" onclick="window.location.href='/perfil'" id="mobileUserAvatar">
+                <!-- Avatar será carregado aqui -->
+            </div>
+            <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 8px 16px;">Sair</button>
         </div>
     </div>
     
@@ -269,8 +390,8 @@
         <div id="alert" class="alert"></div>
         
         <div class="card">
-            <h2>Registrar Ponto</h2>
-            <p>Registre sua entrada ou saída:</p>
+            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Registrar Ponto</h2>
+            <p style="color: #666; margin-bottom: 15px;">Registre sua entrada ou saída:</p>
             
             <div class="ponto-buttons">
                 <button class="btn btn-success" onclick="registrarPonto('entrada')" id="btnEntrada">
@@ -299,8 +420,8 @@
         </div>
         
         <div class="card">
-            <h2>Meus Registros</h2>
-            <p>Histórico dos seus registros de ponto:</p>
+            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Meus Registros</h2>
+            <p style="color: #666; margin-bottom: 15px;">Histórico dos seus registros de ponto:</p>
             
             <div class="loading" id="loadingRegistros">
                 <div class="spinner"></div>
@@ -316,6 +437,15 @@
     <script>
         let currentUser = null;
         
+        // Menu mobile
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            const mobileNav = document.getElementById('mobileNav');
+            const userInfo = document.getElementById('desktopUserInfo');
+            
+            mobileNav.classList.toggle('active');
+            userInfo.classList.toggle('active');
+        });
+        
         // Verificar autenticação
         document.addEventListener('DOMContentLoaded', function() {
             const userData = localStorage.getItem('currentUser');
@@ -326,6 +456,13 @@
             }
             
             currentUser = JSON.parse(userData);
+            
+            // Se for admin, redirecionar para área administrativa
+            if (currentUser.isAdmin) {
+                window.location.href = '/admin';
+                return;
+            }
+            
             atualizarAvatar();
             carregarRegistros();
         });
@@ -333,12 +470,16 @@
         // Atualizar avatar no header
         function atualizarAvatar() {
             const avatarElement = document.getElementById('userAvatar');
+            const mobileAvatarElement = document.getElementById('mobileUserAvatar');
+            
             if (currentUser.avatar) {
                 avatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
+                mobileAvatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
             } else {
                 // Usar iniciais do nome
                 const iniciais = currentUser.nome.split(' ').map(n => n[0]).join('').toUpperCase();
                 avatarElement.textContent = iniciais.substring(0, 2);
+                mobileAvatarElement.textContent = iniciais.substring(0, 2);
             }
         }
         
