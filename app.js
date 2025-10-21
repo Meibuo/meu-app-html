@@ -149,13 +149,16 @@ const apiService = {
     },
 
     mockRegistroPonto(dados) {
-        return {
-            success: true,
-            message: 'Ponto registrado com sucesso',
-            horario: new Date().toLocaleTimeString('pt-BR'),
-            timestamp: new Date().getTime()
-        };
-    },
+    return {
+        success: true,
+        message: 'Ponto registrado com sucesso',
+        horario: new Date().toLocaleTimeString('pt-BR'),
+        timestamp: new Date().getTime(),
+        local: dados.local || '',
+        horas_extras: dados.horas_extras || false,
+        observacao: dados.observacao || ''
+    };
+},
 
     getMockNotificacoes() {
         return [

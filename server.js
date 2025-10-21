@@ -458,9 +458,18 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
     }
 });
 
+// Rota atualizada para registrar ponto
 app.post('/api/registrar-ponto', (req, res) => {
     try {
-        const { usuario_id, tipo } = req.body;
+        const { 
+            usuario_id, 
+            tipo, 
+            local, 
+            horas_extras, 
+            trabalho_sabado, 
+            observacao, 
+            manual 
+        } = req.body;
         
         if (!usuario_id || !tipo) {
             return res.status(400).json({ error: 'ID do usuário e tipo são obrigatórios' });
@@ -480,10 +489,19 @@ app.post('/api/registrar-ponto', (req, res) => {
             data: now.toISOString().split('T')[0],
             hora: now.toTimeString().split(' ')[0],
             timestamp: now.getTime(),
-            diaSemana: now.toLocaleDateString('pt-BR', { weekday: 'long' })
+            diaSemana: now.toLocaleDateString('pt-BR', { weekday: 'long' }),
+            // Novos campos
+            local: local || '',
+            horas_extras: horas_extras || false,
+            trabalho_sabado: trabalho_sabado || false,
+            observacao: observacao || '',
+            manual: manual || false
         };
         
         pontos.push(novoPonto);
+        
+        console.log(`📝 Ponto registrado: ${userExists.nome} - ${tipo} - ${local} - ${horas_extras ? 'Horas Extras' : ''}`);
+        
         res.json({ 
             success: true, 
             message: `Ponto ${tipo} registrado com sucesso!`,
@@ -495,6 +513,7 @@ app.post('/api/registrar-ponto', (req, res) => {
     }
 });
 
+// Rota para obter registros do usuário
 app.get('/api/registros/:usuario_id', (req, res) => {
     try {
         const { usuario_id } = req.params;
@@ -516,6 +535,36 @@ app.get('/api/registros/:usuario_id', (req, res) => {
         });
     } catch (error) {
         console.error('Erro ao buscar registros:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Nova rota para estatísticas de horas
+app.get('/api/estatisticas/:usuario_id', (req, res) => {
+    try {
+        const { usuario_id } = req.params;
+        const { mes, ano } = req.query;
+        
+        const registrosUsuario = pontos.filter(ponto => 
+            ponto.usuario_id === usuario_id
+        );
+        
+        // Calcular horas trabalhadas, extras, etc.
+        const estatisticas = {
+            total_registros: registrosUsuario.length,
+            registros_este_mes: registrosUsuario.filter(p => {
+                const data = new Date(p.timestamp);
+                return data.getMonth() === (parseInt(mes) - 1) && data.getFullYear() === parseInt(ano);
+            }).length,
+            horas_extras: registrosUsuario.filter(p => p.horas_extras).length
+        };
+        
+        res.json({ 
+            success: true,
+            estatisticas
+        });
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
@@ -580,4 +629,5 @@ app.listen(PORT, async () => {
     console.log(`📊 Status: http://localhost:${PORT}/api/status`);
     console.log(`👑 Admin: admin@admin.com / admin123`);
     console.log(`📋 Cargos disponíveis: ${CARGOS_DISPONIVEIS.join(', ')}`);
+    console.log(`⏰ Sistema de ponto automático ativado!`);
 });

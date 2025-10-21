@@ -191,6 +191,10 @@
         
         .tipo-entrada { background: #e8f5e9; color: var(--success-color); }
         .tipo-saida { background: #ffebee; color: var(--error-color); }
+        .tipo-entrada_almoco { background: #fff3e0; color: #ff9800; }
+        .tipo-saida_almoco { background: #fff3e0; color: #ff9800; }
+        .tipo-entrada_extra { background: #e3f2fd; color: #2196f3; }
+        .tipo-saida_extra { background: #f3e5f5; color: #9c27b0; }
         
         .alert {
             padding: 12px;
@@ -274,6 +278,73 @@
         
         .mobile-nav.active {
             display: block;
+        }
+        
+        /* Novos estilos para o sistema automático */
+        .local-selector {
+            margin: 15px 0;
+        }
+        
+        .local-selector select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .local-custom {
+            display: none;
+            margin-top: 10px;
+        }
+        
+        .local-custom input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .horario-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .horario-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .horario-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .extra-options {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
         }
         
         /* Responsividade */
@@ -390,15 +461,56 @@
         <div id="alert" class="alert"></div>
         
         <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Registrar Ponto</h2>
-            <p style="color: #666; margin-bottom: 15px;">Registre sua entrada ou saída:</p>
+            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Registro de Ponto Automático</h2>
+            
+            <div class="horario-info">
+                <h4 style="margin-bottom: 10px;">📅 Horários Padrão</h4>
+                <div class="horario-item">
+                    <span>Segunda a Quinta:</span>
+                    <span><strong>07:00 - 12:00 | 13:00 - 17:00</strong></span>
+                </div>
+                <div class="horario-item">
+                    <span>Sexta-feira:</span>
+                    <span><strong>07:00 - 12:00 | 13:00 - 16:00</strong></span>
+                </div>
+                <div class="horario-item">
+                    <span>Sábado/Domingo:</span>
+                    <span><strong>Folga (horas extras disponíveis)</strong></span>
+                </div>
+            </div>
+            
+            <div class="local-selector">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">📍 Local de Trabalho:</label>
+                <select id="localTrabalho" onchange="toggleCustomLocal()">
+                    <option value="">Selecione o local...</option>
+                    <option value="escritorio">Escritório Principal</option>
+                    <option value="home_office">Home Office</option>
+                    <option value="cliente">Visita a Cliente</option>
+                    <option value="outro">Outro Local</option>
+                </select>
+                
+                <div class="local-custom" id="customLocalContainer">
+                    <input type="text" id="customLocal" placeholder="Digite o local (ex: São Paulo, Centro)">
+                </div>
+            </div>
+            
+            <div class="extra-options">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="trabalhoSabado">
+                    <label for="trabalhoSabado">Trabalhando no Sábado</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="horasExtras">
+                    <label for="horasExtras">Horas Extras (após o horário regular)</label>
+                </div>
+            </div>
             
             <div class="ponto-buttons">
-                <button class="btn btn-success" onclick="registrarPonto('entrada')" id="btnEntrada">
-                    🟢 Entrada
+                <button class="btn btn-primary" onclick="registrarPontoAutomatico()" id="btnRegistrar">
+                    ⏰ Registrar Ponto Automático
                 </button>
-                <button class="btn btn-warning" onclick="registrarPonto('saida')" id="btnSaida">
-                    🔴 Saída
+                <button class="btn btn-warning" onclick="registrarPontoManual()" id="btnManual">
+                    ✏️ Registrar Ponto Manual
                 </button>
             </div>
             
@@ -416,6 +528,10 @@
             <div class="stat-card">
                 <div class="stat-number" id="registrosHoje">0</div>
                 <div class="stat-label">Registros Hoje</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="horasExtrasCount">0</div>
+                <div class="stat-label">Horas Extras</div>
             </div>
         </div>
         
@@ -465,7 +581,45 @@
             
             atualizarAvatar();
             carregarRegistros();
+            atualizarInterfaceHorario();
         });
+        
+        // Alternar campo de local personalizado
+        function toggleCustomLocal() {
+            const localSelect = document.getElementById('localTrabalho');
+            const customContainer = document.getElementById('customLocalContainer');
+            
+            if (localSelect.value === 'outro') {
+                customContainer.style.display = 'block';
+            } else {
+                customContainer.style.display = 'none';
+            }
+        }
+        
+        // Atualizar interface baseada no horário atual
+        function atualizarInterfaceHorario() {
+            const agora = new Date();
+            const diaSemana = agora.getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
+            const hora = agora.getHours();
+            const minutos = agora.getMinutes();
+            
+            const btnRegistrar = document.getElementById('btnRegistrar');
+            let textoBotao = '⏰ Registrar Ponto Automático';
+            
+            // Definir texto do botão baseado no horário
+            if (diaSemana === 0 || diaSemana === 6) { // Fim de semana
+                textoBotao = '🏠 Registrar Horas Extras (Fim de Semana)';
+            } else if (hora >= 12 && hora < 13) { // Horário de almoço
+                textoBotao = '🍽️ Registrar Saída para Almoço';
+            } else if ((diaSemana >= 1 && diaSemana <= 4 && hora >= 17) || 
+                      (diaSemana === 5 && hora >= 16)) { // Após horário regular
+                textoBotao = '🌙 Registrar Horas Extras';
+            } else if (hora >= 13) {
+                textoBotao = '↩️ Registrar Retorno do Almoço';
+            }
+            
+            btnRegistrar.textContent = textoBotao;
+        }
         
         // Atualizar avatar no header
         function atualizarAvatar() {
@@ -483,16 +637,145 @@
             }
         }
         
-        // Registrar ponto
-        async function registrarPonto(tipo) {
+        // Registrar ponto automático
+        async function registrarPontoAutomatico() {
             const loading = document.getElementById('loadingPonto');
-            const btnEntrada = document.getElementById('btnEntrada');
-            const btnSaida = document.getElementById('btnSaida');
+            const btnRegistrar = document.getElementById('btnRegistrar');
+            const btnManual = document.getElementById('btnManual');
+            
+            // Validar local
+            const localSelect = document.getElementById('localTrabalho');
+            const customLocal = document.getElementById('customLocal');
+            let local = localSelect.value;
+            
+            if (local === 'outro') {
+                local = customLocal.value.trim();
+                if (!local) {
+                    showAlert('Por favor, informe o local de trabalho.', 'error');
+                    return;
+                }
+            }
+            
+            if (!local) {
+                showAlert('Por favor, selecione o local de trabalho.', 'error');
+                return;
+            }
             
             // Desabilitar botões
-            btnEntrada.disabled = true;
-            btnSaida.disabled = true;
+            btnRegistrar.disabled = true;
+            btnManual.disabled = true;
             loading.style.display = 'block';
+            
+            try {
+                const agora = new Date();
+                const tipoPonto = calcularTipoPontoAutomatico(agora);
+                
+                const response = await fetch('/api/registrar-ponto', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        usuario_id: currentUser.id,
+                        tipo: tipoPonto.tipo,
+                        local: local,
+                        horas_extras: document.getElementById('horasExtras').checked,
+                        trabalho_sabado: document.getElementById('trabalhoSabado').checked,
+                        observacao: tipoPonto.observacao
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert(`Ponto registrado com sucesso! (${tipoPonto.tipo})`, 'success');
+                    carregarRegistros();
+                    
+                    // Resetar checkboxes
+                    document.getElementById('horasExtras').checked = false;
+                    document.getElementById('trabalhoSabado').checked = false;
+                    
+                } else {
+                    showAlert(data.error, 'error');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                showAlert('Erro de conexão. Tente novamente.', 'error');
+            } finally {
+                btnRegistrar.disabled = false;
+                btnManual.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Calcular tipo de ponto automático baseado no horário
+        function calcularTipoPontoAutomatico(data) {
+            const diaSemana = data.getDay();
+            const hora = data.getHours();
+            const minutos = data.getMinutes();
+            const horasExtras = document.getElementById('horasExtras').checked;
+            const trabalhaSabado = document.getElementById('trabalhoSabado').checked;
+            
+            let tipo = 'entrada';
+            let observacao = '';
+            
+            // Fim de semana
+            if (diaSemana === 0 || diaSemana === 6) {
+                if (trabalhaSabado && diaSemana === 6) {
+                    tipo = horasExtras ? 'entrada_extra' : 'entrada';
+                    observacao = 'Trabalho no sábado';
+                } else {
+                    tipo = 'entrada_extra';
+                    observacao = 'Horas extras - fim de semana';
+                }
+            }
+            // Dias úteis
+            else {
+                if (hora >= 12 && hora < 13) {
+                    tipo = 'saida_almoco';
+                    observacao = 'Saída para almoço';
+                } else if (hora >= 13 && hora < 14) {
+                    tipo = 'entrada_almoco';
+                    observacao = 'Retorno do almoço';
+                } else if ((diaSemana >= 1 && diaSemana <= 4 && hora >= 17) || 
+                          (diaSemana === 5 && hora >= 16)) {
+                    tipo = horasExtras ? 'saida_extra' : 'saida';
+                    observacao = horasExtras ? 'Saída com horas extras' : 'Saída regular';
+                } else {
+                    tipo = 'entrada';
+                    observacao = 'Entrada regular';
+                }
+            }
+            
+            return { tipo, observacao };
+        }
+        
+        // Registrar ponto manual (para situações especiais)
+        async function registrarPontoManual() {
+            const tipo = prompt('Digite o tipo de ponto (entrada, saida, entrada_almoco, saida_almoco, entrada_extra, saida_extra):');
+            
+            if (!tipo) return;
+            
+            const localSelect = document.getElementById('localTrabalho');
+            const customLocal = document.getElementById('customLocal');
+            let local = localSelect.value;
+            
+            if (local === 'outro') {
+                local = customLocal.value.trim();
+                if (!local) {
+                    showAlert('Por favor, informe o local de trabalho.', 'error');
+                    return;
+                }
+            }
+            
+            if (!local) {
+                showAlert('Por favor, selecione o local de trabalho.', 'error');
+                return;
+            }
+            
+            const observacao = prompt('Observação (opcional):') || '';
+            const horasExtras = confirm('São horas extras?');
+            const trabalhoSabado = confirm('É trabalho no sábado?');
             
             try {
                 const response = await fetch('/api/registrar-ponto', {
@@ -502,25 +785,26 @@
                     },
                     body: JSON.stringify({
                         usuario_id: currentUser.id,
-                        tipo: tipo
+                        tipo: tipo,
+                        local: local,
+                        horas_extras: horasExtras,
+                        trabalho_sabado: trabalhoSabado,
+                        observacao: observacao,
+                        manual: true
                     })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    showAlert(`Ponto de ${tipo} registrado com sucesso!`, 'success');
-                    carregarRegistros(); // Recarregar lista
+                    showAlert('Ponto manual registrado com sucesso!', 'success');
+                    carregarRegistros();
                 } else {
                     showAlert(data.error, 'error');
                 }
             } catch (error) {
                 console.error('Erro:', error);
                 showAlert('Erro de conexão. Tente novamente.', 'error');
-            } finally {
-                btnEntrada.disabled = false;
-                btnSaida.disabled = false;
-                loading.style.display = 'none';
             }
         }
         
@@ -548,16 +832,32 @@
                         `;
                     } else {
                         data.registros.forEach(registro => {
+                            const tipoDisplay = {
+                                'entrada': '🟢 Entrada',
+                                'saida': '🔴 Saída',
+                                'entrada_almoco': '🟡 Retorno Almoço',
+                                'saida_almoco': '🟠 Saída Almoço',
+                                'entrada_extra': '🔵 Entrada Extra',
+                                'saida_extra': '🟣 Saída Extra'
+                            }[registro.tipo] || registro.tipo;
+                            
+                            const tipoClass = registro.tipo.includes('entrada') ? 'entrada' : 
+                                            registro.tipo.includes('saida') ? 'saida' : registro.tipo;
+                            
                             const registroElement = document.createElement('div');
                             registroElement.className = 'registro-item';
                             registroElement.innerHTML = `
                                 <div class="registro-info">
-                                    <h4>Ponto de ${registro.tipo}</h4>
+                                    <h4>${tipoDisplay}</h4>
                                     <div class="registro-meta">
                                         ${registro.data} às ${registro.hora} - ${registro.diaSemana}
+                                        ${registro.local ? `<br>📍 ${registro.local}` : ''}
+                                        ${registro.observacao ? `<br>📝 ${registro.observacao}` : ''}
+                                        ${registro.horas_extras ? '<br>⚡ Horas Extras' : ''}
+                                        ${registro.manual ? '<br>✏️ Registro Manual' : ''}
                                     </div>
                                 </div>
-                                <div class="registro-tipo tipo-${registro.tipo}">
+                                <div class="registro-tipo tipo-${tipoClass}">
                                     ${registro.tipo.toUpperCase()}
                                 </div>
                             `;
@@ -579,9 +879,11 @@
         function atualizarEstatisticas(registros) {
             const hoje = new Date().toISOString().split('T')[0];
             const registrosHoje = registros.filter(r => r.data === hoje).length;
+            const horasExtrasCount = registros.filter(r => r.horas_extras).length;
             
             document.getElementById('totalRegistros').textContent = registros.length;
             document.getElementById('registrosHoje').textContent = registrosHoje;
+            document.getElementById('horasExtrasCount').textContent = horasExtrasCount;
         }
         
         // Mostrar alertas
