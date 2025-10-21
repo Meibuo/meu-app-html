@@ -10,13 +10,6 @@ const CONFIG = {
 // Estado da aplicação
 let currentUser = null;
 let registrosHoje = [];
-let userProfileData = {
-    nome: '',
-    email: '',
-    telefone: '(11) 99999-9999',
-    cargo: 'Analista',
-    foto: null
-};
 
 // Utilitários
 const utils = {
@@ -55,10 +48,12 @@ const utils = {
 const apiService = {
     async request(endpoint, options = {}) {
         const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+        const token = localStorage.getItem('authToken');
+        
         const config = {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${currentUser?.token}`
+                'Authorization': `Bearer ${token}`
             },
             timeout: CONFIG.REQUEST_TIMEOUT,
             ...options
@@ -75,6 +70,11 @@ const apiService = {
             
             clearTimeout(timeoutId);
 
+            if (response.status === 401) {
+                this.handleAuthError();
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -88,21 +88,20 @@ const apiService = {
         }
     },
 
+    handleAuthError() {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+        window.location.href = '/login.html';
+    },
+
     // Métodos específicos
     async getRegistrosHoje() {
-        if (utils.isDevelopment()) {
-            // Mock data para desenvolvimento
-            return this.getMockRegistros();
-        }
-        return this.request('/registros/hoje');
+        if (!currentUser) throw new Error('Usuário não autenticado');
+        return this.request(`/registros/${currentUser.id}`);
     },
 
     async registrarPonto(dados) {
-        if (utils.isDevelopment()) {
-            // Mock para desenvolvimento
-            return this.mockRegistroPonto(dados);
-        }
-        return this.request('/registros', {
+        return this.request('/registrar-ponto', {
             method: 'POST',
             body: JSON.stringify(dados)
         });
@@ -110,16 +109,9 @@ const apiService = {
 
     async alterarSenha(dados) {
         return this.request('/alterar-senha', {
-            method: 'POST',
+            method: 'PUT',
             body: JSON.stringify(dados)
         });
-    },
-
-    async getNotificacoes() {
-        if (utils.isDevelopment()) {
-            return this.getMockNotificacoes();
-        }
-        return this.request('/notificacoes');
     },
 
     // Mock data para desenvolvimento
@@ -131,58 +123,42 @@ const apiService = {
                     horario: '08:00', 
                     data: new Date().toISOString(),
                     timestamp: new Date().setHours(8, 0, 0)
-                },
-                { 
-                    tipo: 'saida', 
-                    horario: '12:00', 
-                    data: new Date().toISOString(),
-                    timestamp: new Date().setHours(12, 0, 0)
-                },
-                { 
-                    tipo: 'entrada', 
-                    horario: '13:00', 
-                    data: new Date().toISOString(),
-                    timestamp: new Date().setHours(13, 0, 0)
                 }
             ]
         };
-    },
-
-    mockRegistroPonto(dados) {
-    return {
-        success: true,
-        message: 'Ponto registrado com sucesso',
-        horario: new Date().toLocaleTimeString('pt-BR'),
-        timestamp: new Date().getTime(),
-        local: dados.local || '',
-        horas_extras: dados.horas_extras || false,
-        observacao: dados.observacao || ''
-    };
-},
-
-    getMockNotificacoes() {
-        return [
-            {
-                id: 1,
-                titulo: 'Bem-vindo ao sistema',
-                mensagem: 'Seu cadastro foi ativado com sucesso',
-                lida: false,
-                data: new Date().toISOString()
-            }
-        ];
     }
 };
 
 // Sistema de Notificações UI
 const notificationManager = {
     show(message, type = 'success', duration = 5000) {
-        const alert = document.getElementById(`${type}Alert`);
-        const textElement = document.getElementById(`${type}Text`);
-        
-        if (!alert || !textElement) return;
+        // Criar elemento de alerta dinâmico se não existir
+        let alert = document.getElementById('dynamicAlert');
+        if (!alert) {
+            alert = document.createElement('div');
+            alert.id = 'dynamicAlert';
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                z-index: 10000;
+                max-width: 300px;
+            `;
+            document.body.appendChild(alert);
+        }
 
-        textElement.textContent = message;
-        alert.style.display = 'flex';
+        const colors = {
+            success: '#2ecc71',
+            error: '#e74c3c',
+            warning: '#f39c12'
+        };
+
+        alert.textContent = message;
+        alert.style.background = colors[type] || colors.success;
+        alert.style.display = 'block';
 
         setTimeout(() => {
             alert.style.display = 'none';
@@ -195,16 +171,6 @@ const notificationManager = {
 
     showError(message) {
         this.show(message, 'error');
-    },
-
-    showLoading(message = 'Carregando...') {
-        // Implementar overlay de loading se necessário
-        console.log('Loading:', message);
-    },
-
-    hideLoading() {
-        // Esconder overlay de loading
-        console.log('Loading complete');
     }
 };
 
@@ -215,9 +181,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
         console.error('Falha na inicialização:', error);
         notificationManager.showError('Erro ao carregar aplicação');
-        setTimeout(() => {
-            window.location.href = '/login';
-        }, 3000);
     }
 });
 
@@ -233,17 +196,17 @@ async function initializeApp() {
     // Iniciar serviços
     startClock();
     await loadDashboard();
-    await checkNotifications();
 
     // Configurar event listeners
     setupEventListeners();
 }
 
 async function checkAuthentication() {
-    const userData = sessionStorage.getItem('currentUser');
+    const userData = localStorage.getItem('currentUser');
+    const token = localStorage.getItem('authToken');
     
-    if (!userData) {
-        window.location.href = '/login';
+    if (!userData || !token) {
+        window.location.href = '/login.html';
         return false;
     }
     
@@ -255,113 +218,103 @@ async function checkAuthentication() {
             throw new Error('Dados de usuário inválidos');
         }
         
-        await loadUserProfile();
         return true;
         
     } catch (error) {
         console.error('Erro na autenticação:', error);
-        sessionStorage.removeItem('currentUser');
-        window.location.href = '/login';
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+        window.location.href = '/login.html';
         return false;
     }
 }
 
-async function loadUserProfile() {
-    try {
-        // Tentar carregar do localStorage primeiro
-        const savedProfile = localStorage.getItem('userProfile');
-        if (savedProfile) {
-            userProfileData = { ...userProfileData, ...JSON.parse(savedProfile) };
-        }
+function updateUserInterface() {
+    // Atualizar elementos da UI com dados do usuário
+    const userNameElements = document.querySelectorAll('[data-user-name]');
+    userNameElements.forEach(el => {
+        el.textContent = currentUser.nome;
+    });
 
-        // Atualizar com dados do usuário atual
-        userProfileData.nome = currentUser.nome;
-        userProfileData.email = currentUser.email;
-        userProfileData.foto = localStorage.getItem('userPhoto');
+    const userRoleElements = document.querySelectorAll('[data-user-role]');
+    userRoleElements.forEach(el => {
+        el.textContent = currentUser.cargo || 'Funcionário';
+    });
+}
 
-        // Salvar perfil atualizado
-        localStorage.setItem('userProfile', JSON.stringify(userProfileData));
+function startClock() {
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('pt-BR');
+        const dateString = now.toLocaleDateString('pt-BR', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
         
+        const clockElements = document.querySelectorAll('[data-clock]');
+        clockElements.forEach(el => {
+            el.textContent = timeString;
+        });
+        
+        const dateElements = document.querySelectorAll('[data-date]');
+        dateElements.forEach(el => {
+            el.textContent = dateString;
+        });
+    }
+    
+    updateClock();
+    setInterval(updateClock, 1000);
+}
+
+async function loadDashboard() {
+    try {
+        const data = await apiService.getRegistrosHoje();
+        if (data.success) {
+            registrosHoje = data.registros;
+            updateRegistrosList();
+        }
     } catch (error) {
-        console.error('Erro ao carregar perfil:', error);
-        // Usar dados básicos como fallback
-        userProfileData.nome = currentUser.nome;
-        userProfileData.email = currentUser.email || 'usuario@empresa.com';
+        console.error('Erro ao carregar dashboard:', error);
     }
 }
 
-// ... (restante das funções mantidas, mas usando a nova estrutura)
-
-// Funções de Geolocalização (atualizadas)
-async function checkLocationPermission() {
-    if (!('geolocation' in navigator)) {
-        notificationManager.showError('Geolocalização não suportada neste dispositivo');
-        return false;
-    }
-
-    return new Promise((resolve) => {
-        navigator.geolocation.getCurrentPosition(
-            () => resolve(true),
-            (error) => {
-                console.warn('Permissão de localização negada:', error);
-                notificationManager.showError(
-                    'Permissão de localização é necessária para registrar ponto. ' +
-                    'Por favor, habilite a localização nas configurações do seu navegador.'
-                );
-                resolve(false);
-            },
-            { 
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 60000
-            }
-        );
-    });
+function updateRegistrosList() {
+    // Implementar atualização da lista de registros
+    console.log('Registros atualizados:', registrosHoje);
 }
 
-async function getCurrentLocation() {
-    return new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-            (position) => resolve({
-                latitude: position.coords.latitude,
-                longitude: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                timestamp: position.timestamp
-            }),
-            (error) => reject(error),
-            { 
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 300000 // 5 minutos
-            }
-        );
-    });
-}
-
-// Setup de Event Listeners
 function setupEventListeners() {
     // Fechar modal ao clicar fora
     window.addEventListener('click', (event) => {
-        const modal = document.getElementById('profileModal');
-        if (event.target === modal) {
-            closeProfileModal();
-        }
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     });
 
     // Teclas de atalho
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            closeProfileModal();
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.style.display = 'none';
+            });
         }
-    });
-
-    // Prevenir submit de formulários
-    document.addEventListener('submit', (e) => {
-        e.preventDefault();
     });
 }
 
-// Exportar para uso global (se necessário)
+// Funções globais
+function logout() {
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('authToken');
+    window.location.href = '/login.html';
+}
+
+// Exportar para uso global
 window.app = {
     utils,
     apiService,

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Ponto</title>
+    <title>Sistema de Ponto Eletrônico - Login</title>
     <style>
         :root {
             --primary-color: #3498db;
@@ -29,7 +29,23 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; width: 100%; 
         }
         
-        .logo { font-size: 24px; color: var(--text-color); margin-bottom: 20px; text-align: center; }
+        .logo { 
+            font-size: 28px; 
+            color: var(--text-color); 
+            margin-bottom: 10px; 
+            text-align: center; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
         
         .form-group { margin-bottom: 20px; }
         
@@ -85,14 +101,18 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo">⏰ Login - Sistema de Ponto</div>
+        <div class="logo">
+            <span>⏰</span>
+            Sistema de Ponto
+        </div>
+        <p class="subtitle">Controle seus horários de trabalho</p>
         
         <div id="alert" class="alert"></div>
         
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" required autofocus>
             </div>
             
             <div class="form-group">
@@ -105,12 +125,11 @@
                 <span>Entrando...</span>
             </div>
             
-            <button type="submit" class="btn" id="submitBtn">Entrar</button>
+            <button type="submit" class="btn" id="submitBtn">Entrar no Sistema</button>
         </form>
         
         <div class="links">
-            <a href="/">← Voltar para a página inicial</a> | 
-            <a href="/cadastro">Criar conta</a>
+            <a href="/cadastro">Primeiro acesso? Criar conta</a>
         </div>
     </div>
 
@@ -144,16 +163,20 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Login bem-sucedido
                     showAlert('Login realizado com sucesso! Redirecionando...', 'success');
                     
-                    // Salvar usuário no localStorage
+                    // Salvar usuário e token
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    localStorage.setItem('authToken', data.token);
                     
                     // Redirecionar para dashboard
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1500);
+                        if (data.user.isAdmin) {
+                            window.location.href = '/admin.html';
+                        } else {
+                            window.location.href = '/dashboard.html';
+                        }
+                    }, 1000);
                 } else {
                     showAlert(data.error, 'error');
                 }
@@ -177,7 +200,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             const currentUser = localStorage.getItem('currentUser');
             if (currentUser) {
-                window.location.href = '/dashboard';
+                const user = JSON.parse(currentUser);
+                if (user.isAdmin) {
+                    window.location.href = '/admin.html';
+                } else {
+                    window.location.href = '/dashboard.html';
+                }
             }
         });
     </script>
