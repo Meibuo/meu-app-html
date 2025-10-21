@@ -20,6 +20,8 @@
         .alert-success { background: #e8f5e8; color: #2e7d32; border: 1px solid #c8e6c9; }
         .link { text-align: center; margin-top: 20px; }
         .link a { color: #3498db; text-decoration: none; }
+        .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid #ffffff; border-radius: 50%; border-top-color: transparent; animation: spin 1s linear infinite; margin-right: 8px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -50,7 +52,9 @@
                 <input type="password" id="confirmPassword" placeholder="Digite a senha novamente" required>
             </div>
             
-            <button type="submit" class="btn" id="submitBtn">Criar Conta</button>
+            <button type="submit" class="btn" id="submitBtn">
+                <span id="btnText">Criar Conta</span>
+            </button>
         </form>
         
         <div class="link">
@@ -68,6 +72,7 @@
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
             
             hideAlerts();
             
@@ -88,7 +93,7 @@
             }
             
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Criando conta...';
+            btnText.innerHTML = '<div class="loading"></div>Criando conta...';
             
             try {
                 const response = await fetch('/api/cadastro', {
@@ -104,18 +109,24 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showSuccess('Conta criada com sucesso! Redirecionando...');
+                    showSuccess('Conta criada com sucesso! Redirecionando para login...');
                     document.getElementById('cadastroForm').reset();
-                    setTimeout(() => window.location.href = '/login', 2000);
+                    
+                    // REDIRECIONAMENTO CORRIGIDO - URL ABSOLUTA
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                    
                 } else {
                     showError(data.error);
                 }
                 
             } catch (error) {
+                console.error('Erro:', error);
                 showError('Erro de conexão com o servidor');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Criar Conta';
+                btnText.textContent = 'Criar Conta';
             }
         });
         
@@ -135,6 +146,10 @@
             document.getElementById('errorAlert').style.display = 'none';
             document.getElementById('successAlert').style.display = 'none';
         }
+
+        // Debug
+        console.log('Página de cadastro carregada');
+        console.log('URL atual:', window.location.href);
     </script>
 </body>
 </html>
