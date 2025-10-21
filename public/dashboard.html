@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Pontos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background-color: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .logout-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .ponto-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .ponto-btn {
+            padding: 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .entrada-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .entrada-btn:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .saida-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .saida-btn:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn-icon {
+            font-size: 24px;
+        }
+
+        .registros-list {
+            margin-top: 20px;
+        }
+
+        .registro-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .registro-item:last-child {
+            border-bottom: none;
+        }
+
+        .registro-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .registro-tipo {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .registro-entrada {
+            color: #2ecc71;
+        }
+
+        .registro-saida {
+            color: #e74c3c;
+        }
+
+        .registro-data {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .registro-hora {
+            font-weight: 600;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 40px;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-card.entrada {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .stat-card.saida {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .ponto-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+
+        .success-message {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #c8e6c9;
+        }
+
+        .success-message i {
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div>
+                    <h2 id="userEmail">Usuário</h2>
+                    <p id="currentDate">Carregando...</p>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+        </div>
+
+        <div class="success-message" id="successMessage">
+            <i class="fas fa-check-circle"></i>
+            <span id="successText"></span>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card entrada">
+                <div class="stat-number" id="totalEntradas">0</div>
+                <div class="stat-label">Entradas Hoje</div>
+            </div>
+            <div class="stat-card saida">
+                <div class="stat-number" id="totalSaidas">0</div>
+                <div class="stat-label">Saídas Hoje</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Registrar Ponto</h2>
+            <div class="ponto-buttons">
+                <button class="ponto-btn entrada-btn" onclick="registrarPonto('entrada')">
+                    <i class="fas fa-sign-in-alt btn-icon"></i>
+                    Entrada
+                </button>
+                <button class="ponto-btn saida-btn" onclick="registrarPonto('saida')">
+                    <i class="fas fa-sign-out-alt btn-icon"></i>
+                    Saída
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card-title">Registros de Hoje</h2>
+            <div class="registros-list" id="registrosList">
+                <div class="empty-state">
+                    <i class="fas fa-clock"></i>
+                    <p>Nenhum registro encontrado para hoje</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar se usuário está logado
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                alert('Você precisa fazer login primeiro!');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Configurar informações do usuário
+            document.getElementById('userEmail').textContent = currentUser.email;
+            document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+            
+            // Atualizar data atual
+            updateCurrentDate();
+            
+            // Carregar registros
+            loadRegistros();
+        });
+
+        function updateCurrentDate() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('currentDate').textContent = 
+                now.toLocaleDateString('pt-BR', options);
+        }
+
+        function registrarPonto(tipo) {
+            const now = new Date();
+            const registro = {
+                tipo: tipo,
+                data: now.toISOString().split('T')[0],
+                hora: now.toTimeString().split(' ')[0],
+                timestamp: now.getTime()
+            };
+
+            // Salvar no localStorage
+            const registros = JSON.parse(localStorage.getItem('pontos') || '[]');
+            registros.push(registro);
+            localStorage.setItem('pontos', JSON.stringify(registros));
+
+            // Mostrar mensagem de sucesso
+            showSuccess(`Ponto de ${tipo === 'entrada' ? 'entrada' : 'saída'} registrado com sucesso!`);
+            
+            // Atualizar a lista
+            loadRegistros();
+        }
+
+        function loadRegistros() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const registros = JSON.parse(localStorage.getItem('pontos') || '[]');
+            const registrosHoje = registros.filter(r => r.data === hoje);
+            
+            // Atualizar estatísticas
+            document.getElementById('totalEntradas').textContent = 
+                registrosHoje.filter(r => r.tipo === 'entrada').length;
+            document.getElementById('totalSaidas').textContent = 
+                registrosHoje.filter(r => r.tipo === 'saida').length;
+            
+            // Atualizar lista
+            const registrosList = document.getElementById('registrosList');
+            
+            if (registrosHoje.length === 0) {
+                registrosList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clock"></i>
+                        <p>Nenhum registro encontrado para hoje</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Ordenar por timestamp (mais recente primeiro)
+            registrosHoje.sort((a, b) => b.timestamp - a.timestamp);
+            
+            registrosList.innerHTML = registrosHoje.map(registro => `
+                <div class="registro-item">
+                    <div class="registro-info">
+                        <span class="registro-tipo ${registro.tipo === 'entrada' ? 'registro-entrada' : 'registro-saida'}">
+                            ${registro.tipo === 'entrada' ? '🟢 Entrada' : '🔴 Saída'}
+                        </span>
+                        <span class="registro-data">${formatarData(registro.data)}</span>
+                    </div>
+                    <div class="registro-hora">${registro.hora}</div>
+                </div>
+            `).join('');
+        }
+
+        function formatarData(data) {
+            const [ano, mes, dia] = data.split('-');
+            return `${dia}/${mes}/${ano}`;
+        }
+
+        function showSuccess(message) {
+            const successElement = document.getElementById('successMessage');
+            document.getElementById('successText').textContent = message;
+            successElement.style.display = 'flex';
+            
+            // Ocultar mensagem após 3 segundos
+            setTimeout(() => {
+                successElement.style.display = 'none';
+            }, 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+
+        // Atualizar a cada minuto
+        setInterval(updateCurrentDate, 60000);
+    </script>
+</body>
+</html>
