@@ -464,6 +464,65 @@
             .menu-item.active {
                 transform: none;
             }
+            
+            /* Melhorias para mobile */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 85%;
+                max-width: 320px;
+                height: 100vh;
+                z-index: 1000;
+                overflow-y: auto;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+                padding: 20px;
+            }
+            
+            .sidebar.active {
+                left: 0;
+            }
+            
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            
+            .overlay.active {
+                display: block;
+            }
+            
+            .profile-menu-btn {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                padding: 15px;
+                background: white;
+                border: none;
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                margin-bottom: 20px;
+            }
+            
+            .profile-menu-btn span:last-child {
+                font-size: 20px;
+                transition: transform 0.3s;
+            }
+            
+            .profile-menu-btn.active span:last-child {
+                transform: rotate(180deg);
+            }
         }
         
         @media (min-width: 769px) {
@@ -473,6 +532,10 @@
             
             .nav-links {
                 display: flex !important;
+            }
+            
+            .profile-menu-btn, .overlay {
+                display: none !important;
             }
         }
         
@@ -606,7 +669,13 @@
     <div class="container">
         <div id="alert" class="alert"></div>
         
-        <div class="sidebar">
+        <!-- Botão para abrir menu no mobile -->
+        <button class="profile-menu-btn" id="profileMenuBtn">
+            <span>Menu do Perfil</span>
+            <span>▼</span>
+        </button>
+        
+        <div class="sidebar" id="sidebar">
             <div class="profile-header">
                 <div class="profile-avatar" id="profileAvatar">
                     <!-- Avatar grande será carregado aqui -->
@@ -655,6 +724,9 @@
                 </li>
             </ul>
         </div>
+        
+        <!-- Overlay para fechar menu no mobile -->
+        <div class="overlay" id="overlay"></div>
         
         <div class="main-content">
             <!-- Seção: Dados Pessoais -->
@@ -786,6 +858,28 @@
             
             mobileNav.classList.toggle('active');
             userInfo.classList.toggle('active');
+        });
+        
+        // Menu do perfil no mobile
+        document.getElementById('profileMenuBtn').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const profileMenuBtn = document.getElementById('profileMenuBtn');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+            profileMenuBtn.classList.toggle('active');
+        });
+        
+        // Fechar menu ao clicar no overlay
+        document.getElementById('overlay').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const profileMenuBtn = document.getElementById('profileMenuBtn');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            profileMenuBtn.classList.remove('active');
         });
         
         // Verificar autenticação
@@ -948,6 +1042,17 @@
             
             // Ativar item do menu correspondente
             event.target.closest('.menu-item').classList.add('active');
+            
+            // Fechar menu no mobile após selecionar uma opção
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                const profileMenuBtn = document.getElementById('profileMenuBtn');
+                
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+                profileMenuBtn.classList.remove('active');
+            }
         }
         
         // Formatação do telefone
@@ -968,96 +1073,92 @@
             e.target.value = value;
         });
         
-        // Atualizar perfil
+        // Envio do formulário de perfil
         document.getElementById('perfilForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            if (currentUser.perfilEditado && !currentUser.isAdmin) {
-                showAlert('Perfil já foi editado. Para novas alterações, entre em contato com o administrador.', 'warning');
-                return;
-            }
-            
             const submitBtn = document.getElementById('submitPerfilBtn');
             const loading = document.getElementById('loadingPerfil');
-            const alert = document.getElementById('alert');
             
             submitBtn.disabled = true;
             loading.style.display = 'block';
-            alert.style.display = 'none';
             
-            const formData = {
-                usuario_id: currentUser.id,
-                nome: document.getElementById('editNome').value,
-                telefone: document.getElementById('editTelefone').value
-            };
+            const formData = new FormData(this);
+            formData.append('usuario_id', currentUser.id);
             
             try {
-                const response = await fetch('/api/perfil', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
+                const response = await fetch('/api/atualizar-perfil', {
+                    method: 'POST',
+                    body: formData
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    showAlert('Perfil atualizado com sucesso!', 'success');
+                    // Atualizar dados do usuário
+                    currentUser.nome = document.getElementById('editNome').value;
+                    currentUser.telefone = document.getElementById('editTelefone').value;
+                    currentUser.perfilEditado = true;
                     
-                    // Atualizar dados locais
-                    currentUser = { ...currentUser, ...data.user };
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     carregarDadosPerfil();
-                    atualizarAvatar();
+                    
+                    showAlert('Perfil atualizado com sucesso!', 'success');
+                    
+                    // Desabilitar edição se não for admin
+                    if (!currentUser.isAdmin) {
+                        document.getElementById('perfilWarning').style.display = 'block';
+                        document.getElementById('editNome').readOnly = true;
+                        document.getElementById('editTelefone').readOnly = true;
+                        submitBtn.disabled = true;
+                    }
                 } else {
                     showAlert(data.error, 'error');
                 }
             } catch (error) {
                 console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
+                showAlert('Erro ao atualizar perfil.', 'error');
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
             }
         });
         
-        // Alterar senha
+        // Envio do formulário de senha
         document.getElementById('senhaForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const submitBtn = document.getElementById('submitSenhaBtn');
             const loading = document.getElementById('loadingSenha');
-            const alert = document.getElementById('alert');
             
             const senhaAtual = document.getElementById('senhaAtual').value;
             const novaSenha = document.getElementById('novaSenha').value;
             const confirmarNovaSenha = document.getElementById('confirmarNovaSenha').value;
             
+            // Validações
             if (novaSenha !== confirmarNovaSenha) {
-                showAlert('As novas senhas não coincidem', 'error');
+                showAlert('As senhas não coincidem.', 'error');
                 return;
             }
             
             if (novaSenha.length < 6) {
-                showAlert('A nova senha deve ter pelo menos 6 caracteres', 'error');
+                showAlert('A nova senha deve ter pelo menos 6 caracteres.', 'error');
                 return;
             }
             
             submitBtn.disabled = true;
             loading.style.display = 'block';
-            alert.style.display = 'none';
             
             try {
                 const response = await fetch('/api/alterar-senha', {
-                    method: 'PUT',
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         usuario_id: currentUser.id,
-                        senhaAtual: senhaAtual,
-                        novaSenha: novaSenha
+                        senha_atual: senhaAtual,
+                        nova_senha: novaSenha
                     })
                 });
                 
@@ -1071,21 +1172,20 @@
                 }
             } catch (error) {
                 console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
+                showAlert('Erro ao alterar senha.', 'error');
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
             }
         });
         
-        // Mostrar alertas
+        // Função para exibir alertas
         function showAlert(message, type) {
             const alert = document.getElementById('alert');
             alert.textContent = message;
             alert.className = `alert alert-${type}`;
             alert.style.display = 'block';
             
-            // Auto-esconder após 5 segundos
             setTimeout(() => {
                 alert.style.display = 'none';
             }, 5000);
@@ -1094,7 +1194,7 @@
         // Logout
         function logout() {
             localStorage.removeItem('currentUser');
-            window.location.href = '/';
+            window.location.href = '/login';
         }
     </script>
 </body>
