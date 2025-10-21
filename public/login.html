@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar Conta</title>
+    <title>Fazer Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -127,21 +127,21 @@
             box-shadow: none;
         }
 
-        .login-link {
+        .register-link {
             text-align: center;
             margin-top: 20px;
             color: #7f8c8d;
             font-size: 14px;
         }
 
-        .login-link a {
+        .register-link a {
             color: #3498db;
             text-decoration: none;
             font-weight: 500;
             transition: color 0.3s;
         }
 
-        .login-link a:hover {
+        .register-link a:hover {
             text-decoration: underline;
             color: #2980b9;
         }
@@ -210,7 +210,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo">Criar Conta</div>
+        <div class="logo">Fazer Login</div>
         
         <div class="social-icons">
             <i class="fab fa-whatsapp"></i>
@@ -230,7 +230,7 @@
             <span id="successText"></span>
         </div>
         
-        <form id="cadastroForm">
+        <form id="loginForm">
             <div class="form-group">
                 <label for="email">E-mail</label>
                 <input type="email" id="email" placeholder="seu@email.com" required>
@@ -238,46 +238,35 @@
             
             <div class="form-group">
                 <label for="password">Senha</label>
-                <input type="password" id="password" placeholder="**********" required minlength="6">
-            </div>
-            
-            <div class="form-group">
-                <label for="confirm-password">Confirmar Senha</label>
-                <input type="password" id="confirm-password" placeholder="**********" required>
+                <input type="password" id="password" placeholder="**********" required>
             </div>
             
             <button type="submit" class="btn" id="submitBtn">
-                <span id="btnText">Criar Conta</span>
+                <span id="btnText">Entrar</span>
             </button>
         </form>
         
-        <div class="login-link">
-            Já tem conta? <a href="login.html">Faça login aqui</a>
+        <div class="register-link">
+            Não tem conta? <a href="cadastro.html">Crie uma conta aqui</a>
         </div>
     </div>
 
     <script>
-        // Sistema de cadastro funcional
-        document.getElementById('cadastroForm').addEventListener('submit', async function(e) {
+        // Sistema de login funcional
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
             const submitBtn = document.getElementById('submitBtn');
             const btnText = document.getElementById('btnText');
             
             // Limpar mensagens
             hideMessages();
             
-            // Validações
-            if (password !== confirmPassword) {
-                showError('As senhas não coincidem');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showError('A senha deve ter pelo menos 6 caracteres');
+            // Validações básicas
+            if (!email || !password) {
+                showError('Por favor, preencha todos os campos');
                 return;
             }
             
@@ -288,38 +277,30 @@
             
             // Mostrar loading
             submitBtn.disabled = true;
-            btnText.innerHTML = '<div class="loading"></div>Criando conta...';
+            btnText.innerHTML = '<div class="loading"></div>Entrando...';
             
             try {
                 // Simular delay de rede
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 
-                // Verificar se o usuário já existe
+                // Buscar usuários do localStorage
                 const users = JSON.parse(localStorage.getItem('users') || '[]');
-                const userExists = users.find(user => user.email === email);
+                const user = users.find(user => user.email === email && user.password === password);
                 
-                if (userExists) {
-                    showError('Este e-mail já está cadastrado');
+                if (!user) {
+                    showError('E-mail ou senha incorretos');
                     return;
                 }
                 
-                // Criar novo usuário
-                const newUser = {
-                    email: email,
-                    password: password,
-                    createdAt: new Date().toISOString()
-                };
+                // Login bem-sucedido
+                showSuccess('Login realizado com sucesso!');
                 
-                users.push(newUser);
-                localStorage.setItem('users', JSON.stringify(users));
+                // Salvar usuário logado na sessão
+                localStorage.setItem('currentUser', JSON.stringify(user));
                 
-                // Sucesso
-                showSuccess('Conta criada com sucesso!');
-                document.getElementById('cadastroForm').reset();
-                
-                // Redirecionar para login após 2 segundos
+                // Redirecionar para página principal após 2 segundos
                 setTimeout(() => {
-                    window.location.href = 'login.html';
+                    window.location.href = 'dashboard.html';
                 }, 2000);
                 
             } catch (error) {
@@ -327,7 +308,7 @@
             } finally {
                 // Restaurar botão
                 submitBtn.disabled = false;
-                btnText.textContent = 'Criar Conta';
+                btnText.textContent = 'Entrar';
             }
         });
         
