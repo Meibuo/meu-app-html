@@ -259,7 +259,7 @@
             <div class="user-info">
                 <div class="user-avatar" id="userAvatar">U</div>
                 <div>
-                    <h2 id="userEmail">Usuário</h2>
+                    <h2 id="userName">Usuário</h2>
                     <p id="currentDate">Carregando...</p>
                 </div>
             </div>
@@ -321,8 +321,8 @@
             }
 
             // Configurar informações do usuário
-            document.getElementById('userEmail').textContent = currentUser.email;
-            document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+            document.getElementById('userName').textContent = currentUser.nome;
+            document.getElementById('userAvatar').textContent = currentUser.nome.charAt(0).toUpperCase();
             
             // Atualizar data atual
             updateCurrentDate();
@@ -422,7 +422,7 @@
 
         function logout() {
             localStorage.removeItem('currentUser');
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         }
 
         // Atualizar a cada minuto
