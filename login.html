@@ -5,20 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Ponto Eletrônico - Login</title>
     <style>
-        :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
-            --error-color: #e74c3c;
-            --success-color: #2ecc71;
-            --text-color: #2c3e50;
-            --gradient-start: #667eea;
-            --gradient-end: #764ba2;
-        }
-        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body { 
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end)); 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
             display: flex; justify-content: center; align-items: center; 
             min-height: 100vh; padding: 20px; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -30,65 +20,52 @@
         }
         
         .logo { 
-            font-size: 28px; 
-            color: var(--text-color); 
-            margin-bottom: 10px; 
-            text-align: center; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            font-size: 28px; color: #2c3e50; margin-bottom: 10px; 
+            text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px;
         }
         
         .subtitle {
-            color: #7f8c8d;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 16px;
+            color: #7f8c8d; text-align: center; margin-bottom: 30px; font-size: 16px;
         }
         
         .form-group { margin-bottom: 20px; }
         
-        label { display: block; margin-bottom: 5px; color: var(--text-color); font-weight: 500; }
+        label { display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 500; }
         
         input { 
             width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; 
             font-size: 16px; transition: border-color 0.3s; 
         }
         
-        input:focus { border-color: var(--primary-color); outline: none; }
+        input:focus { border-color: #3498db; outline: none; }
         
         .btn { 
-            width: 100%; padding: 15px; background: var(--primary-color); color: white; 
+            width: 100%; padding: 15px; background: #3498db; color: white; 
             border: none; border-radius: 8px; font-size: 16px; font-weight: bold; 
-            cursor: pointer; transition: background 0.3s; 
+            cursor: pointer; transition: background 0.3s; margin-top: 10px;
         }
         
-        .btn:hover { background: var(--primary-dark); }
+        .btn:hover { background: #2980b9; }
         
         .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
         
         .links { text-align: center; margin-top: 20px; }
         
-        .links a { color: var(--primary-color); text-decoration: none; }
+        .links a { color: #3498db; text-decoration: none; }
         
         .links a:hover { text-decoration: underline; }
         
         .alert { 
-            padding: 12px; border-radius: 8px; margin-bottom: 20px; 
-            display: none; 
+            padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; 
         }
         
-        .alert-error { background: #ffeaea; color: var(--error-color); border: 1px solid #ffcdd2; }
+        .alert-error { background: #ffeaea; color: #e74c3c; border: 1px solid #ffcdd2; }
+        .alert-success { background: #e8f5e9; color: #2ecc71; border: 1px solid #c8e6c9; }
         
-        .alert-success { background: #e8f5e9; color: var(--success-color); border: 1px solid #c8e6c9; }
-        
-        .loading { 
-            display: none; text-align: center; margin: 10px 0; 
-        }
+        .loading { display: none; text-align: center; margin: 10px 0; }
         
         .spinner { 
-            border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-color); 
+            border: 3px solid #f3f3f3; border-top: 3px solid #3498db; 
             border-radius: 50%; width: 20px; height: 20px; 
             animation: spin 1s linear infinite; display: inline-block; 
         }
@@ -96,6 +73,11 @@
         @keyframes spin { 
             0% { transform: rotate(0deg); } 
             100% { transform: rotate(360deg); } 
+        }
+
+        .test-credentials {
+            margin-top: 20px; padding: 15px; background: #f8f9fa; 
+            border-radius: 8px; font-size: 12px; color: #666; border-left: 4px solid #3498db;
         }
     </style>
 </head>
@@ -112,12 +94,12 @@
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" required autofocus placeholder="seu@email.com">
+                <input type="email" id="email" name="email" required autofocus placeholder="admin@admin.com">
             </div>
             
             <div class="form-group">
                 <label for="senha">Senha:</label>
-                <input type="password" id="senha" name="senha" required placeholder="Sua senha">
+                <input type="password" id="senha" name="senha" required placeholder="admin123">
             </div>
             
             <div class="loading" id="loading">
@@ -132,11 +114,9 @@
             <a href="/cadastro">Primeiro acesso? Criar conta</a>
         </div>
 
-        <!-- Credenciais para teste -->
-        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; font-size: 12px; color: #666;">
+        <div class="test-credentials">
             <strong>Credenciais para teste:</strong><br>
-            Admin: admin@admin.com / admin123<br>
-            Usuário comum: faça cadastro
+            👑 Admin: admin@admin.com / admin123
         </div>
     </div>
 
@@ -158,9 +138,9 @@
                 senha: document.getElementById('senha').value
             };
             
+            console.log('🔐 Tentando login com:', formData.email);
+            
             try {
-                console.log('🔐 Tentando login...', formData.email);
-                
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
@@ -170,32 +150,31 @@
                 });
                 
                 const data = await response.json();
-                console.log('🔐 Resposta do login:', data);
+                console.log('📨 Resposta do servidor:', data);
                 
                 if (data.success) {
-                    showAlert('Login realizado com sucesso! Redirecionando...', 'success');
+                    showAlert('✅ Login realizado com sucesso! Redirecionando...', 'success');
                     
                     // Salvar usuário e token
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
                     localStorage.setItem('token', data.token);
                     
-                    console.log('✅ Token salvo com sucesso');
-                    console.log('👤 Usuário:', data.user.nome, '- Admin:', data.user.isAdmin);
+                    console.log('🎫 Token salvo, usuário:', data.user.nome);
                     
-                    // Redirecionar para dashboard
+                    // Redirecionar
                     setTimeout(() => {
                         if (data.user.isAdmin) {
                             window.location.href = '/admin';
                         } else {
                             window.location.href = '/dashboard';
                         }
-                    }, 1500);
+                    }, 1000);
                 } else {
-                    showAlert(data.error || 'Erro desconhecido no login', 'error');
+                    showAlert('❌ ' + (data.error || 'Erro no login'), 'error');
                 }
             } catch (error) {
-                console.error('❌ Erro no login:', error);
-                showAlert('Erro de conexão. Verifique se o servidor está rodando.', 'error');
+                console.error('💥 Erro na requisição:', error);
+                showAlert('❌ Erro de conexão. Verifique se o servidor está rodando.', 'error');
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
@@ -207,11 +186,6 @@
             alert.textContent = message;
             alert.className = `alert alert-${type}`;
             alert.style.display = 'block';
-            
-            // Auto-esconder após 5 segundos
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
         }
         
         // Verificar se já está logado
@@ -222,7 +196,7 @@
             if (token && currentUser) {
                 try {
                     const user = JSON.parse(currentUser);
-                    console.log('🔐 Usuário já logado:', user.email);
+                    console.log('🔐 Usuário já logado, redirecionando...');
                     
                     if (user.isAdmin) {
                         window.location.href = '/admin';
@@ -230,40 +204,13 @@
                         window.location.href = '/dashboard';
                     }
                 } catch (e) {
-                    console.error('❌ Erro ao verificar login:', e);
-                    // Limpar dados corrompidos
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('currentUser');
+                    localStorage.clear();
                 }
             }
             
-            console.log('🔐 Página de login carregada');
-            console.log('👑 Credenciais admin: admin@admin.com / admin123');
-            
-            // Auto-preenchir para facilitar testes (opcional)
-            // document.getElementById('email').value = 'admin@admin.com';
-            // document.getElementById('senha').value = 'admin123';
-        });
-
-        // Função para testar conexão com a API
-        async function testarConexao() {
-            try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
-                console.log('🌐 Status da API:', data);
-                return data.status === 'online';
-            } catch (error) {
-                console.error('❌ API offline:', error);
-                return false;
-            }
-        }
-
-        // Testar conexão quando a página carregar
-        window.addEventListener('load', async () => {
-            const conectado = await testarConexao();
-            if (!conectado) {
-                console.warn('⚠️ Servidor parece estar offline');
-            }
+            // Auto-preenchir para facilitar testes
+            document.getElementById('email').value = 'admin@admin.com';
+            document.getElementById('senha').value = 'admin123';
         });
     </script>
 </body>
