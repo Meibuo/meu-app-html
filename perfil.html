@@ -755,7 +755,7 @@
                             <h4>Informações da Conta</h4>
                             <p><strong>ID do Usuário:</strong> <span id="displayUserId">-</span></p>
                             <p><strong>Membro desde:</strong> <span id="displayMembroDesde">-</span></p>
-                            <p><strong>Status do Perfil:</strong> <span id="displayStatusPerfil">-</span></p>
+                            <p><strong>Status:</strong> <span id="displayStatusPerfil">-</span></p>
                         </div>
                     </div>
                 </div>
@@ -918,8 +918,8 @@
             document.getElementById('infoTelefone').textContent = currentUser.telefone || 'Não informado';
             
             // Formatar data
-            if (currentUser.criadoEm) {
-                const data = new Date(currentUser.criadoEm);
+            if (currentUser.dataContratacao) {
+                const data = new Date(currentUser.dataContratacao);
                 document.getElementById('infoCriadoEm').textContent = data.toLocaleDateString('pt-BR');
             }
             
@@ -929,8 +929,16 @@
             document.getElementById('displayCargo').textContent = currentUser.cargo || 'Funcionário';
             document.getElementById('displayTelefone').textContent = currentUser.telefone || 'Não informado';
             document.getElementById('displayUserId').textContent = currentUser.id;
-            document.getElementById('displayMembroDesde').textContent = currentUser.criadoEm ? new Date(currentUser.criadoEm).toLocaleDateString('pt-BR') : '-';
-            document.getElementById('displayStatusPerfil').textContent = currentUser.perfilEditado ? 'Editado' : 'Não Editado';
+            document.getElementById('displayMembroDesde').textContent = currentUser.dataContratacao ? new Date(currentUser.dataContratacao).toLocaleDateString('pt-BR') : '-';
+            
+            // Status do usuário
+            const statusText = {
+                'ativo': 'Ativo',
+                'inativo': 'Inativo', 
+                'ferias': 'De Férias',
+                'bloqueado': 'Bloqueado'
+            };
+            document.getElementById('displayStatusPerfil').textContent = statusText[currentUser.status] || 'Ativo';
             
             // Formulário de edição
             document.getElementById('editNome').value = currentUser.nome;
@@ -1073,92 +1081,96 @@
             e.target.value = value;
         });
         
-        // Envio do formulário de perfil
+        // Atualizar perfil
         document.getElementById('perfilForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            if (currentUser.perfilEditado && !currentUser.isAdmin) {
+                showAlert('Perfil já foi editado. Para novas alterações, entre em contato com o administrador.', 'warning');
+                return;
+            }
+            
             const submitBtn = document.getElementById('submitPerfilBtn');
             const loading = document.getElementById('loadingPerfil');
+            const alert = document.getElementById('alert');
             
             submitBtn.disabled = true;
             loading.style.display = 'block';
+            alert.style.display = 'none';
             
-            const formData = new FormData(this);
-            formData.append('usuario_id', currentUser.id);
+            const formData = {
+                usuario_id: currentUser.id,
+                nome: document.getElementById('editNome').value,
+                telefone: document.getElementById('editTelefone').value
+            };
             
             try {
-                const response = await fetch('/api/atualizar-perfil', {
-                    method: 'POST',
-                    body: formData
+                const response = await fetch('/api/perfil', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Atualizar dados do usuário
-                    currentUser.nome = document.getElementById('editNome').value;
-                    currentUser.telefone = document.getElementById('editTelefone').value;
-                    currentUser.perfilEditado = true;
-                    
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    carregarDadosPerfil();
-                    
                     showAlert('Perfil atualizado com sucesso!', 'success');
                     
-                    // Desabilitar edição se não for admin
-                    if (!currentUser.isAdmin) {
-                        document.getElementById('perfilWarning').style.display = 'block';
-                        document.getElementById('editNome').readOnly = true;
-                        document.getElementById('editTelefone').readOnly = true;
-                        submitBtn.disabled = true;
-                    }
+                    // Atualizar dados locais
+                    currentUser = { ...currentUser, ...data.user };
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    carregarDadosPerfil();
+                    atualizarAvatar();
                 } else {
                     showAlert(data.error, 'error');
                 }
             } catch (error) {
                 console.error('Erro:', error);
-                showAlert('Erro ao atualizar perfil.', 'error');
+                showAlert('Erro de conexão. Tente novamente.', 'error');
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
             }
         });
         
-        // Envio do formulário de senha
+        // Alterar senha
         document.getElementById('senhaForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const submitBtn = document.getElementById('submitSenhaBtn');
             const loading = document.getElementById('loadingSenha');
+            const alert = document.getElementById('alert');
             
             const senhaAtual = document.getElementById('senhaAtual').value;
             const novaSenha = document.getElementById('novaSenha').value;
             const confirmarNovaSenha = document.getElementById('confirmarNovaSenha').value;
             
-            // Validações
             if (novaSenha !== confirmarNovaSenha) {
-                showAlert('As senhas não coincidem.', 'error');
+                showAlert('As novas senhas não coincidem', 'error');
                 return;
             }
             
             if (novaSenha.length < 6) {
-                showAlert('A nova senha deve ter pelo menos 6 caracteres.', 'error');
+                showAlert('A nova senha deve ter pelo menos 6 caracteres', 'error');
                 return;
             }
             
             submitBtn.disabled = true;
             loading.style.display = 'block';
+            alert.style.display = 'none';
             
             try {
                 const response = await fetch('/api/alterar-senha', {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         usuario_id: currentUser.id,
-                        senha_atual: senhaAtual,
-                        nova_senha: novaSenha
+                        senhaAtual: senhaAtual,
+                        novaSenha: novaSenha
                     })
                 });
                 
@@ -1172,20 +1184,21 @@
                 }
             } catch (error) {
                 console.error('Erro:', error);
-                showAlert('Erro ao alterar senha.', 'error');
+                showAlert('Erro de conexão. Tente novamente.', 'error');
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
             }
         });
         
-        // Função para exibir alertas
+        // Mostrar alertas
         function showAlert(message, type) {
             const alert = document.getElementById('alert');
             alert.textContent = message;
             alert.className = `alert alert-${type}`;
             alert.style.display = 'block';
             
+            // Auto-esconder após 5 segundos
             setTimeout(() => {
                 alert.style.display = 'none';
             }, 5000);
@@ -1194,7 +1207,7 @@
         // Logout
         function logout() {
             localStorage.removeItem('currentUser');
-            window.location.href = '/login';
+            window.location.href = '/';
         }
     </script>
 </body>

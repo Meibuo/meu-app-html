@@ -134,7 +134,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
-            min-width: 600px;
+            min-width: 800px;
         }
         
         .table th,
@@ -355,6 +355,21 @@
             cursor: not-allowed;
         }
         
+        /* Estilos para status dos usuários */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+            display: inline-block;
+        }
+        
+        .status-ativo { background: #e8f5e9; color: #2ecc71; }
+        .status-inativo { background: #f5f5f5; color: #7f8c8d; }
+        .status-ferias { background: #fff3cd; color: #f39c12; }
+        .status-bloqueado { background: #ffeaea; color: #e74c3c; }
+        
         /* Responsividade */
         @media (max-width: 768px) {
             .header {
@@ -482,6 +497,10 @@
                 <div class="stat-label">Usuários Ativos</div>
             </div>
             <div class="stat-card">
+                <div class="stat-number" id="usuariosFerias">0</div>
+                <div class="stat-label">De Férias</div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-number" id="totalRegistros">0</div>
                 <div class="stat-label">Registros de Ponto</div>
             </div>
@@ -510,6 +529,7 @@
                             <th>Cargo</th>
                             <th>Telefone</th>
                             <th>Status</th>
+                            <th>Contratado em</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -564,6 +584,21 @@
                     <input type="tel" id="novoUserTelefone" placeholder="(11) 99999-9999">
                 </div>
                 
+                <div class="form-group">
+                    <label for="novoUserStatus">Status:</label>
+                    <select id="novoUserStatus" required>
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="ferias">De Férias</option>
+                        <option value="bloqueado">Bloqueado</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="novoUserDataContratacao">Data de Contratação:</label>
+                    <input type="date" id="novoUserDataContratacao" required>
+                </div>
+                
                 <div class="loading" id="loadingNovoUsuario">
                     <div class="spinner"></div>
                     <span>Criando usuário...</span>
@@ -615,6 +650,21 @@
                 <div class="form-group">
                     <label for="editUserTelefone">Telefone:</label>
                     <input type="tel" id="editUserTelefone" placeholder="(11) 99999-9999">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editUserStatus">Status:</label>
+                    <select id="editUserStatus" required>
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="ferias">De Férias</option>
+                        <option value="bloqueado">Bloqueado</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editUserDataContratacao">Data de Contratação:</label>
+                    <input type="date" id="editUserDataContratacao" required>
                 </div>
                 
                 <div class="loading" id="loadingModal">
@@ -707,8 +757,28 @@
                 }
                 
                 // Status
-                const status = usuario.perfilEditado ? 'Editado' : 'Não Editado';
-                const statusClass = usuario.perfilEditado ? 'success' : 'warning';
+                const statusText = {
+                    'ativo': 'Ativo',
+                    'inativo': 'Inativo', 
+                    'ferias': 'De Férias',
+                    'bloqueado': 'Bloqueado'
+                };
+                
+                const statusClass = {
+                    'ativo': 'status-ativo',
+                    'inativo': 'status-inativo',
+                    'ferias': 'status-ferias',
+                    'bloqueado': 'status-bloqueado'
+                };
+                
+                const statusHtml = `<span class="status-badge ${statusClass[usuario.status]}">${statusText[usuario.status]}</span>`;
+                
+                // Data de contratação
+                let dataContratacao = '-';
+                if (usuario.dataContratacao) {
+                    const data = new Date(usuario.dataContratacao);
+                    dataContratacao = data.toLocaleDateString('pt-BR');
+                }
                 
                 tr.innerHTML = `
                     <td>${avatarHtml}</td>
@@ -719,7 +789,8 @@
                     <td>${usuario.email}</td>
                     <td>${usuario.cargo || 'Funcionário'}</td>
                     <td>${usuario.telefone || '-'}</td>
-                    <td><span class="btn btn-${statusClass} btn-sm">${status}</span></td>
+                    <td>${statusHtml}</td>
+                    <td>${dataContratacao}</td>
                     <td>
                         <button class="btn btn-primary btn-sm" onclick="editarUsuario('${usuario.id}')">
                             Editar
@@ -733,11 +804,13 @@
         
         // Atualizar estatísticas
         function atualizarEstatisticas(usuarios) {
-            const usuariosAtivos = usuarios.filter(u => !u.isAdmin).length;
+            const usuariosAtivos = usuarios.filter(u => u.status === 'ativo' && !u.isAdmin).length;
+            const usuariosFerias = usuarios.filter(u => u.status === 'ferias' && !u.isAdmin).length;
             const totalRegistros = 0; // Em produção, buscar do banco de dados
             
             document.getElementById('totalUsuarios').textContent = usuarios.length;
             document.getElementById('usuariosAtivos').textContent = usuariosAtivos;
+            document.getElementById('usuariosFerias').textContent = usuariosFerias;
             document.getElementById('totalRegistros').textContent = totalRegistros;
         }
         
@@ -745,6 +818,11 @@
         function abrirModalNovoUsuario() {
             const modal = document.getElementById('modalNovoUsuario');
             document.getElementById('formNovoUsuario').reset();
+            
+            // Definir data atual como padrão
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('novoUserDataContratacao').value = hoje;
+            
             modal.style.display = 'block';
         }
         
@@ -771,6 +849,19 @@
                     }
                     
                     document.getElementById('editUserTelefone').value = usuario.telefone || '';
+                    
+                    // Configurar status
+                    const selectStatus = document.getElementById('editUserStatus');
+                    if (selectStatus && usuario.status) {
+                        selectStatus.value = usuario.status;
+                    }
+                    
+                    // Configurar data de contratação
+                    const dataContratacao = document.getElementById('editUserDataContratacao');
+                    if (dataContratacao && usuario.dataContratacao) {
+                        const data = new Date(usuario.dataContratacao);
+                        dataContratacao.value = data.toISOString().split('T')[0];
+                    }
                 }
             }
             
@@ -818,7 +909,9 @@
                 email: document.getElementById('novoUserEmail').value,
                 senha: document.getElementById('novoUserSenha').value,
                 cargo: document.getElementById('novoUserCargo').value,
-                telefone: document.getElementById('novoUserTelefone').value
+                telefone: document.getElementById('novoUserTelefone').value,
+                status: document.getElementById('novoUserStatus').value,
+                dataContratacao: document.getElementById('novoUserDataContratacao').value
             };
             
             try {
@@ -863,7 +956,9 @@
                 nome: document.getElementById('editUserNome').value,
                 email: document.getElementById('editUserEmail').value,
                 cargo: document.getElementById('editUserCargo').value,
-                telefone: document.getElementById('editUserTelefone').value
+                telefone: document.getElementById('editUserTelefone').value,
+                status: document.getElementById('editUserStatus').value,
+                dataContratacao: document.getElementById('editUserDataContratacao').value
             };
             
             try {
