@@ -26,7 +26,7 @@
         
         .container { 
             background: white; padding: 40px; border-radius: 15px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; width: 100%; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 450px; width: 100%; 
         }
         
         .logo { font-size: 24px; color: var(--text-color); margin-bottom: 20px; text-align: center; }
@@ -35,12 +35,23 @@
         
         label { display: block; margin-bottom: 5px; color: var(--text-color); font-weight: 500; }
         
-        input { 
+        input, select { 
             width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; 
             font-size: 16px; transition: border-color 0.3s; 
         }
         
-        input:focus { border-color: var(--primary-color); outline: none; }
+        input:focus, select:focus { border-color: var(--primary-color); outline: none; }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-group input {
+            width: auto;
+        }
         
         .btn { 
             width: 100%; padding: 15px; background: var(--primary-color); color: white; 
@@ -90,6 +101,12 @@
         .strength-weak { color: var(--error-color); }
         .strength-medium { color: #f39c12; }
         .strength-strong { color: var(--success-color); }
+        
+        .info-text {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -107,6 +124,19 @@
             <div class="form-group">
                 <label for="email">E-mail:</label>
                 <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="telefone">Telefone:</label>
+                <input type="tel" id="telefone" name="telefone" placeholder="(11) 99999-9999">
+                <div class="info-text">Opcional - poderá ser alterado posteriormente no perfil</div>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="whatsapp" name="whatsapp">
+                    <label for="whatsapp">Este número é WhatsApp</label>
+                </div>
             </div>
             
             <div class="form-group">
@@ -135,6 +165,24 @@
     </div>
 
     <script>
+        // Formatação do telefone
+        document.getElementById('telefone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substring(0, 11);
+            
+            if (value.length > 10) {
+                value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            } else if (value.length > 6) {
+                value = value.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+            } else if (value.length > 2) {
+                value = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+            } else if (value.length > 0) {
+                value = value.replace(/^(\d*)/, '($1');
+            }
+            
+            e.target.value = value;
+        });
+        
         // Validação de força da senha
         document.getElementById('senha').addEventListener('input', function() {
             const password = this.value;
@@ -203,6 +251,8 @@
             const formData = {
                 nome: document.getElementById('nome').value,
                 email: document.getElementById('email').value,
+                telefone: document.getElementById('telefone').value,
+                whatsapp: document.getElementById('whatsapp').checked,
                 senha: senha
             };
             

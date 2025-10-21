@@ -34,7 +34,54 @@
         
         .logo { font-size: 24px; color: var(--text-color); font-weight: bold; }
         
-        .user-info { display: flex; align-items: center; gap: 15px; }
+        .user-info { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        
+        .nav-link:hover {
+            background: #f8f9fa;
+        }
+        
+        .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
         
         .container { max-width: 800px; margin: 0 auto; padding: 20px; }
         
@@ -195,6 +242,11 @@
                 flex-direction: column;
                 gap: 10px;
             }
+            
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -202,7 +254,13 @@
     <div class="header">
         <div class="logo">⏰ Sistema de Ponto</div>
         <div class="user-info">
-            <span id="userName">Usuário</span>
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link active">Dashboard</a>
+                <a href="/perfil" class="nav-link">Meu Perfil</a>
+            </div>
+            <div class="user-avatar" onclick="window.location.href='/perfil'" id="userAvatar">
+                <!-- Avatar será carregado aqui -->
+            </div>
             <button class="btn btn-danger" onclick="logout()">Sair</button>
         </div>
     </div>
@@ -268,10 +326,21 @@
             }
             
             currentUser = JSON.parse(userData);
-            document.getElementById('userName').textContent = currentUser.nome;
-            
+            atualizarAvatar();
             carregarRegistros();
         });
+        
+        // Atualizar avatar no header
+        function atualizarAvatar() {
+            const avatarElement = document.getElementById('userAvatar');
+            if (currentUser.avatar) {
+                avatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
+            } else {
+                // Usar iniciais do nome
+                const iniciais = currentUser.nome.split(' ').map(n => n[0]).join('').toUpperCase();
+                avatarElement.textContent = iniciais.substring(0, 2);
+            }
+        }
         
         // Registrar ponto
         async function registrarPonto(tipo) {

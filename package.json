@@ -1,13 +1,13 @@
 {
   "name": "sistema-ponto-eletronico",
-  "version": "2.0.0",
-  "description": "Sistema de ponto eletrônico online",
+  "version": "2.1.0",
+  "description": "Sistema de ponto eletrônico online com área de perfil",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["ponto", "eletronico", "registro", "horarios"],
+  "keywords": ["ponto", "eletronico", "registro", "horarios", "perfil"],
   "author": "Seu Nome",
   "license": "MIT",
   "dependencies": {
