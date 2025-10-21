@@ -5,685 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administração - Sistema de Ponto</title>
     <style>
-        :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
-            --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --error-color: #e74c3c;
-            --text-color: #2c3e50;
-            --bg-color: #f8f9fa;
-        }
+        /* ... (manter o mesmo CSS do admin.html anterior) ... */
         
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            background: var(--bg-color); 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        .header {
+        /* Adicionar estilo para o select de cargos */
+        select {
             background: white;
-            padding: 15px 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .logo { 
-            font-size: clamp(18px, 4vw, 24px); 
-            color: var(--text-color); 
-            font-weight: bold; 
-        }
-        
-        .user-info { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        
-        .admin-badge {
-            background: var(--warning-color);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .nav-link {
-            color: var(--text-color);
-            text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            transition: background 0.3s;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-        
-        .nav-link:hover {
-            background: #f8f9fa;
-        }
-        
-        .nav-link.active {
-            background: var(--primary-color);
-            color: white;
-        }
-        
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding: 20px;
-            width: 100%;
-        }
-        
-        .card {
-            background: white;
-            padding: clamp(20px, 4vw, 25px);
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            white-space: nowrap;
         }
         
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        
-        .btn-success { background: var(--success-color); color: white; }
-        .btn-success:hover { background: #27ae60; }
-        
-        .btn-warning { background: var(--warning-color); color: white; }
-        .btn-warning:hover { background: #e67e22; }
-        
-        .btn-danger { background: var(--error-color); color: white; }
-        .btn-danger:hover { background: #c0392b; }
-        
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            min-width: 600px;
-        }
-        
-        .table th,
-        .table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .table th {
+        select:disabled {
             background: #f8f9fa;
-            font-weight: 600;
-            color: var(--text-color);
-            position: sticky;
-            top: 0;
-        }
-        
-        .table tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .avatar-small {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
-        .avatar-placeholder {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        .alert {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .alert-success { background: #e8f5e9; color: var(--success-color); border: 1px solid #c8e6c9; }
-        .alert-error { background: #ffeaea; color: var(--error-color); border: 1px solid #ffcdd2; }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
-        .modal-content {
-            background-color: white;
-            margin: 0 auto;
-            padding: clamp(20px, 4vw, 30px);
-            border-radius: 10px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            position: relative;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .modal-title {
-            font-size: clamp(18px, 4vw, 20px);
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        
-        .close {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            background: none;
-            border: none;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .close:hover {
-            color: var(--error-color);
-        }
-        
-        .form-group { margin-bottom: 20px; }
-        
-        label { 
-            display: block; 
-            margin-bottom: 5px; 
-            color: var(--text-color); 
-            font-weight: 500; 
-            font-size: 14px;
-        }
-        
-        input, select { 
-            width: 100%; 
-            padding: 10px; 
-            border: 2px solid #ddd; 
-            border-radius: 6px; 
-            font-size: 14px; 
-            transition: border-color 0.3s; 
-        }
-        
-        input:focus, select:focus { 
-            border-color: var(--primary-color); 
-            outline: none; 
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .checkbox-group input {
-            width: auto;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .stat-number {
-            font-size: clamp(24px, 4vw, 32px);
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-        
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        .mobile-nav {
-            display: none;
-            background: white;
-            padding: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .mobile-nav.active {
-            display: block;
-        }
-        
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .header {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .mobile-menu-btn {
-                display: block;
-            }
-            
-            .user-info {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                margin-top: 10px;
-                display: none;
-            }
-            
-            .user-info.active {
-                display: flex;
-            }
-            
-            .container {
-                padding: 15px;
-            }
-            
-            .card {
-                padding: 15px;
-            }
-            
-            .table-container {
-                overflow-x: auto;
-                margin: 0 -15px;
-                padding: 0 15px;
-            }
-            
-            .modal-content {
-                margin: 20px auto;
-                width: calc(100% - 40px);
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .mobile-nav {
-                display: none !important;
-            }
-            
-            .nav-links {
-                display: flex !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .btn {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-            
-            .table th,
-            .table td {
-                padding: 8px;
-                font-size: 12px;
-            }
-        }
-        
-        @media (max-width: 1024px) and (min-width: 769px) {
-            .container {
-                padding: 20px;
-            }
-            
-            .card {
-                padding: 20px;
-            }
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">⏰ Sistema de Ponto - Administração</div>
-        
-        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-        
-        <div class="nav-links" id="desktopNav">
-            <a href="/perfil" class="nav-link">Meu Perfil</a>
-            <a href="/admin" class="nav-link active">👑 Administração</a>
-        </div>
-        
-        <div class="user-info" id="desktopUserInfo">
-            <div class="admin-badge">ADMIN</div>
-            <button class="btn btn-danger" onclick="logout()">Sair</button>
-        </div>
-    </div>
-    
-    <!-- Menu Mobile -->
-    <div class="mobile-nav" id="mobileNav">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="/perfil" class="nav-link">Meu Perfil</a>
-            <a href="/admin" class="nav-link active">👑 Administração</a>
-        </div>
-        <div class="user-info" style="justify-content: center; margin-top: 15px;">
-            <div class="admin-badge">ADMIN</div>
-            <button class="btn btn-danger" onclick="logout()">Sair</button>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div id="alert" class="alert"></div>
-        
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number" id="totalUsuarios">0</div>
-                <div class="stat-label">Total de Usuários</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="usuariosAtivos">0</div>
-                <div class="stat-label">Usuários Ativos</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalRegistros">0</div>
-                <div class="stat-label">Registros de Ponto</div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                <h2 style="font-size: clamp(18px, 4vw, 24px);">Gerenciar Usuários</h2>
-                <button class="btn btn-primary" onclick="abrirModalEditar()">
-                    + Novo Usuário
-                </button>
-            </div>
-            
-            <div class="loading" id="loadingUsuarios">
-                <div class="spinner"></div>
-                <span>Carregando usuários...</span>
-            </div>
-            
-            <div class="table-container">
-                <table class="table" id="tabelaUsuarios">
-                    <thead>
-                        <tr>
-                            <th>Avatar</th>
-                            <th>Nome</th>
-                            <th>E-mail</th>
-                            <th>Cargo</th>
-                            <th>Telefone</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Usuários serão carregados aqui -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Editar Usuário -->
-    <div id="modalEditar" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modalTitulo">Editar Usuário</h3>
-                <button class="close" onclick="fecharModalEditar()">&times;</button>
-            </div>
-            
-            <form id="formEditarUsuario">
-                <input type="hidden" id="editUserId">
-                
-                <div class="form-group">
-                    <label for="editUserNome">Nome completo:</label>
-                    <input type="text" id="editUserNome" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editUserEmail">E-mail:</label>
-                    <input type="email" id="editUserEmail" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editUserCargo">Cargo:</label>
-                    <input type="text" id="editUserCargo" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editUserTelefone">Telefone:</label>
-                    <input type="tel" id="editUserTelefone" placeholder="(11) 99999-9999">
-                </div>
-                
-                <div class="form-group">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="editUserWhatsapp">
-                        <label for="editUserWhatsapp">Número é WhatsApp</label>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="editUserAdmin">
-                        <label for="editUserAdmin">Usuário Administrador</label>
-                    </div>
-                </div>
-                
-                <div class="loading" id="loadingModal">
-                    <div class="spinner"></div>
-                    <span>Salvando...</span>
-                </div>
-                
-                <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-                    <button type="button" class="btn" onclick="fecharModalEditar()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- ... (manter o mesmo HTML do admin.html anterior) ... -->
 
     <script>
-        let currentUser = null;
-        let usuarios = [];
+        // ... (manter o mesmo JavaScript do admin.html anterior) ... 
         
-        // Menu mobile
-        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-            const mobileNav = document.getElementById('mobileNav');
-            const userInfo = document.getElementById('desktopUserInfo');
-            
-            mobileNav.classList.toggle('active');
-            userInfo.classList.toggle('active');
-        });
-        
-        // Verificar autenticação e admin
-        document.addEventListener('DOMContentLoaded', function() {
-            const userData = localStorage.getItem('currentUser');
-            
-            if (!userData) {
-                window.location.href = '/login';
-                return;
-            }
-            
-            currentUser = JSON.parse(userData);
-            
-            if (!currentUser.isAdmin) {
-                window.location.href = '/dashboard';
-                return;
-            }
-            
-            carregarUsuarios();
-        });
-        
-        // Carregar lista de usuários
-        async function carregarUsuarios() {
-            const loading = document.getElementById('loadingUsuarios');
-            const tabela = document.getElementById('tabelaUsuarios').querySelector('tbody');
-            
-            loading.style.display = 'block';
-            tabela.innerHTML = '';
-            
+        // Carregar cargos disponíveis
+        async function carregarCargos() {
             try {
-                const response = await fetch('/api/admin/usuarios');
+                const response = await fetch('/api/admin/cargos');
                 const data = await response.json();
                 
                 if (data.success) {
-                    usuarios = data.usuarios;
-                    atualizarEstatisticas(usuarios);
-                    renderizarUsuarios(usuarios);
-                } else {
-                    showAlert(data.error, 'error');
+                    window.cargosDisponiveis = data.cargos;
+                    atualizarSelectCargos();
                 }
             } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro ao carregar usuários.', 'error');
-            } finally {
-                loading.style.display = 'none';
+                console.error('Erro ao carregar cargos:', error);
             }
         }
         
-        // Renderizar usuários na tabela
-        function renderizarUsuarios(usuarios) {
-            const tabela = document.getElementById('tabelaUsuarios').querySelector('tbody');
-            tabela.innerHTML = '';
-            
-            usuarios.forEach(usuario => {
-                const tr = document.createElement('tr');
+        // Atualizar select de cargos no modal
+        function atualizarSelectCargos() {
+            const selectCargo = document.getElementById('editUserCargo');
+            if (selectCargo && window.cargosDisponiveis) {
+                // Salvar valor atual
+                const valorAtual = selectCargo.value;
                 
-                // Avatar
-                let avatarHtml;
-                if (usuario.avatar) {
-                    avatarHtml = `<img src="${usuario.avatar}" class="avatar-small" alt="${usuario.nome}">`;
-                } else {
-                    const iniciais = usuario.nome.split(' ').map(n => n[0]).join('').toUpperCase();
-                    avatarHtml = `<div class="avatar-placeholder">${iniciais.substring(0, 2)}</div>`;
+                // Limpar options
+                selectCargo.innerHTML = '';
+                
+                // Adicionar options
+                window.cargosDisponiveis.forEach(cargo => {
+                    const option = document.createElement('option');
+                    option.value = cargo;
+                    option.textContent = cargo;
+                    selectCargo.appendChild(option);
+                });
+                
+                // Restaurar valor anterior se existir
+                if (valorAtual && window.cargosDisponiveis.includes(valorAtual)) {
+                    selectCargo.value = valorAtual;
                 }
-                
-                // Status
-                const status = usuario.perfilEditado ? 'Editado' : 'Não Editado';
-                const statusClass = usuario.perfilEditado ? 'success' : 'warning';
-                
-                tr.innerHTML = `
-                    <td>${avatarHtml}</td>
-                    <td>
-                        <strong>${usuario.nome}</strong>
-                        ${usuario.isAdmin ? '<div class="admin-badge" style="display: inline-block; margin-left: 5px;">ADMIN</div>' : ''}
-                    </td>
-                    <td>${usuario.email}</td>
-                    <td>${usuario.cargo || 'Funcionário'}</td>
-                    <td>${usuario.telefone || '-'} ${usuario.whatsapp ? '📱' : ''}</td>
-                    <td><span class="btn btn-${statusClass} btn-sm">${status}</span></td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="editarUsuario('${usuario.id}')">
-                            Editar
-                        </button>
-                    </td>
-                `;
-                
-                tabela.appendChild(tr);
-            });
+            }
         }
         
-        // Atualizar estatísticas
-        function atualizarEstatisticas(usuarios) {
-            const usuariosAtivos = usuarios.filter(u => !u.isAdmin).length;
-            const totalRegistros = 0; // Em produção, buscar do banco de dados
-            
-            document.getElementById('totalUsuarios').textContent = usuarios.length;
-            document.getElementById('usuariosAtivos').textContent = usuariosAtivos;
-            document.getElementById('totalRegistros').textContent = totalRegistros;
-        }
-        
-        // Abrir modal para editar usuário
+        // Modificar a função abrirModalEditar para usar select
         function abrirModalEditar(usuarioId = null) {
             const modal = document.getElementById('modalEditar');
             const titulo = document.getElementById('modalTitulo');
             const form = document.getElementById('formEditarUsuario');
+            
+            // Substituir input por select para cargo
+            const cargoGroup = document.querySelector('#formEditarUsuario .form-group:nth-child(3)');
+            if (cargoGroup) {
+                cargoGroup.innerHTML = `
+                    <label for="editUserCargo">Cargo:</label>
+                    <select id="editUserCargo" required>
+                        <option value="">Selecione um cargo</option>
+                    </select>
+                `;
+                atualizarSelectCargos();
+            }
             
             if (usuarioId) {
                 // Editar usuário existente
@@ -693,7 +91,13 @@
                     document.getElementById('editUserId').value = usuario.id;
                     document.getElementById('editUserNome').value = usuario.nome;
                     document.getElementById('editUserEmail').value = usuario.email;
-                    document.getElementById('editUserCargo').value = usuario.cargo || '';
+                    
+                    // Configurar select de cargo
+                    const selectCargo = document.getElementById('editUserCargo');
+                    if (selectCargo && usuario.cargo) {
+                        selectCargo.value = usuario.cargo;
+                    }
+                    
                     document.getElementById('editUserTelefone').value = usuario.telefone || '';
                     document.getElementById('editUserWhatsapp').checked = usuario.whatsapp || false;
                     document.getElementById('editUserAdmin').checked = usuario.isAdmin || false;
@@ -708,114 +112,11 @@
             modal.style.display = 'block';
         }
         
-        // Fechar modal
-        function fecharModalEditar() {
-            document.getElementById('modalEditar').style.display = 'none';
-        }
-        
-        // Formatação do telefone no modal
-        document.getElementById('editUserTelefone').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 11) value = value.substring(0, 11);
-            
-            if (value.length > 10) {
-                value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            } else if (value.length > 6) {
-                value = value.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
-            } else if (value.length > 2) {
-                value = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
-            } else if (value.length > 0) {
-                value = value.replace(/^(\d*)/, '($1');
-            }
-            
-            e.target.value = value;
+        // Carregar cargos ao inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... (código anterior) ...
+            carregarCargos();
         });
-        
-        // Salvar usuário
-        document.getElementById('formEditarUsuario').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const loading = document.getElementById('loadingModal');
-            const submitBtn = this.querySelector('button[type="submit"]');
-            
-            loading.style.display = 'block';
-            submitBtn.disabled = true;
-            
-            const usuarioId = document.getElementById('editUserId').value;
-            const formData = {
-                nome: document.getElementById('editUserNome').value,
-                email: document.getElementById('editUserEmail').value,
-                cargo: document.getElementById('editUserCargo').value,
-                telefone: document.getElementById('editUserTelefone').value,
-                whatsapp: document.getElementById('editUserWhatsapp').checked
-            };
-            
-            try {
-                let response;
-                if (usuarioId) {
-                    // Editar usuário existente
-                    response = await fetch(`/api/admin/usuarios/${usuarioId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
-                    });
-                } else {
-                    // Criar novo usuário - em produção, implementar criação
-                    showAlert('Funcionalidade de criar usuário em desenvolvimento', 'warning');
-                    return;
-                }
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert('Usuário atualizado com sucesso!', 'success');
-                    fecharModalEditar();
-                    carregarUsuarios();
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
-            } finally {
-                loading.style.display = 'none';
-                submitBtn.disabled = false;
-            }
-        });
-        
-        // Editar usuário
-        function editarUsuario(usuarioId) {
-            abrirModalEditar(usuarioId);
-        }
-        
-        // Mostrar alertas
-        function showAlert(message, type) {
-            const alert = document.getElementById('alert');
-            alert.textContent = message;
-            alert.className = `alert alert-${type}`;
-            alert.style.display = 'block';
-            
-            // Auto-esconder após 5 segundos
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Logout
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/';
-        }
-        
-        // Fechar modal ao clicar fora
-        window.onclick = function(event) {
-            const modal = document.getElementById('modalEditar');
-            if (event.target === modal) {
-                fecharModalEditar();
-            }
-        }
     </script>
 </body>
 </html>

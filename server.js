@@ -42,6 +42,17 @@ const upload = multer({
   }
 });
 
+// Lista de cargos disponíveis
+const CARGOS_DISPONIVEIS = [
+  'CEO Administrativo',
+  'CEO Operações',
+  'Engenharia',
+  'Topógrafo',
+  'Nivelador',
+  'Aux. Topografia',
+  'Terceiro'
+];
+
 // "Database" em memória (para demonstração - em produção use um banco real)
 let users = [];
 let pontos = [];
@@ -60,7 +71,7 @@ const createAdminUser = async () => {
       whatsapp: false,
       senha: hashedPassword,
       avatar: '',
-      cargo: 'Administrador',
+      cargo: 'CEO Administrativo',
       perfilEditado: false,
       isAdmin: true,
       criadoEm: new Date().toISOString(),
@@ -100,7 +111,7 @@ app.post('/api/cadastro', async (req, res) => {
             whatsapp: whatsapp || false,
             senha: hashedPassword,
             avatar: '',
-            cargo: 'Funcionário', // Cargo padrão
+            cargo: 'Terceiro', // Cargo padrão para novos usuários
             perfilEditado: false,
             isAdmin: false,
             criadoEm: new Date().toISOString(),
@@ -344,6 +355,11 @@ app.get('/api/admin/usuarios', (req, res) => {
     }
 });
 
+// Rota para obter cargos disponíveis
+app.get('/api/admin/cargos', (req, res) => {
+    res.json({ success: true, cargos: CARGOS_DISPONIVEIS });
+});
+
 app.put('/api/admin/usuarios/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -352,6 +368,11 @@ app.put('/api/admin/usuarios/:id', async (req, res) => {
         const userIndex = users.findIndex(user => user.id === id);
         if (userIndex === -1) {
             return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        
+        // Validar cargo
+        if (cargo && !CARGOS_DISPONIVEIS.includes(cargo)) {
+            return res.status(400).json({ error: 'Cargo inválido' });
         }
         
         users[userIndex] = {
@@ -506,4 +527,5 @@ app.listen(PORT, async () => {
     console.log(`👉 Acesse: http://localhost:${PORT}`);
     console.log(`📊 Status: http://localhost:${PORT}/api/status`);
     console.log(`👑 Admin: admin@admin.com / admin123`);
+    console.log(`📋 Cargos disponíveis: ${CARGOS_DISPONIVEIS.join(', ')}`);
 });
