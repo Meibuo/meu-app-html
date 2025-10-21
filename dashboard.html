@@ -142,7 +142,7 @@
         
         .ponto-buttons {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 12px;
             margin: 20px 0;
         }
@@ -313,24 +313,6 @@
             border-bottom: none;
         }
         
-        .extra-options {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .checkbox-group input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-        }
-        
         .modal {
             display: none;
             position: fixed;
@@ -419,10 +401,6 @@
             
             .user-info.active {
                 display: flex;
-            }
-            
-            .ponto-buttons {
-                grid-template-columns: 1fr;
             }
             
             .registro-item {
@@ -540,13 +518,6 @@
                 <input type="text" id="localTrabalho" placeholder="Digite o local (ex: São Paulo, Centro)">
             </div>
             
-            <div class="extra-options">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="horasExtras">
-                    <label for="horasExtras">Horas Extras</label>
-                </div>
-            </div>
-            
             <div class="ponto-buttons">
                 <button class="btn btn-primary" onclick="registrarPonto()" id="btnRegistrar">
                     ⏰ Registrar Ponto
@@ -649,28 +620,10 @@
             
             atualizarAvatar();
             carregarRegistros();
-            atualizarInterfaceHorario();
             
             // Definir data atual como padrão no modal
             document.getElementById('dataHoraExtra').value = new Date().toISOString().split('T')[0];
         });
-        
-        // Atualizar interface baseada no horário atual
-        function atualizarInterfaceHorario() {
-            const agora = new Date();
-            const diaSemana = agora.getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
-            const hora = agora.getHours();
-            
-            const btnRegistrar = document.getElementById('btnRegistrar');
-            let textoBotao = '⏰ Registrar Entrada';
-            
-            // Definir texto do botão baseado no horário
-            if (hora >= 12) {
-                textoBotao = '🔴 Registrar Saída';
-            }
-            
-            btnRegistrar.textContent = textoBotao;
-        }
         
         // Atualizar avatar no header
         function atualizarAvatar() {
@@ -719,7 +672,6 @@
                         usuario_id: currentUser.id,
                         tipo: tipoPonto.tipo,
                         local: local,
-                        horas_extras: document.getElementById('horasExtras').checked,
                         observacao: tipoPonto.observacao
                     })
                 });
@@ -729,9 +681,6 @@
                 if (data.success) {
                     showAlert(`Ponto registrado com sucesso! (${tipoPonto.tipo})`, 'success');
                     carregarRegistros();
-                    
-                    // Resetar checkbox
-                    document.getElementById('horasExtras').checked = false;
                     
                 } else {
                     showAlert(data.error, 'error');
@@ -748,17 +697,16 @@
         // Calcular tipo de ponto baseado no horário
         function calcularTipoPonto(data) {
             const hora = data.getHours();
-            const horasExtras = document.getElementById('horasExtras').checked;
             
             let tipo = 'entrada';
             let observacao = '';
             
             if (hora >= 12) {
-                tipo = horasExtras ? 'saida_extra' : 'saida';
-                observacao = horasExtras ? 'Saída com horas extras' : 'Saída regular';
+                tipo = 'saida';
+                observacao = 'Saída regular';
             } else {
-                tipo = horasExtras ? 'entrada_extra' : 'entrada';
-                observacao = horasExtras ? 'Entrada com horas extras' : 'Entrada regular';
+                tipo = 'entrada';
+                observacao = 'Entrada regular';
             }
             
             return { tipo, observacao };
