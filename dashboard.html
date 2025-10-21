@@ -39,6 +39,9 @@
             top: 0;
             z-index: 100;
             border-bottom: 3px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .user-info {
@@ -62,6 +65,13 @@
             cursor: pointer;
             transition: all 0.3s;
             position: relative;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .user-avatar:hover {
@@ -99,10 +109,50 @@
             font-weight: 600;
         }
 
-        .logout-btn {
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification-btn {
+            background: var(--warning);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
+            position: relative;
+        }
+
+        .notification-btn:hover {
+            transform: scale(1.05);
+            background: #e67e22;
+        }
+
+        .notification-badge {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .logout-btn {
             background: var(--danger);
             color: white;
             border: none;
@@ -201,6 +251,13 @@
             font-weight: bold;
             margin: 0 auto 15px;
             border: 3px solid rgba(255,255,255,0.3);
+            overflow: hidden;
+        }
+
+        .profile-avatar-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .modal-body {
@@ -640,6 +697,33 @@
             color: #bdc3c7;
         }
 
+        /* Modal de Alterar Senha */
+        .password-form {
+            display: none;
+            padding: 15px 0;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+        }
+
+        .password-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
         /* Animações */
         @keyframes pulse {
             0% { opacity: 1; }
@@ -759,15 +843,24 @@
     <!-- Header -->
     <div class="header">
         <div class="user-info">
-            <div class="user-avatar" id="userAvatar" onclick="openProfileModal()">U</div>
+            <div class="user-avatar" id="userAvatar" onclick="openProfileModal()">
+                <img id="userAvatarImg" style="display: none;">
+                <span id="userAvatarText">U</span>
+            </div>
             <div class="user-details">
                 <h2 id="userName">Usuário</h2>
                 <p><span class="cargo">Cargo:</span> <span id="userCargo">Analista</span></p>
             </div>
         </div>
-        <button class="logout-btn" onclick="logout()" title="Sair do sistema">
-            <i class="fas fa-sign-out-alt"></i>
-        </button>
+        <div class="header-actions">
+            <button class="notification-btn" id="notificationBtn" onclick="toggleNotifications()" title="Notificações">
+                <i class="fas fa-bell"></i>
+                <div class="notification-badge" id="notificationBadge" style="display: none;">0</div>
+            </button>
+            <button class="logout-btn" onclick="openProfileModal()" title="Perfil">
+                <i class="fas fa-user"></i>
+            </button>
+        </div>
     </div>
 
     <!-- Modal de Perfil -->
@@ -777,7 +870,10 @@
                 <button class="close-modal" onclick="closeProfileModal()">
                     <i class="fas fa-times"></i>
                 </button>
-                <div class="profile-avatar-large" id="modalUserAvatar">U</div>
+                <div class="profile-avatar-large" id="modalUserAvatar">
+                    <img id="modalUserAvatarImg" style="display: none;">
+                    <span id="modalUserAvatarText">U</span>
+                </div>
                 <h2 id="modalUserName">Usuário</h2>
                 <p id="modalUserCargo">Cargo: Analista</p>
             </div>
@@ -786,7 +882,8 @@
                 <!-- Foto do Perfil -->
                 <div class="profile-section">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <button class="edit-btn" onclick="editProfilePhoto()">
+                        <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                        <button class="edit-btn" onclick="document.getElementById('photoInput').click()">
                             <i class="fas fa-camera"></i> Editar Foto
                         </button>
                     </div>
@@ -836,7 +933,7 @@
                 <!-- Configurações -->
                 <div class="profile-section">
                     <h3 class="section-title">⚙️ Configurações</h3>
-                    <div class="menu-item" onclick="showSection('senha')">
+                    <div class="menu-item" onclick="togglePasswordForm()">
                         <div class="menu-icon">
                             <i class="fas fa-lock"></i>
                         </div>
@@ -845,15 +942,18 @@
                             <div style="font-size: 12px; color: var(--gray);">Atualize sua senha de acesso</div>
                         </div>
                     </div>
-                    <div class="menu-item" onclick="showSection('notificacoes')">
-                        <div class="menu-icon">
-                            <i class="fas fa-bell"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight: 500;">Notificações</div>
-                            <div style="font-size: 12px; color: var(--gray);">Configure alertas e notificações</div>
+                    
+                    <!-- Formulário de Alteração de Senha -->
+                    <div class="password-form" id="passwordForm">
+                        <input type="password" class="password-input" id="currentPassword" placeholder="Senha atual">
+                        <input type="password" class="password-input" id="newPassword" placeholder="Nova senha">
+                        <input type="password" class="password-input" id="confirmPassword" placeholder="Confirmar nova senha">
+                        <div class="password-buttons">
+                            <button class="cancel-btn" onclick="togglePasswordForm()">Cancelar</button>
+                            <button class="save-btn" onclick="changePassword()">Salvar</button>
                         </div>
                     </div>
+                    
                     <div class="menu-item" onclick="showSection('localizacao')">
                         <div class="menu-icon">
                             <i class="fas fa-map-marker-alt"></i>
@@ -877,12 +977,6 @@
                 <!-- Documentos -->
                 <div class="profile-section">
                     <h3 class="section-title">📄 Documentos</h3>
-                    <div class="menu-item" onclick="showSection('carteira')">
-                        <div class="menu-icon">
-                            <i class="fas fa-id-card"></i>
-                        </div>
-                        <div style="font-weight: 500;">Carteira de Trabalho</div>
-                    </div>
                     <div class="menu-item" onclick="showSection('banco-horas')">
                         <div class="menu-icon">
                             <i class="fas fa-clock"></i>
@@ -897,21 +991,8 @@
                     </div>
                 </div>
 
-                <!-- Ajuda -->
+                <!-- Sair -->
                 <div class="profile-section">
-                    <h3 class="section-title">🛠️ Ajuda</h3>
-                    <div class="menu-item" onclick="showSection('rh')">
-                        <div class="menu-icon">
-                            <i class="fas fa-headset"></i>
-                        </div>
-                        <div style="font-weight: 500;">Contatar RH</div>
-                    </div>
-                    <div class="menu-item" onclick="showSection('faq')">
-                        <div class="menu-icon">
-                            <i class="fas fa-question-circle"></i>
-                        </div>
-                        <div style="font-weight: 500;">FAQ</div>
-                    </div>
                     <div class="menu-item" onclick="logout()" style="color: var(--danger);">
                         <div class="menu-icon" style="background: rgba(231, 76, 60, 0.1); color: var(--danger);">
                             <i class="fas fa-sign-out-alt"></i>
@@ -1021,7 +1102,8 @@
             nome: '',
             email: '',
             telefone: '(11) 99999-9999',
-            cargo: 'Analista'
+            cargo: 'Analista',
+            foto: null
         };
 
         // Inicialização
@@ -1046,6 +1128,9 @@
                 await loadDashboard();
                 startClock();
                 
+                // Verificar notificações
+                checkNotifications();
+                
             } catch (error) {
                 console.error('Erro:', error);
                 showError('Erro ao carregar dados');
@@ -1059,198 +1144,57 @@
             userProfileData = {
                 nome: currentUser.nome,
                 email: currentUser.email,
-                telefone: '(11) 99999-9999',
-                cargo: getCargo(currentUser.nome)
+                telefone: userProfileData.telefone,
+                cargo: userProfileData.cargo,
+                foto: localStorage.getItem('userPhoto')
             };
         }
 
         function updateUserInterface() {
-            // Header
+            // Atualizar header
             document.getElementById('userName').textContent = userProfileData.nome;
-            document.getElementById('userAvatar').textContent = userProfileData.nome.charAt(0).toUpperCase();
             document.getElementById('userCargo').textContent = userProfileData.cargo;
             
-            // Modal
+            // Atualizar modal
             document.getElementById('modalUserName').textContent = userProfileData.nome;
-            document.getElementById('modalUserAvatar').textContent = userProfileData.nome.charAt(0).toUpperCase();
             document.getElementById('modalUserCargo').textContent = `Cargo: ${userProfileData.cargo}`;
             document.getElementById('displayNome').textContent = userProfileData.nome;
             document.getElementById('displayEmail').textContent = userProfileData.email;
             document.getElementById('displayTelefone').textContent = userProfileData.telefone;
             
-            // Preencher inputs
-            document.getElementById('editNome').value = userProfileData.nome;
-            document.getElementById('editEmail').value = userProfileData.email;
-            document.getElementById('editTelefone').value = userProfileData.telefone;
+            // Atualizar avatar
+            updateAvatar();
         }
 
-        function getCargo(nome) {
-            const cargos = ['Analista', 'Desenvolvedor', 'Gerente', 'Assistente', 'Coordenador'];
-            const hash = nome.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-            return cargos[hash % cargos.length];
-        }
-
-        // Funções de Edição
-        function startEdit(field) {
-            const item = document.getElementById(`${field}Item`);
-            const display = document.getElementById(`display${field.charAt(0).toUpperCase() + field.slice(1)}`);
-            const input = document.getElementById(`edit${field.charAt(0).toUpperCase() + field.slice(1)}`);
-            const editBtn = item.querySelector('.edit-btn');
-            const saveBtn = item.querySelector('.save-btn');
-            const cancelBtn = item.querySelector('.cancel-btn');
+        function updateAvatar() {
+            const avatarImg = document.getElementById('userAvatarImg');
+            const avatarText = document.getElementById('userAvatarText');
+            const modalAvatarImg = document.getElementById('modalUserAvatarImg');
+            const modalAvatarText = document.getElementById('modalUserAvatarText');
             
-            // Esconder display, mostrar input
-            display.style.display = 'none';
-            input.style.display = 'block';
-            editBtn.style.display = 'none';
-            saveBtn.style.display = 'inline-block';
-            cancelBtn.style.display = 'inline-block';
-            
-            // Focar no input
-            input.focus();
-        }
-
-        function cancelEdit(field) {
-            const item = document.getElementById(`${field}Item`);
-            const display = document.getElementById(`display${field.charAt(0).toUpperCase() + field.slice(1)}`);
-            const input = document.getElementById(`edit${field.charAt(0).toUpperCase() + field.slice(1)}`);
-            const editBtn = item.querySelector('.edit-btn');
-            const saveBtn = item.querySelector('.save-btn');
-            const cancelBtn = item.querySelector('.cancel-btn');
-            
-            // Restaurar valores originais
-            input.value = userProfileData[field];
-            
-            // Mostrar display, esconder input
-            display.style.display = 'block';
-            input.style.display = 'none';
-            editBtn.style.display = 'inline-block';
-            saveBtn.style.display = 'none';
-            cancelBtn.style.display = 'none';
-        }
-
-        async function saveNome() {
-            const novoNome = document.getElementById('editNome').value.trim();
-            
-            if (!novoNome) {
-                showError('Por favor, digite um nome válido');
-                return;
-            }
-            
-            try {
-                // Simular salvamento no servidor
-                userProfileData.nome = novoNome;
-                currentUser.nome = novoNome;
+            if (userProfileData.foto) {
+                avatarImg.src = userProfileData.foto;
+                avatarImg.style.display = 'block';
+                avatarText.style.display = 'none';
                 
-                // Atualizar session storage
-                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                modalAvatarImg.src = userProfileData.foto;
+                modalAvatarImg.style.display = 'block';
+                modalAvatarText.style.display = 'none';
+            } else {
+                avatarImg.style.display = 'none';
+                avatarText.style.display = 'block';
+                avatarText.textContent = userProfileData.nome.charAt(0).toUpperCase();
                 
-                // Atualizar interface
-                updateUserInterface();
-                
-                // Sair do modo edição
-                cancelEdit('nome');
-                
-                showSuccess('Nome atualizado com sucesso!');
-                
-            } catch (error) {
-                console.error('Erro ao salvar nome:', error);
-                showError('Erro ao atualizar nome');
+                modalAvatarImg.style.display = 'none';
+                modalAvatarText.style.display = 'block';
+                modalAvatarText.textContent = userProfileData.nome.charAt(0).toUpperCase();
             }
         }
 
-        async function saveEmail() {
-            const novoEmail = document.getElementById('editEmail').value.trim();
-            
-            if (!novoEmail || !isValidEmail(novoEmail)) {
-                showError('Por favor, digite um e-mail válido');
-                return;
-            }
-            
-            try {
-                // Simular salvamento no servidor
-                userProfileData.email = novoEmail;
-                currentUser.email = novoEmail;
-                
-                // Atualizar session storage
-                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                // Atualizar interface
-                updateUserInterface();
-                
-                // Sair do modo edição
-                cancelEdit('email');
-                
-                showSuccess('E-mail atualizado com sucesso!');
-                
-            } catch (error) {
-                console.error('Erro ao salvar e-mail:', error);
-                showError('Erro ao atualizar e-mail');
-            }
-        }
-
-        async function saveTelefone() {
-            const novoTelefone = document.getElementById('editTelefone').value.trim();
-            
-            if (!novoTelefone) {
-                showError('Por favor, digite um telefone válido');
-                return;
-            }
-            
-            try {
-                // Simular salvamento no servidor
-                userProfileData.telefone = formatTelefone(novoTelefone);
-                
-                // Atualizar interface
-                updateUserInterface();
-                
-                // Sair do modo edição
-                cancelEdit('telefone');
-                
-                showSuccess('Telefone atualizado com sucesso!');
-                
-            } catch (error) {
-                console.error('Erro ao salvar telefone:', error);
-                showError('Erro ao atualizar telefone');
-            }
-        }
-
-        function isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
-        }
-
-        function formatTelefone(telefone) {
-            // Formatação simples de telefone
-            const numbers = telefone.replace(/\D/g, '');
-            if (numbers.length === 11) {
-                return `(${numbers.substring(0,2)}) ${numbers.substring(2,7)}-${numbers.substring(7)}`;
-            } else if (numbers.length === 10) {
-                return `(${numbers.substring(0,2)}) ${numbers.substring(2,6)}-${numbers.substring(6)}`;
-            }
-            return telefone;
-        }
-
-        function editProfilePhoto() {
-            alert('Funcionalidade de edição de foto será implementada em breve!');
-        }
-
-        function openProfileModal() {
-            document.getElementById('profileModal').style.display = 'flex';
-        }
-
-        function closeProfileModal() {
-            document.getElementById('profileModal').style.display = 'none';
-        }
-
-        function showSection(section) {
-            alert(`Abrindo seção: ${section}`);
-        }
-
+        // Funções do Relógio
         function startClock() {
             updateClock();
             setInterval(updateClock, 1000);
-            setInterval(loadDashboard, 30000);
         }
 
         function updateClock() {
@@ -1258,39 +1202,38 @@
             document.getElementById('currentTime').textContent = 
                 now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             document.getElementById('currentDate').textContent = 
-                now.toLocaleDateString('pt-BR', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                });
+                now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         }
 
+        // Funções do Dashboard
         async function loadDashboard() {
             try {
-                await loadRegistros();
-                updateStats();
-                updateStatus();
-            } catch (error) {
-                console.error('Erro ao carregar dashboard:', error);
-            }
-        }
-
-        async function loadRegistros() {
-            try {
-                const response = await fetch(`/api/registros/${currentUser.id}`);
-                const data = await response.json();
+                // Simular carregamento de dados
+                const response = await fetch('/api/registros/hoje', {
+                    headers: { 'Authorization': `Bearer ${currentUser.token}` }
+                });
                 
-                const hoje = new Date().toISOString().split('T')[0];
-                registrosHoje = data.registros
-                    .filter(registro => registro.data === hoje)
-                    .sort((a, b) => b.timestamp - a.timestamp);
+                if (!response.ok) throw new Error('Erro ao carregar registros');
+                
+                const data = await response.json();
+                registrosHoje = data.registros;
                 
                 updateRegistrosList();
+                updateStats();
+                updateStatus();
                 
             } catch (error) {
-                console.error('Erro ao carregar registros:', error);
-                showError('Erro ao carregar registros');
+                console.error('Erro:', error);
+                // Simular dados para demonstração
+                registrosHoje = [
+                    { tipo: 'entrada', horario: '08:00', data: new Date().toISOString() },
+                    { tipo: 'saida', horario: '12:00', data: new Date().toISOString() },
+                    { tipo: 'entrada', horario: '13:00', data: new Date().toISOString() }
+                ];
+                
+                updateRegistrosList();
+                updateStats();
+                updateStatus();
             }
         }
 
@@ -1307,53 +1250,58 @@
                 `;
                 return;
             }
-
+            
             registrosList.innerHTML = registrosHoje.map(registro => `
                 <div class="registro-item">
                     <div class="registro-info">
-                        <div class="registro-icon ${registro.tipo === 'entrada' ? 'entrada-icon' : 'saida-icon'}">
+                        <div class="registro-icon ${registro.tipo}-icon">
                             <i class="fas fa-${registro.tipo === 'entrada' ? 'sign-in-alt' : 'sign-out-alt'}"></i>
                         </div>
                         <div class="registro-details">
-                            <span class="registro-tipo">
-                                ${registro.tipo === 'entrada' ? 'Entrada Registrada' : 'Saída Registrada'}
-                            </span>
-                            <span class="registro-data">
-                                ${formatarData(registro.data)}
-                            </span>
+                            <div class="registro-tipo">${registro.tipo === 'entrada' ? 'Entrada' : 'Saída'}</div>
+                            <div class="registro-data">${new Date(registro.data).toLocaleDateString('pt-BR')}</div>
                         </div>
                     </div>
-                    <div class="registro-hora">${registro.hora}</div>
+                    <div class="registro-hora">${registro.horario}</div>
                 </div>
             `).join('');
         }
 
         function updateStats() {
-            const entradas = registrosHoje.filter(r => r.tipo === 'entrada');
-            const saidas = registrosHoje.filter(r => r.tipo === 'saida');
+            const entradas = registrosHoje.filter(r => r.tipo === 'entrada').length;
+            const saidas = registrosHoje.filter(r => r.tipo === 'saida').length;
             
-            document.getElementById('totalEntradas').textContent = entradas.length;
-            document.getElementById('totalSaidas').textContent = saidas.length;
-            document.getElementById('totalIntervalos').textContent = Math.max(0, Math.min(entradas.length, saidas.length) - 1);
+            document.getElementById('totalEntradas').textContent = entradas;
+            document.getElementById('totalSaidas').textContent = saidas;
+            document.getElementById('totalIntervalos').textContent = Math.min(entradas, saidas);
+            
+            // Calcular horas trabalhadas (simulação)
+            const horasTrabalhadas = calcularHorasTrabalhadas();
+            document.getElementById('horasTrabalhadas').textContent = horasTrabalhadas;
+        }
+
+        function calcularHorasTrabalhadas() {
+            // Simulação de cálculo de horas
+            if (registrosHoje.length < 2) return '0h 00m';
             
             let totalMinutos = 0;
-            let entradaPendente = null;
+            let entradaAtual = null;
             
-            registrosHoje
-                .sort((a, b) => a.timestamp - b.timestamp)
-                .forEach(registro => {
-                    if (registro.tipo === 'entrada') {
-                        entradaPendente = registro;
-                    } else if (registro.tipo === 'saida' && entradaPendente) {
-                        const diffMs = registro.timestamp - entradaPendente.timestamp;
-                        totalMinutos += Math.floor(diffMs / (1000 * 60));
-                        entradaPendente = null;
-                    }
-                });
+            for (const registro of registrosHoje) {
+                if (registro.tipo === 'entrada') {
+                    entradaAtual = registro;
+                } else if (registro.tipo === 'saida' && entradaAtual) {
+                    const entrada = new Date(entradaAtual.data);
+                    const saida = new Date(registro.data);
+                    totalMinutos += (saida - entrada) / (1000 * 60);
+                    entradaAtual = null;
+                }
+            }
             
             const horas = Math.floor(totalMinutos / 60);
-            const minutos = totalMinutos % 60;
-            document.getElementById('horasTrabalhadas').textContent = `${horas}h ${minutos.toString().padStart(2, '0')}m`;
+            const minutos = Math.floor(totalMinutos % 60);
+            
+            return `${horas}h ${minutos.toString().padStart(2, '0')}m`;
         }
 
         function updateStatus() {
@@ -1362,61 +1310,411 @@
             
             if (registrosHoje.length === 0) {
                 statusDot.className = 'status-dot inativo';
-                statusText.textContent = 'Sem registros hoje';
+                statusText.textContent = 'Aguardando primeiro registro';
                 return;
             }
             
-            const ultimoRegistro = registrosHoje[0];
+            const ultimoRegistro = registrosHoje[registrosHoje.length - 1];
+            
             if (ultimoRegistro.tipo === 'entrada') {
                 statusDot.className = 'status-dot ativo';
-                statusText.textContent = `Trabalhando desde ${ultimoRegistro.hora}`;
+                statusText.textContent = 'Trabalhando';
             } else {
                 statusDot.className = 'status-dot inativo';
-                statusText.textContent = `Fora desde ${ultimoRegistro.hora}`;
+                statusText.textContent = 'Fora do trabalho';
             }
         }
 
+        // Funções de Registro de Ponto
         async function registrarPonto(tipo) {
             try {
-                const btn = event.target.closest('.ponto-btn');
-                btn.style.transform = 'scale(0.95)';
+                // Verificar permissão de localização
+                if (!await checkLocationPermission()) {
+                    showError('Permissão de localização necessária para registrar ponto');
+                    return;
+                }
                 
-                const response = await fetch('/api/registrar-ponto', {
+                // Obter localização
+                const location = await getCurrentLocation();
+                
+                // Registrar ponto
+                const response = await fetch('/api/registros', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
                     body: JSON.stringify({
-                        usuario_id: currentUser.id,
-                        tipo: tipo
+                        tipo: tipo,
+                        localizacao: location
                     })
                 });
                 
-                const data = await response.json();
+                if (!response.ok) throw new Error('Erro ao registrar ponto');
                 
-                if (data.success) {
-                    showSuccess(data.message);
-                    await loadDashboard();
-                    
-                    if (navigator.vibrate) {
-                        navigator.vibrate(50);
-                    }
-                } else {
-                    showError(data.error || 'Erro ao registrar ponto');
-                }
+                const resultado = await response.json();
+                
+                showSuccess(`Ponto registrado com sucesso às ${resultado.horario}`);
+                await loadDashboard();
                 
             } catch (error) {
                 console.error('Erro:', error);
-                showError('Erro de conexão com o servidor');
-            } finally {
-                setTimeout(() => {
-                    const btn = event.target.closest('.ponto-btn');
-                    if (btn) btn.style.transform = '';
-                }, 300);
+                showError('Erro ao registrar ponto. Tente novamente.');
             }
         }
 
-        function formatarData(data) {
-            const [ano, mes, dia] = data.split('-');
-            return `${dia}/${mes}/${ano}`;
+        async function checkLocationPermission() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve(false);
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    () => resolve(true),
+                    () => resolve(false),
+                    { timeout: 5000 }
+                );
+            });
+        }
+
+        async function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(
+                    position => resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    }),
+                    error => reject(error),
+                    { 
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            });
+        }
+
+        // Funções do Modal de Perfil
+        function openProfileModal() {
+            document.getElementById('profileModal').style.display = 'flex';
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').style.display = 'none';
+            // Resetar formulários de edição
+            cancelAllEdits();
+            document.getElementById('passwordForm').style.display = 'none';
+        }
+
+        // Funções de Edição de Perfil
+        function startEdit(campo) {
+            // Cancelar outras edições
+            cancelAllEdits();
+            
+            const item = document.getElementById(`${campo}Item`);
+            const display = document.getElementById(`display${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
+            const input = document.getElementById(`edit${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
+            const editBtn = item.querySelector('.edit-btn');
+            const saveBtn = item.querySelector('.save-btn');
+            const cancelBtn = item.querySelector('.cancel-btn');
+            
+            // Configurar valor do input
+            input.value = display.textContent;
+            
+            // Mostrar/ocultar elementos
+            display.style.display = 'none';
+            input.style.display = 'block';
+            editBtn.style.display = 'none';
+            saveBtn.style.display = 'inline-block';
+            cancelBtn.style.display = 'inline-block';
+            
+            // Focar no input
+            input.focus();
+        }
+
+        function cancelEdit(campo) {
+            const item = document.getElementById(`${campo}Item`);
+            const display = document.getElementById(`display${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
+            const input = document.getElementById(`edit${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
+            const editBtn = item.querySelector('.edit-btn');
+            const saveBtn = item.querySelector('.save-btn');
+            const cancelBtn = item.querySelector('.cancel-btn');
+            
+            // Restaurar estado
+            display.style.display = 'block';
+            input.style.display = 'none';
+            editBtn.style.display = 'inline-block';
+            saveBtn.style.display = 'none';
+            cancelBtn.style.display = 'none';
+        }
+
+        function cancelAllEdits() {
+            ['nome', 'email', 'telefone'].forEach(campo => {
+                const item = document.getElementById(`${campo}Item`);
+                if (item) {
+                    const display = document.getElementById(`display${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
+                    const input = document.getElementById(`edit${campo.charAt(0).toUpperCase() + campo.slice(1)}`);
+                    const editBtn = item.querySelector('.edit-btn');
+                    const saveBtn = item.querySelector('.save-btn');
+                    const cancelBtn = item.querySelector('.cancel-btn');
+                    
+                    if (display && input && editBtn && saveBtn && cancelBtn) {
+                        display.style.display = 'block';
+                        input.style.display = 'none';
+                        editBtn.style.display = 'inline-block';
+                        saveBtn.style.display = 'none';
+                        cancelBtn.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        async function saveNome() {
+            const novoNome = document.getElementById('editNome').value.trim();
+            
+            if (!novoNome) {
+                showError('Nome não pode estar vazio');
+                return;
+            }
+            
+            try {
+                // Simular salvamento no servidor
+                userProfileData.nome = novoNome;
+                localStorage.setItem('userProfile', JSON.stringify(userProfileData));
+                
+                // Atualizar interface
+                document.getElementById('displayNome').textContent = novoNome;
+                document.getElementById('userName').textContent = novoNome;
+                document.getElementById('modalUserName').textContent = novoNome;
+                updateAvatar();
+                
+                cancelEdit('nome');
+                showSuccess('Nome atualizado com sucesso');
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showError('Erro ao atualizar nome');
+            }
+        }
+
+        async function saveEmail() {
+            const novoEmail = document.getElementById('editEmail').value.trim();
+            
+            if (!novoEmail || !isValidEmail(novoEmail)) {
+                showError('E-mail inválido');
+                return;
+            }
+            
+            try {
+                // Simular salvamento no servidor
+                userProfileData.email = novoEmail;
+                localStorage.setItem('userProfile', JSON.stringify(userProfileData));
+                
+                // Atualizar interface
+                document.getElementById('displayEmail').textContent = novoEmail;
+                
+                cancelEdit('email');
+                showSuccess('E-mail atualizado com sucesso');
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showError('Erro ao atualizar e-mail');
+            }
+        }
+
+        async function saveTelefone() {
+            const novoTelefone = document.getElementById('editTelefone').value.trim();
+            
+            if (!novoTelefone) {
+                showError('Telefone não pode estar vazio');
+                return;
+            }
+            
+            try {
+                // Simular salvamento no servidor
+                userProfileData.telefone = novoTelefone;
+                localStorage.setItem('userProfile', JSON.stringify(userProfileData));
+                
+                // Atualizar interface
+                document.getElementById('displayTelefone').textContent = novoTelefone;
+                
+                cancelEdit('telefone');
+                showSuccess('Telefone atualizado com sucesso');
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showError('Erro ao atualizar telefone');
+            }
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Funções de Alteração de Senha
+        function togglePasswordForm() {
+            const form = document.getElementById('passwordForm');
+            form.style.display = form.style.display === 'block' ? 'none' : 'block';
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showError('Preencha todos os campos');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showError('As senhas não coincidem');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showError('A nova senha deve ter pelo menos 6 caracteres');
+                return;
+            }
+            
+            try {
+                // Simular alteração de senha
+                const response = await fetch('/api/alterar-senha', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`
+                    },
+                    body: JSON.stringify({
+                        senhaAtual: currentPassword,
+                        novaSenha: newPassword
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Erro ao alterar senha');
+                
+                // Limpar formulário
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                
+                togglePasswordForm();
+                showSuccess('Senha alterada com sucesso');
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showError('Erro ao alterar senha. Verifique a senha atual.');
+            }
+        }
+
+        // Upload de Foto
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showError('Por favor, selecione uma imagem');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                showError('A imagem deve ter no máximo 5MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                // Criar canvas para redimensionar a imagem
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Definir tamanho máximo
+                    const maxSize = 300;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height) {
+                        if (width > maxSize) {
+                            height = Math.round((height * maxSize) / width);
+                            width = maxSize;
+                        }
+                    } else {
+                        if (height > maxSize) {
+                            width = Math.round((width * maxSize) / height);
+                            height = maxSize;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Desenhar imagem redimensionada
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Obter URL da imagem redimensionada
+                    const resizedImageUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    // Salvar imagem
+                    userProfileData.foto = resizedImageUrl;
+                    localStorage.setItem('userPhoto', resizedImageUrl);
+                    localStorage.setItem('userProfile', JSON.stringify(userProfileData));
+                    
+                    // Atualizar avatares
+                    updateAvatar();
+                    
+                    showSuccess('Foto atualizada com sucesso');
+                };
+                
+                img.src = e.target.result;
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Funções de Notificação
+        async function checkNotifications() {
+            try {
+                const response = await fetch('/api/notificacoes', {
+                    headers: { 'Authorization': `Bearer ${currentUser.token}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const notificacoesNaoLidas = data.filter(n => !n.lida).length;
+                    
+                    if (notificacoesNaoLidas > 0) {
+                        document.getElementById('notificationBadge').textContent = notificacoesNaoLidas;
+                        document.getElementById('notificationBadge').style.display = 'flex';
+                    } else {
+                        document.getElementById('notificationBadge').style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao verificar notificações:', error);
+            }
+        }
+
+        function toggleNotifications() {
+            // Simular abertura de notificações
+            showSuccess('Notificações carregadas');
+            // Aqui você implementaria a lógica para mostrar as notificações
+        }
+
+        // Funções Auxiliares
+        function showSection(section) {
+            showSuccess(`Abrindo ${section}`);
+            // Implementar navegação para as seções
+        }
+
+        function logout() {
+            sessionStorage.removeItem('currentUser');
+            window.location.href = '/login';
         }
 
         function showSuccess(message) {
@@ -1439,30 +1737,13 @@
             }, 5000);
         }
 
-        function logout() {
-            if (confirm('Deseja realmente sair do sistema?')) {
-                sessionStorage.removeItem('currentUser');
-                window.location.href = '/';
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('profileModal');
+            if (event.target === modal) {
+                closeProfileModal();
             }
         }
-
-        // Fechar modal ao clicar fora
-        window.addEventListener('click', function(e) {
-            if (e.target.id === 'profileModal') {
-                closeProfileModal();
-            }
-        });
-
-        // Atalhos de teclado
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'e' || e.key === 'E') {
-                registrarPonto('entrada');
-            } else if (e.key === 's' || e.key === 'S') {
-                registrarPonto('saida');
-            } else if (e.key === 'Escape') {
-                closeProfileModal();
-            }
-        });
     </script>
 </body>
 </html>
