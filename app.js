@@ -1,9 +1,7 @@
 // Sistema de Ponto - Frontend JavaScript
 // Configuração
 const CONFIG = {
-    API_BASE_URL: '/api',
-    MAX_PHOTO_SIZE: 5 * 1024 * 1024, // 5MB
-    REQUEST_TIMEOUT: 10000
+    API_BASE_URL: '/api'
 };
 
 // Estado da aplicação
@@ -40,16 +38,14 @@ const utils = {
     }
 };
 
-// API Service
+// API Service - SEM TOKEN
 const apiService = {
     async request(endpoint, options = {}) {
         const url = `${CONFIG.API_BASE_URL}${endpoint}`;
-        const token = localStorage.getItem('authToken');
         
         const config = {
             headers: {
-                'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` })
+                'Content-Type': 'application/json'
             },
             ...options
         };
@@ -60,11 +56,6 @@ const apiService = {
 
         try {
             const response = await fetch(url, config);
-
-            if (response.status === 401) {
-                this.handleAuthError();
-                throw new Error('Não autorizado');
-            }
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -78,26 +69,12 @@ const apiService = {
         }
     },
 
-    handleAuthError() {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('authToken');
-        window.location.href = '/login';
-    },
-
     // Métodos de autenticação
     async login(email, senha) {
         return this.request('/login', {
             method: 'POST',
             body: { email, senha }
         });
-    },
-
-    async verificarToken() {
-        return this.request('/verify-token');
-    },
-
-    async obterUsuarioAtual() {
-        return this.request('/me');
     },
 
     // Métodos de perfil
@@ -116,20 +93,16 @@ const apiService = {
     },
 
     async uploadAvatar(formData) {
-        const token = localStorage.getItem('authToken');
         const response = await fetch('/api/upload-avatar', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
             body: formData
         });
         return await response.json();
     },
 
     // Métodos de administração
-    async listarUsuarios() {
-        return this.request('/admin/usuarios');
+    async listarUsuarios(usuario_id) {
+        return this.request(`/admin/usuarios?usuario_id=${usuario_id}`);
     },
 
     async cadastrarUsuario(dados) {
@@ -143,7 +116,6 @@ const apiService = {
 // Sistema de Notificações
 const notificationManager = {
     show(message, type = 'success', duration = 5000) {
-        // Criar elemento de alerta dinâmico se não existir
         let alert = document.getElementById('dynamicAlert');
         if (!alert) {
             alert = document.createElement('div');
@@ -196,23 +168,20 @@ const notificationManager = {
     }
 };
 
-// Gerenciamento de Autenticação
+// Gerenciamento de Autenticação - SEM TOKEN
 const authManager = {
     async initialize() {
         const userData = localStorage.getItem('currentUser');
-        const token = localStorage.getItem('authToken');
         
-        if (!userData || !token) {
+        if (!userData) {
             return false;
         }
         
         try {
-            // Verificar se o token ainda é válido
-            await apiService.verificarToken();
             currentUser = JSON.parse(userData);
             return true;
         } catch (error) {
-            console.error('Token inválido:', error);
+            console.error('Erro ao carregar usuário:', error);
             this.logout();
             return false;
         }
@@ -224,7 +193,6 @@ const authManager = {
             
             if (result.success) {
                 localStorage.setItem('currentUser', JSON.stringify(result.user));
-                localStorage.setItem('authToken', result.token);
                 currentUser = result.user;
                 
                 notificationManager.showSuccess(result.message);
@@ -241,7 +209,6 @@ const authManager = {
 
     logout() {
         localStorage.removeItem('currentUser');
-        localStorage.removeItem('authToken');
         currentUser = null;
         window.location.href = '/login';
     },
@@ -267,7 +234,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function initializeApp() {
     // Verificar se está na página de login
     if (window.location.pathname === '/login' || window.location.pathname === '/') {
-        return; // Não inicializar nas páginas públicas
+        return;
     }
 
     // Verificar autenticação
@@ -296,7 +263,11 @@ function updateUserInterface() {
     // Atualizar elementos da UI com dados do usuário
     const userNameElements = document.querySelectorAll('.user-name, [data-user-name]');
     userNameElements.forEach(el => {
-        el.textContent = currentUser.nome;
+        if (el.tagName === 'INPUT') {
+            el.value = currentUser.nome;
+        } else {
+            el.textContent = currentUser.nome;
+        }
     });
 
     const userRoleElements = document.querySelectorAll('.user-cargo, [data-user-role]');
@@ -318,6 +289,17 @@ function updateUserInterface() {
     const adminElements = document.querySelectorAll('.admin-only');
     adminElements.forEach(el => {
         el.style.display = currentUser.isAdmin ? 'block' : 'none';
+    });
+
+    // Atualizar informações de perfil
+    const emailElements = document.querySelectorAll('[data-user-email]');
+    emailElements.forEach(el => {
+        el.textContent = currentUser.email;
+    });
+
+    const telefoneElements = document.querySelectorAll('[data-user-telefone]');
+    telefoneElements.forEach(el => {
+        el.textContent = currentUser.telefone || 'Não informado';
     });
 }
 
@@ -357,14 +339,6 @@ function setupGlobalEventListeners() {
         });
     });
 
-    // Navegação admin
-    if (authManager.isAdmin()) {
-        const adminLinks = document.querySelectorAll('[data-admin-link]');
-        adminLinks.forEach(link => {
-            link.style.display = 'block';
-        });
-    }
-
     // Fechar modais ao clicar fora
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
@@ -394,3 +368,11 @@ window.app = {
 
 // Função global de logout
 window.logout = authManager.logout;
+
+// Função global para verificar autenticação
+window.checkAuth = () => {
+    const user = localStorage.getItem('currentUser');
+    if (!user && !window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+    }
+};

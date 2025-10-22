@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 
 const app = express();
@@ -15,9 +14,6 @@ const pool = new Pool({
     rejectUnauthorized: false
   }
 });
-
-// Configurações
-const JWT_SECRET = process.env.JWT_SECRET || 'secreto_super_seguro_mudar_em_producao_2024';
 
 // Middleware
 app.use(cors());
@@ -60,7 +56,7 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Tabela users criada/verificada');
 
-    // Verificar se admin existe
+    // Verificar se admin existe - SEM MOSTRAR CREDENCIAIS
     const adminResult = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@admin.com']);
     
     if (adminResult.rows.length === 0) {
@@ -73,9 +69,9 @@ const initializeDatabase = async () => {
         [adminId, 'Administrador', 'admin@admin.com', hashedPassword, 'CEO Administrativo', true]
       );
       
-      console.log('👑 Usuário admin criado');
+      console.log('👑 Usuário administrador criado');
     } else {
-      console.log('👑 Usuário admin já existe');
+      console.log('👑 Usuário administrador já existe');
     }
 
     console.log('✅ Banco de dados inicializado com sucesso!');
@@ -84,40 +80,59 @@ const initializeDatabase = async () => {
   }
 };
 
-// Middleware de autenticação
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Token de acesso requerido' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token inválido' });
+// Middleware de autenticação SIMPLIFICADO - SEM TOKEN
+const requireAuth = async (req, res, next) => {
+  try {
+    const { usuario_id } = req.body;
+    
+    if (!usuario_id) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
     }
-    req.user = user;
+
+    // Verificar se usuário existe
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Usuário não encontrado' });
+    }
+
+    req.user = result.rows[0];
     next();
-  });
+  } catch (error) {
+    console.error('Erro na autenticação:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 };
 
-// Gerar token JWT
-const generateToken = (user) => {
-  return jwt.sign(
-    { 
-      id: user.id, 
-      email: user.email, 
-      isAdmin: user.is_admin 
-    },
-    JWT_SECRET,
-    { expiresIn: '24h' }
-  );
+// Middleware para admin
+const requireAdmin = async (req, res, next) => {
+  try {
+    const { usuario_id } = req.body;
+    
+    if (!usuario_id) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Usuário não encontrado' });
+    }
+
+    const user = result.rows[0];
+    if (!user.is_admin) {
+      return res.status(403).json({ error: 'Acesso restrito a administradores' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Erro na verificação de admin:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 };
 
 // ========== ROTAS DA API ==========
 
-// ROTA DE LOGIN
+// ROTA DE LOGIN - SIMPLIFICADA
 app.post('/api/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -142,15 +157,11 @@ app.post('/api/login', async (req, res) => {
     if (!senhaValida) {
       return res.status(400).json({ error: 'E-mail ou senha incorretos' });
     }
-
-    // Gerar token
-    const token = generateToken(user);
     
-    // Responder com sucesso
+    // Responder com sucesso - SEM TOKEN
     res.json({ 
       success: true, 
-      message: 'Login realizado com sucesso!', 
-      token,
+      message: 'Login realizado com sucesso!',
       user: { 
         id: user.id, 
         nome: user.nome, 
@@ -170,16 +181,19 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ROTA DE CADASTRO (para admin)
-app.post('/api/cadastro', authenticateToken, async (req, res) => {
+// ROTA DE CADASTRO (para admin) - SEM TOKEN
+app.post('/api/cadastro', async (req, res) => {
   try {
+    const { usuario_id, nome, email, telefone, senha, cargo } = req.body;
+    
     // Verificar se é admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ error: 'Acesso restrito a administradores' });
+    if (usuario_id) {
+      const adminResult = await pool.query('SELECT * FROM users WHERE id = $1 AND is_admin = true', [usuario_id]);
+      if (adminResult.rows.length === 0) {
+        return res.status(403).json({ error: 'Acesso restrito a administradores' });
+      }
     }
 
-    const { nome, email, telefone, senha, cargo } = req.body;
-    
     if (!nome || !email || !senha) {
       return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios' });
     }
@@ -221,38 +235,55 @@ app.post('/api/cadastro', authenticateToken, async (req, res) => {
   }
 });
 
-// ROTA DE ATUALIZAÇÃO DE PERFIL
-app.put('/api/perfil', authenticateToken, async (req, res) => {
+// ROTA DE ATUALIZAÇÃO DE PERFIL - SEM TOKEN
+app.put('/api/perfil', async (req, res) => {
   try {
-    const { nome, telefone } = req.body;
+    const { usuario_id, nome, telefone } = req.body;
     
+    if (!usuario_id) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
     if (!nome) {
       return res.status(400).json({ error: 'Nome é obrigatório' });
+    }
+
+    // Verificar se usuário existe
+    const userCheck = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    const user = userCheck.rows[0];
+
+    // Se não for admin e perfil já foi editado, bloquear edição
+    if (!user.is_admin && user.perfil_editado) {
+      return res.status(400).json({ error: 'Perfil já foi editado. Para novas alterações, entre em contato com o administrador.' });
     }
 
     // Atualizar perfil
     await pool.query(
       'UPDATE users SET nome = $1, telefone = $2, perfil_editado = true WHERE id = $3',
-      [nome, telefone || null, req.user.id]
+      [nome, telefone || null, usuario_id]
     );
 
     // Buscar usuário atualizado
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
-    const user = result.rows[0];
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    const updatedUser = result.rows[0];
 
     res.json({ 
       success: true, 
       message: 'Perfil atualizado com sucesso!',
       user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        telefone: user.telefone,
-        avatar: user.avatar,
-        cargo: user.cargo,
-        perfilEditado: user.perfil_editado,
-        isAdmin: user.is_admin,
-        criadoEm: user.criado_em
+        id: updatedUser.id,
+        nome: updatedUser.nome,
+        email: updatedUser.email,
+        telefone: updatedUser.telefone,
+        avatar: updatedUser.avatar,
+        cargo: updatedUser.cargo,
+        perfilEditado: updatedUser.perfil_editado,
+        isAdmin: updatedUser.is_admin,
+        criadoEm: updatedUser.criado_em
       }
     });
 
@@ -262,11 +293,15 @@ app.put('/api/perfil', authenticateToken, async (req, res) => {
   }
 });
 
-// ROTA PARA ALTERAR SENHA
-app.put('/api/alterar-senha', authenticateToken, async (req, res) => {
+// ROTA PARA ALTERAR SENHA - SEM TOKEN
+app.put('/api/alterar-senha', async (req, res) => {
   try {
-    const { senhaAtual, novaSenha } = req.body;
+    const { usuario_id, senhaAtual, novaSenha } = req.body;
     
+    if (!usuario_id) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
     if (!senhaAtual || !novaSenha) {
       return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias' });
     }
@@ -276,7 +311,11 @@ app.put('/api/alterar-senha', authenticateToken, async (req, res) => {
     }
 
     // Buscar usuário
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
     const user = result.rows[0];
 
     // Verificar senha atual
@@ -291,7 +330,7 @@ app.put('/api/alterar-senha', authenticateToken, async (req, res) => {
     // Atualizar senha
     await pool.query(
       'UPDATE users SET senha = $1 WHERE id = $2',
-      [hashedNovaSenha, req.user.id]
+      [hashedNovaSenha, usuario_id]
     );
 
     res.json({ 
@@ -305,9 +344,15 @@ app.put('/api/alterar-senha', authenticateToken, async (req, res) => {
   }
 });
 
-// ROTA PARA UPLOAD DE AVATAR (simplificada)
-app.post('/api/upload-avatar', authenticateToken, async (req, res) => {
+// ROTA PARA UPLOAD DE AVATAR (simplificada) - SEM TOKEN
+app.post('/api/upload-avatar', async (req, res) => {
   try {
+    const { usuario_id } = req.body;
+    
+    if (!usuario_id) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
     // Em uma implementação real, aqui processaria o upload de imagem
     // Por enquanto, retornamos sucesso sem fazer nada
     res.json({ 
@@ -339,50 +384,18 @@ app.get('/api/status', async (req, res) => {
   }
 });
 
-// Rota para verificar token
-app.get('/api/verify-token', authenticateToken, (req, res) => {
-  res.json({ 
-    success: true, 
-    message: 'Token válido',
-    user: req.user 
-  });
-});
-
-// Rota para obter dados do usuário atual
-app.get('/api/me', authenticateToken, async (req, res) => {
+// Rotas de administração - SEM TOKEN
+app.get('/api/admin/usuarios', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    const { usuario_id } = req.query;
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (!usuario_id) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
     }
-    
-    const user = result.rows[0];
-    
-    res.json({
-      success: true,
-      user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        telefone: user.telefone,
-        avatar: user.avatar,
-        cargo: user.cargo,
-        perfilEditado: user.perfil_editado,
-        isAdmin: user.is_admin,
-        criadoEm: user.criado_em
-      }
-    });
-  } catch (error) {
-    console.error('Erro ao obter dados do usuário:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
 
-// Rotas de administração
-app.get('/api/admin/usuarios', authenticateToken, async (req, res) => {
-  try {
-    if (!req.user.isAdmin) {
+    // Verificar se é admin
+    const adminResult = await pool.query('SELECT * FROM users WHERE id = $1 AND is_admin = true', [usuario_id]);
+    if (adminResult.rows.length === 0) {
       return res.status(403).json({ error: 'Acesso restrito a administradores' });
     }
     
