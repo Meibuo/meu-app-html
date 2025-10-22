@@ -56,7 +56,25 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Tabela users criada/verificada');
 
-    // Verificar se admin existe - SEM MOSTRAR CREDENCIAIS
+    // Criar tabela de registros de ponto
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS registros_ponto (
+        id VARCHAR(100) PRIMARY KEY,
+        usuario_id VARCHAR(100) NOT NULL,
+        tipo VARCHAR(20) NOT NULL,
+        local VARCHAR(100),
+        observacao TEXT,
+        horas_extras BOOLEAN DEFAULT FALSE,
+        manual BOOLEAN DEFAULT FALSE,
+        data_custom DATE,
+        hora_custom TIME,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (usuario_id) REFERENCES users(id)
+      )
+    `);
+    console.log('✅ Tabela registros_ponto criada/verificada');
+
+    // Verificar se admin existe
     const adminResult = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@admin.com']);
     
     if (adminResult.rows.length === 0) {
@@ -83,7 +101,7 @@ const initializeDatabase = async () => {
 // Middleware de autenticação SIMPLIFICADO - SEM TOKEN
 const requireAuth = async (req, res, next) => {
   try {
-    const { usuario_id } = req.body;
+    const usuario_id = req.body.usuario_id || req.query.usuario_id;
     
     if (!usuario_id) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
@@ -106,7 +124,7 @@ const requireAuth = async (req, res, next) => {
 // Middleware para admin
 const requireAdmin = async (req, res, next) => {
   try {
-    const { usuario_id } = req.body;
+    const usuario_id = req.body.usuario_id || req.query.usuario_id;
     
     if (!usuario_id) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
@@ -182,18 +200,10 @@ app.post('/api/login', async (req, res) => {
 });
 
 // ROTA DE CADASTRO (para admin) - SEM TOKEN
-app.post('/api/cadastro', async (req, res) => {
+app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
   try {
-    const { usuario_id, nome, email, telefone, senha, cargo } = req.body;
+    const { nome, email, telefone, senha, cargo } = req.body;
     
-    // Verificar se é admin
-    if (usuario_id) {
-      const adminResult = await pool.query('SELECT * FROM users WHERE id = $1 AND is_admin = true', [usuario_id]);
-      if (adminResult.rows.length === 0) {
-        return res.status(403).json({ error: 'Acesso restrito a administradores' });
-      }
-    }
-
     if (!nome || !email || !senha) {
       return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios' });
     }
@@ -236,28 +246,17 @@ app.post('/api/cadastro', async (req, res) => {
 });
 
 // ROTA DE ATUALIZAÇÃO DE PERFIL - SEM TOKEN
-app.put('/api/perfil', async (req, res) => {
+app.put('/api/perfil', requireAuth, async (req, res) => {
   try {
-    const { usuario_id, nome, telefone } = req.body;
+    const { nome, telefone } = req.body;
+    const usuario_id = req.user.id;
     
-    if (!usuario_id) {
-      return res.status(401).json({ error: 'Usuário não autenticado' });
-    }
-
     if (!nome) {
       return res.status(400).json({ error: 'Nome é obrigatório' });
     }
 
-    // Verificar se usuário existe
-    const userCheck = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
-    if (userCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-
-    const user = userCheck.rows[0];
-
     // Se não for admin e perfil já foi editado, bloquear edição
-    if (!user.is_admin && user.perfil_editado) {
+    if (!req.user.is_admin && req.user.perfil_editado) {
       return res.status(400).json({ error: 'Perfil já foi editado. Para novas alterações, entre em contato com o administrador.' });
     }
 
@@ -294,14 +293,11 @@ app.put('/api/perfil', async (req, res) => {
 });
 
 // ROTA PARA ALTERAR SENHA - SEM TOKEN
-app.put('/api/alterar-senha', async (req, res) => {
+app.put('/api/alterar-senha', requireAuth, async (req, res) => {
   try {
-    const { usuario_id, senhaAtual, novaSenha } = req.body;
+    const { senhaAtual, novaSenha } = req.body;
+    const usuario_id = req.user.id;
     
-    if (!usuario_id) {
-      return res.status(401).json({ error: 'Usuário não autenticado' });
-    }
-
     if (!senhaAtual || !novaSenha) {
       return res.status(400).json({ error: 'Senha atual e nova senha são obrigatórias' });
     }
@@ -310,16 +306,8 @@ app.put('/api/alterar-senha', async (req, res) => {
       return res.status(400).json({ error: 'Nova senha deve ter pelo menos 6 caracteres' });
     }
 
-    // Buscar usuário
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-
-    const user = result.rows[0];
-
     // Verificar senha atual
-    const senhaAtualValida = await bcrypt.compare(senhaAtual, user.senha);
+    const senhaAtualValida = await bcrypt.compare(senhaAtual, req.user.senha);
     if (!senhaAtualValida) {
       return res.status(400).json({ error: 'Senha atual incorreta' });
     }
@@ -345,13 +333,9 @@ app.put('/api/alterar-senha', async (req, res) => {
 });
 
 // ROTA PARA UPLOAD DE AVATAR (simplificada) - SEM TOKEN
-app.post('/api/upload-avatar', async (req, res) => {
+app.post('/api/upload-avatar', requireAuth, async (req, res) => {
   try {
-    const { usuario_id } = req.body;
-    
-    if (!usuario_id) {
-      return res.status(401).json({ error: 'Usuário não autenticado' });
-    }
+    const usuario_id = req.user.id;
 
     // Em uma implementação real, aqui processaria o upload de imagem
     // Por enquanto, retornamos sucesso sem fazer nada
@@ -363,6 +347,29 @@ app.post('/api/upload-avatar', async (req, res) => {
 
   } catch (error) {
     console.error('Erro no upload de avatar:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA OBTER DADOS DO USUÁRIO LOGADO
+app.get('/api/me', requireAuth, async (req, res) => {
+  try {
+    res.json({ 
+      success: true, 
+      user: {
+        id: req.user.id,
+        nome: req.user.nome,
+        email: req.user.email,
+        telefone: req.user.telefone,
+        avatar: req.user.avatar,
+        cargo: req.user.cargo,
+        perfilEditado: req.user.perfil_editado,
+        isAdmin: req.user.is_admin,
+        criadoEm: req.user.criado_em
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar dados do usuário:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
@@ -384,21 +391,11 @@ app.get('/api/status', async (req, res) => {
   }
 });
 
-// Rotas de administração - SEM TOKEN
-app.get('/api/admin/usuarios', async (req, res) => {
-  try {
-    const { usuario_id } = req.query;
-    
-    if (!usuario_id) {
-      return res.status(401).json({ error: 'Usuário não autenticado' });
-    }
+// ========== ROTAS DE ADMINISTRAÇÃO ==========
 
-    // Verificar se é admin
-    const adminResult = await pool.query('SELECT * FROM users WHERE id = $1 AND is_admin = true', [usuario_id]);
-    if (adminResult.rows.length === 0) {
-      return res.status(403).json({ error: 'Acesso restrito a administradores' });
-    }
-    
+// Listar todos os usuários (apenas admin)
+app.get('/api/admin/usuarios', requireAdmin, async (req, res) => {
+  try {
     const result = await pool.query('SELECT * FROM users ORDER BY criado_em DESC');
     
     const usuarios = result.rows.map(user => ({
@@ -416,6 +413,146 @@ app.get('/api/admin/usuarios', async (req, res) => {
     res.json({ success: true, usuarios });
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Atualizar usuário (apenas admin)
+app.put('/api/admin/usuarios/:id', requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { nome, email, telefone, cargo } = req.body;
+    
+    if (!nome || !email) {
+      return res.status(400).json({ error: 'Nome e e-mail são obrigatórios' });
+    }
+
+    // Verificar se o email já está em uso por outro usuário
+    const emailCheck = await pool.query(
+      'SELECT * FROM users WHERE email = $1 AND id != $2',
+      [email, userId]
+    );
+    
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'E-mail já está em uso por outro usuário' });
+    }
+
+    // Atualizar usuário
+    await pool.query(
+      'UPDATE users SET nome = $1, email = $2, telefone = $3, cargo = $4 WHERE id = $5',
+      [nome, email, telefone || null, cargo || 'Terceiro', userId]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Usuário atualizado com sucesso!' 
+    });
+
+  } catch (error) {
+    console.error('Erro ao atualizar usuário:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Redefinir senha do usuário (apenas admin)
+app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
+  try {
+    const { usuario_id } = req.body;
+    
+    if (!usuario_id) {
+      return res.status(400).json({ error: 'ID do usuário é obrigatório' });
+    }
+
+    // Verificar se é o próprio admin tentando redefinir a própria senha
+    if (usuario_id === req.user.id) {
+      return res.status(400).json({ error: 'Administrador não pode redefinir a própria senha por esta rota' });
+    }
+
+    // Gerar senha aleatória
+    const novaSenha = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(novaSenha, 10);
+
+    // Atualizar senha
+    await pool.query(
+      'UPDATE users SET senha = $1 WHERE id = $2',
+      [hashedPassword, usuario_id]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Senha redefinida com sucesso!',
+      novaSenha: novaSenha
+    });
+
+  } catch (error) {
+    console.error('Erro ao redefinir senha:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// ========== ROTAS DE REGISTRO DE PONTO ==========
+
+// Registrar ponto
+app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
+  try {
+    const { tipo, local, observacao, horas_extras, data_custom, hora_custom, manual } = req.body;
+    const usuario_id = req.user.id;
+    
+    if (!tipo || !local) {
+      return res.status(400).json({ error: 'Tipo e local são obrigatórios' });
+    }
+
+    const registroId = 'reg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+    await pool.query(
+      `INSERT INTO registros_ponto (id, usuario_id, tipo, local, observacao, horas_extras, manual, data_custom, hora_custom) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [registroId, usuario_id, tipo, local, observacao || null, horas_extras || false, manual || false, data_custom || null, hora_custom || null]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Ponto registrado com sucesso!' 
+    });
+
+  } catch (error) {
+    console.error('Erro ao registrar ponto:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Obter registros do usuário
+app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    
+    // Verificar se o usuário está acessando seus próprios registros ou é admin
+    if (usuario_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ error: 'Acesso não autorizado' });
+    }
+
+    const result = await pool.query(
+      'SELECT * FROM registros_ponto WHERE usuario_id = $1 ORDER BY criado_em DESC',
+      [usuario_id]
+    );
+
+    const registros = result.rows.map(reg => ({
+      id: reg.id,
+      tipo: reg.tipo,
+      local: reg.local,
+      observacao: reg.observacao,
+      horas_extras: reg.horas_extras,
+      manual: reg.manual,
+      data: reg.data_custom || new Date(reg.criado_em).toLocaleDateString('pt-BR'),
+      hora: reg.hora_custom || new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      diaSemana: new Date(reg.criado_em).toLocaleDateString('pt-BR', { weekday: 'long' }),
+      criadoEm: reg.criado_em
+    }));
+
+    res.json({ success: true, registros });
+
+  } catch (error) {
+    console.error('Erro ao buscar registros:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

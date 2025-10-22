@@ -658,29 +658,24 @@
         let currentUser = null;
         let usuarios = [];
         
-        // Função para obter o token JWT
-        function getAuthToken() {
-            return localStorage.getItem('token');
-        }
-        
         // Função para fazer requisições autenticadas
         async function fetchWithAuth(url, options = {}) {
-            const token = getAuthToken();
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
-            if (!token) {
-                showAlert('Token de autenticação não encontrado. Faça login novamente.', 'error');
+            if (!currentUser || !currentUser.id) {
+                showAlert('Usuário não autenticado. Faça login novamente.', 'error');
                 logout();
                 return null;
             }
             
             const defaultOptions = {
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 }
             };
             
-            const mergedOptions = {
+            // Adicionar usuario_id ao body para POST/PUT ou aos parâmetros para GET
+            let mergedOptions = {
                 ...defaultOptions,
                 ...options,
                 headers: {
@@ -690,6 +685,20 @@
             };
             
             try {
+                // Para requisições GET, adicionar usuario_id como query parameter
+                if (options.method === 'GET' || !options.method) {
+                    const separator = url.includes('?') ? '&' : '?';
+                    url = `${url}${separator}usuario_id=${currentUser.id}`;
+                } 
+                // Para outras requisições, adicionar usuario_id ao body
+                else if (options.body) {
+                    const bodyData = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
+                    bodyData.usuario_id = currentUser.id;
+                    mergedOptions.body = JSON.stringify(bodyData);
+                } else {
+                    mergedOptions.body = JSON.stringify({ usuario_id: currentUser.id });
+                }
+                
                 const response = await fetch(url, mergedOptions);
                 
                 if (response.status === 401) {
@@ -722,48 +731,27 @@
         
         // Verificar autenticação e admin
         document.addEventListener('DOMContentLoaded', async function() {
-            const token = getAuthToken();
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             
-            if (!token) {
+            if (!currentUser || !currentUser.id) {
                 window.location.href = '/login';
                 return;
             }
             
-            // Verificar se o token é válido e obter dados do usuário
-            try {
-                const response = await fetchWithAuth('/api/me');
-                if (!response) return;
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    currentUser = data.user;
-                    
-                    if (!currentUser.isAdmin) {
-                        showAlert('Acesso negado. Apenas administradores podem acessar esta página.', 'error');
-                        setTimeout(() => {
-                            window.location.href = '/dashboard';
-                        }, 2000);
-                        return;
-                    }
-                    
-                    // Atualizar informações do usuário na interface
-                    document.getElementById('userName').textContent = currentUser.nome;
-                    document.getElementById('userNameMobile').textContent = currentUser.nome;
-                    
-                    carregarUsuarios();
-                    
-                    // Definir data atual como padrão no modal novo usuário
-                    const hoje = new Date().toISOString().split('T')[0];
-                    document.getElementById('novoUserDataContratacao').value = hoje;
-                } else {
-                    showAlert('Erro ao carregar dados do usuário.', 'error');
-                    logout();
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
+            // Verificar se o usuário é admin
+            if (!currentUser.isAdmin) {
+                showAlert('Acesso negado. Apenas administradores podem acessar esta página.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 2000);
+                return;
             }
+            
+            // Atualizar informações do usuário na interface
+            document.getElementById('userName').textContent = currentUser.nome;
+            document.getElementById('userNameMobile').textContent = currentUser.nome;
+            
+            carregarUsuarios();
         });
         
         // Carregar lista de usuários
@@ -785,7 +773,7 @@
                     atualizarEstatisticas(usuarios);
                     renderizarUsuarios(usuarios);
                 } else {
-                    showAlert(data.error, 'error');
+                    showAlert(data.error || 'Erro ao carregar usuários', 'error');
                 }
             } catch (error) {
                 console.error('Erro:', error);
@@ -876,11 +864,6 @@
         function abrirModalNovoUsuario() {
             const modal = document.getElementById('modalNovoUsuario');
             document.getElementById('formNovoUsuario').reset();
-            
-            // Definir data atual como padrão
-            const hoje = new Date().toISOString().split('T')[0];
-            document.getElementById('novoUserDataContratacao').value = hoje;
-            
             modal.style.display = 'block';
         }
         
@@ -973,9 +956,6 @@
                     carregarUsuarios();
                 } else {
                     showAlert(data.error, 'error');
-                console.error('Erro na criação:', data);
-                console.log('Dados enviados:', formData);
-                console.log('Resposta completa:', data);
                 }
             } catch (error) {
                 console.error('Erro:', error);
@@ -1078,23 +1058,22 @@
         
         // Logout
         function logout() {
-            localStorage.removeItem('token');
             localStorage.removeItem('currentUser');
             window.location.href = '/login';
         }
         
-        // Fechar modal ao clicar fora
-        window.onclick = function(event) {
+        // Fechar modais ao clicar fora
+        window.addEventListener('click', function(e) {
             const modalNovo = document.getElementById('modalNovoUsuario');
             const modalEditar = document.getElementById('modalEditar');
             
-            if (event.target === modalNovo) {
+            if (e.target === modalNovo) {
                 fecharModalNovoUsuario();
             }
-            if (event.target === modalEditar) {
+            if (e.target === modalEditar) {
                 fecharModalEditar();
             }
-        }
+        });
     </script>
 </body>
 </html>
