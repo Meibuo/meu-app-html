@@ -1,26 +1,22 @@
+// Sistema de Ponto - Frontend JavaScript
 // Configuração
 const CONFIG = {
     API_BASE_URL: '/api',
     MAX_PHOTO_SIZE: 5 * 1024 * 1024, // 5MB
-    PHOTO_QUALITY: 0.8,
-    PHOTO_MAX_SIZE: 300,
     REQUEST_TIMEOUT: 10000
 };
 
 // Estado da aplicação
 let currentUser = null;
-let registrosHoje = [];
 
 // Utilitários
 const utils = {
-    // Verificar se está em desenvolvimento
-    isDevelopment: () => window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
-
     // Validar email
     isValidEmail: (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
 
     // Formatar telefone
     formatTelefone: (telefone) => {
+        if (!telefone) return '';
         const numbers = telefone.replace(/\D/g, '');
         if (numbers.length === 11) {
             return `(${numbers.substring(0,2)}) ${numbers.substring(2,7)}-${numbers.substring(7)}`;
@@ -30,17 +26,17 @@ const utils = {
         return telefone;
     },
 
-    // Debounce para otimização
-    debounce: (func, wait) => {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
+    // Formatar data
+    formatDate: (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR');
+    },
+
+    // Obter iniciais do nome
+    getIniciais: (nome) => {
+        if (!nome) return '??';
+        return nome.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     }
 };
 
@@ -53,37 +49,31 @@ const apiService = {
         const config = {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                ...(token && { 'Authorization': `Bearer ${token}` })
             },
-            timeout: CONFIG.REQUEST_TIMEOUT,
             ...options
         };
 
+        if (options.body && typeof options.body === 'object') {
+            config.body = JSON.stringify(options.body);
+        }
+
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT);
-            
-            const response = await fetch(url, {
-                ...config,
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
+            const response = await fetch(url, config);
 
             if (response.status === 401) {
                 this.handleAuthError();
-                return;
+                throw new Error('Não autorizado');
             }
 
             if (!response.ok) {
+                const errorText = await response.text();
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             return await response.json();
         } catch (error) {
-            if (error.name === 'AbortError') {
-                throw new Error('Request timeout');
-            }
+            console.error('Erro na requisição:', error);
             throw error;
         }
     },
@@ -91,45 +81,66 @@ const apiService = {
     handleAuthError() {
         localStorage.removeItem('currentUser');
         localStorage.removeItem('authToken');
-        window.location.href = '/login.html';
+        window.location.href = '/login';
     },
 
-    // Métodos específicos
-    async getRegistrosHoje() {
-        if (!currentUser) throw new Error('Usuário não autenticado');
-        return this.request(`/registros/${currentUser.id}`);
-    },
-
-    async registrarPonto(dados) {
-        return this.request('/registrar-ponto', {
+    // Métodos de autenticação
+    async login(email, senha) {
+        return this.request('/login', {
             method: 'POST',
-            body: JSON.stringify(dados)
+            body: { email, senha }
+        });
+    },
+
+    async verificarToken() {
+        return this.request('/verify-token');
+    },
+
+    async obterUsuarioAtual() {
+        return this.request('/me');
+    },
+
+    // Métodos de perfil
+    async atualizarPerfil(dados) {
+        return this.request('/perfil', {
+            method: 'PUT',
+            body: dados
         });
     },
 
     async alterarSenha(dados) {
         return this.request('/alterar-senha', {
             method: 'PUT',
-            body: JSON.stringify(dados)
+            body: dados
         });
     },
 
-    // Mock data para desenvolvimento
-    getMockRegistros() {
-        return {
-            registros: [
-                { 
-                    tipo: 'entrada', 
-                    horario: '08:00', 
-                    data: new Date().toISOString(),
-                    timestamp: new Date().setHours(8, 0, 0)
-                }
-            ]
-        };
+    async uploadAvatar(formData) {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/upload-avatar', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        return await response.json();
+    },
+
+    // Métodos de administração
+    async listarUsuarios() {
+        return this.request('/admin/usuarios');
+    },
+
+    async cadastrarUsuario(dados) {
+        return this.request('/cadastro', {
+            method: 'POST',
+            body: dados
+        });
     }
 };
 
-// Sistema de Notificações UI
+// Sistema de Notificações
 const notificationManager = {
     show(message, type = 'success', duration = 5000) {
         // Criar elemento de alerta dinâmico se não existir
@@ -146,6 +157,8 @@ const notificationManager = {
                 color: white;
                 z-index: 10000;
                 max-width: 300px;
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             `;
             document.body.appendChild(alert);
         }
@@ -153,15 +166,20 @@ const notificationManager = {
         const colors = {
             success: '#2ecc71',
             error: '#e74c3c',
-            warning: '#f39c12'
+            warning: '#f39c12',
+            info: '#3498db'
         };
 
         alert.textContent = message;
         alert.style.background = colors[type] || colors.success;
         alert.style.display = 'block';
+        alert.style.opacity = '1';
 
         setTimeout(() => {
-            alert.style.display = 'none';
+            alert.style.opacity = '0';
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 300);
         }, duration);
     },
 
@@ -171,74 +189,135 @@ const notificationManager = {
 
     showError(message) {
         this.show(message, 'error');
+    },
+
+    showWarning(message) {
+        this.show(message, 'warning');
     }
 };
 
-// Inicialização
+// Gerenciamento de Autenticação
+const authManager = {
+    async initialize() {
+        const userData = localStorage.getItem('currentUser');
+        const token = localStorage.getItem('authToken');
+        
+        if (!userData || !token) {
+            return false;
+        }
+        
+        try {
+            // Verificar se o token ainda é válido
+            await apiService.verificarToken();
+            currentUser = JSON.parse(userData);
+            return true;
+        } catch (error) {
+            console.error('Token inválido:', error);
+            this.logout();
+            return false;
+        }
+    },
+
+    async login(email, senha) {
+        try {
+            const result = await apiService.login(email, senha);
+            
+            if (result.success) {
+                localStorage.setItem('currentUser', JSON.stringify(result.user));
+                localStorage.setItem('authToken', result.token);
+                currentUser = result.user;
+                
+                notificationManager.showSuccess(result.message);
+                return { success: true, user: result.user };
+            } else {
+                notificationManager.showError(result.error);
+                return { success: false, error: result.error };
+            }
+        } catch (error) {
+            notificationManager.showError('Erro de conexão. Tente novamente.');
+            return { success: false, error: 'Erro de conexão' };
+        }
+    },
+
+    logout() {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+        currentUser = null;
+        window.location.href = '/login';
+    },
+
+    getCurrentUser() {
+        return currentUser;
+    },
+
+    isAdmin() {
+        return currentUser && currentUser.isAdmin;
+    }
+};
+
+// Inicialização da aplicação
 document.addEventListener('DOMContentLoaded', async function() {
     try {
         await initializeApp();
     } catch (error) {
         console.error('Falha na inicialização:', error);
-        notificationManager.showError('Erro ao carregar aplicação');
     }
 });
 
 async function initializeApp() {
+    // Verificar se está na página de login
+    if (window.location.pathname === '/login' || window.location.pathname === '/') {
+        return; // Não inicializar nas páginas públicas
+    }
+
     // Verificar autenticação
-    if (!await checkAuthentication()) {
+    const isAuthenticated = await authManager.initialize();
+    
+    if (!isAuthenticated) {
+        window.location.href = '/login';
         return;
     }
 
-    // Configurar interface
+    // Configurar interface baseada no usuário
     updateUserInterface();
     
-    // Iniciar serviços
-    startClock();
-    await loadDashboard();
-
-    // Configurar event listeners
-    setupEventListeners();
-}
-
-async function checkAuthentication() {
-    const userData = localStorage.getItem('currentUser');
-    const token = localStorage.getItem('authToken');
-    
-    if (!userData || !token) {
-        window.location.href = '/login.html';
-        return false;
+    // Iniciar relógio se existir na página
+    if (document.querySelector('[data-clock]')) {
+        startClock();
     }
-    
-    try {
-        currentUser = JSON.parse(userData);
-        
-        // Validar estrutura básica do usuário
-        if (!currentUser?.id || !currentUser?.nome) {
-            throw new Error('Dados de usuário inválidos');
-        }
-        
-        return true;
-        
-    } catch (error) {
-        console.error('Erro na autenticação:', error);
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('authToken');
-        window.location.href = '/login.html';
-        return false;
-    }
+
+    // Configurar event listeners globais
+    setupGlobalEventListeners();
 }
 
 function updateUserInterface() {
+    if (!currentUser) return;
+
     // Atualizar elementos da UI com dados do usuário
-    const userNameElements = document.querySelectorAll('[data-user-name]');
+    const userNameElements = document.querySelectorAll('.user-name, [data-user-name]');
     userNameElements.forEach(el => {
         el.textContent = currentUser.nome;
     });
 
-    const userRoleElements = document.querySelectorAll('[data-user-role]');
+    const userRoleElements = document.querySelectorAll('.user-cargo, [data-user-role]');
     userRoleElements.forEach(el => {
         el.textContent = currentUser.cargo || 'Funcionário';
+    });
+
+    const userAvatarElements = document.querySelectorAll('.user-avatar, .profile-avatar');
+    userAvatarElements.forEach(el => {
+        if (currentUser.avatar) {
+            el.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+        } else {
+            const iniciais = utils.getIniciais(currentUser.nome);
+            el.innerHTML = `<span style="font-weight: bold;">${iniciais}</span>`;
+        }
+    });
+
+    // Mostrar/ocultar elementos de admin
+    const adminElements = document.querySelectorAll('.admin-only');
+    adminElements.forEach(el => {
+        el.style.display = currentUser.isAdmin ? 'block' : 'none';
     });
 }
 
@@ -268,35 +347,32 @@ function startClock() {
     setInterval(updateClock, 1000);
 }
 
-async function loadDashboard() {
-    try {
-        const data = await apiService.getRegistrosHoje();
-        if (data.success) {
-            registrosHoje = data.registros;
-            updateRegistrosList();
-        }
-    } catch (error) {
-        console.error('Erro ao carregar dashboard:', error);
-    }
-}
-
-function updateRegistrosList() {
-    // Implementar atualização da lista de registros
-    console.log('Registros atualizados:', registrosHoje);
-}
-
-function setupEventListeners() {
-    // Fechar modal ao clicar fora
-    window.addEventListener('click', (event) => {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
+function setupGlobalEventListeners() {
+    // Logout global
+    const logoutButtons = document.querySelectorAll('[data-logout]');
+    logoutButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            authManager.logout();
         });
     });
 
-    // Teclas de atalho
+    // Navegação admin
+    if (authManager.isAdmin()) {
+        const adminLinks = document.querySelectorAll('[data-admin-link]');
+        adminLinks.forEach(link => {
+            link.style.display = 'block';
+        });
+    }
+
+    // Fechar modais ao clicar fora
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = 'none';
+        }
+    });
+
+    // Tecla Escape para fechar modais
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const modals = document.querySelectorAll('.modal');
@@ -307,17 +383,14 @@ function setupEventListeners() {
     });
 }
 
-// Funções globais
-function logout() {
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('authToken');
-    window.location.href = '/login.html';
-}
-
-// Exportar para uso global
+// Funções globais para uso em outras páginas
 window.app = {
     utils,
     apiService,
+    authManager,
     notificationManager,
-    logout
+    getCurrentUser: () => currentUser
 };
+
+// Função global de logout
+window.logout = authManager.logout;
