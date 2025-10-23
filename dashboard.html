@@ -1,906 +1,316 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Sistema de Ponto</title>
-    <style>
-        :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
-            --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --error-color: #e74c3c;
-            --text-color: #2c3e50;
-            --bg-color: #f8f9fa;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            background: var(--bg-color); 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        .header {
-            background: white;
-            padding: 15px 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .logo { 
-            font-size: clamp(18px, 4vw, 24px); 
-            color: var(--text-color); 
-            font-weight: bold; 
-        }
-        
-        .user-info { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .nav-link {
-            color: var(--text-color);
-            text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            transition: background 0.3s;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-        
-        .nav-link:hover {
-            background: #f8f9fa;
-        }
-        
-        .nav-link.active {
-            background: var(--primary-color);
-            color: white;
-        }
-        
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            padding: 20px;
-            width: 100%;
-        }
-        
-        .card {
-            background: white;
-            padding: clamp(20px, 4vw, 25px);
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: clamp(14px, 2vw, 16px);
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            width: 100%;
-        }
-        
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        
-        .btn-success { background: var(--success-color); color: white; }
-        .btn-success:hover { background: #27ae60; }
-        
-        .btn-warning { background: var(--warning-color); color: white; }
-        .btn-warning:hover { background: #e67e22; }
-        
-        .btn-danger { background: var(--error-color); color: white; }
-        .btn-danger:hover { background: #c0392b; }
-        
-        .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
-        
-        .ponto-buttons {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-            margin: 20px 0;
-        }
-        
-        .registros-list {
-            margin-top: 20px;
-        }
-        
-        .registro-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .registro-item:last-child {
-            border-bottom: none;
-        }
-        
-        .registro-info {
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        .registro-info h4 {
-            margin-bottom: 5px;
-            color: var(--text-color);
-            font-size: 16px;
-        }
-        
-        .registro-meta {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-        
-        .registro-tipo {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        
-        .tipo-entrada { background: #e8f5e9; color: var(--success-color); }
-        .tipo-saida { background: #ffebee; color: var(--error-color); }
-        .tipo-entrada_extra { background: #e3f2fd; color: #2196f3; }
-        .tipo-saida_extra { background: #f3e5f5; color: #9c27b0; }
-        
-        .alert {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .alert-success { background: #e8f5e9; color: var(--success-color); border: 1px solid #c8e6c9; }
-        .alert-error { background: #ffeaea; color: var(--error-color); border: 1px solid #ffcdd2; }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .stat-number {
-            font-size: clamp(20px, 4vw, 24px);
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-        
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        .mobile-nav {
-            display: none;
-            background: white;
-            padding: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .mobile-nav.active {
-            display: block;
-        }
-        
-        /* Novos estilos */
-        .local-input {
-            margin: 15px 0;
-        }
-        
-        .local-input input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        
-        .horario-info {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .horario-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .horario-item:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 20px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .close {
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #999;
-        }
-        
-        .close:hover {
-            color: #333;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        
-        .form-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .header {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .mobile-menu-btn {
-                display: block;
-            }
-            
-            .user-info {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                margin-top: 10px;
-                display: none;
-            }
-            
-            .user-info.active {
-                display: flex;
-            }
-            
-            .registro-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            
-            .registro-info {
-                min-width: auto;
-            }
-            
-            .container {
-                padding: 15px;
-            }
-            
-            .card {
-                padding: 15px;
-            }
-            
-            .modal-content {
-                margin: 10% auto;
-                width: 95%;
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .mobile-nav {
-                display: none !important;
-            }
-            
-            .nav-links {
-                display: flex !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .btn {
-                padding: 10px 15px;
-            }
-            
-            .form-buttons {
-                flex-direction: column;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div class="logo">⏰ Sistema de Ponto</div>
-        
-        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-        
-        <div class="nav-links" id="desktopNav">
-            <a href="/dashboard" class="nav-link active">Dashboard</a>
-            <a href="/perfil" class="nav-link">Meu Perfil</a>
-            <span id="adminLink" style="display: none;">
-                <a href="/admin" class="nav-link">👑 Administração</a>
-            </span>
-        </div>
-        
-        <div class="user-info" id="desktopUserInfo">
-            <div class="user-avatar" onclick="window.location.href='/perfil'" id="userAvatar">
-                <!-- Avatar será carregado aqui -->
-            </div>
-            <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 8px 16px;">Sair</button>
-        </div>
-    </div>
+<script>
+    let currentUser = null;
     
-    <!-- Menu Mobile -->
-    <div class="mobile-nav" id="mobileNav">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="/dashboard" class="nav-link active">Dashboard</a>
-            <a href="/perfil" class="nav-link">Meu Perfil</a>
-            <span id="mobileAdminLink" style="display: none;">
-                <a href="/admin" class="nav-link">👑 Administração</a>
-            </span>
-        </div>
-        <div class="user-info" style="justify-content: center; margin-top: 15px;">
-            <div class="user-avatar" onclick="window.location.href='/perfil'" id="mobileUserAvatar">
-                <!-- Avatar será carregado aqui -->
-            </div>
-            <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 8px 16px;">Sair</button>
-        </div>
-    </div>
+    // Menu mobile
+    document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+        const mobileNav = document.getElementById('mobileNav');
+        const userInfo = document.getElementById('desktopUserInfo');
+        
+        mobileNav.classList.toggle('active');
+        userInfo.classList.toggle('active');
+    });
     
-    <div class="container">
-        <div id="alert" class="alert"></div>
+    // Verificar autenticação
+    document.addEventListener('DOMContentLoaded', function() {
+        const userData = localStorage.getItem('currentUser');
         
-        <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Registro de Ponto</h2>
-            
-            <div class="horario-info">
-                <h4 style="margin-bottom: 10px;">📅 Horários Padrão</h4>
-                <div class="horario-item">
-                    <span>Segunda a Quinta:</span>
-                    <span><strong>07:00 - 12:00 | 13:00 - 17:00</strong></span>
-                </div>
-                <div class="horario-item">
-                    <span>Sexta-feira:</span>
-                    <span><strong>07:00 - 12:00 | 13:00 - 16:00</strong></span>
-                </div>
-                <div class="horario-item">
-                    <span>Sábado/Domingo:</span>
-                    <span><strong>Folga</strong></span>
-                </div>
-            </div>
-            
-            <div class="local-input">
-                <label style="display: block; margin-bottom: 8px; font-weight: bold;">📍 Local de Trabalho:</label>
-                <input type="text" id="localTrabalho" placeholder="Digite o local (ex: São Paulo, Centro)">
-            </div>
-            
-            <div class="ponto-buttons">
-                <button class="btn btn-primary" onclick="registrarPonto()" id="btnRegistrar">
-                    ⏰ Registrar Ponto
-                </button>
-                <button class="btn btn-warning" onclick="abrirModalHoraExtra()">
-                    ⭐ Adicionar Hora Extra
-                </button>
-            </div>
-            
-            <div class="loading" id="loadingPonto">
-                <div class="spinner"></div>
-                <span>Registrando ponto...</span>
-            </div>
-        </div>
+        if (!userData) {
+            window.location.href = '/login';
+            return;
+        }
         
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <div class="stat-number" id="horasExtrasCount">0</div>
-                <div class="stat-label">Horas Extras</div>
-            </div>
-        </div>
+        currentUser = JSON.parse(userData);
         
-        <div class="card">
-            <h2 style="margin-bottom: 15px; font-size: clamp(18px, 4vw, 24px);">Histórico de Registros</h2>
-            
-            <div class="loading" id="loadingRegistros">
-                <div class="spinner"></div>
-                <span>Carregando registros...</span>
-            </div>
-            
-            <div class="registros-list" id="registrosList">
-                <!-- Registros serão carregados aqui -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para Hora Extra -->
-    <div id="modalHoraExtra" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>⭐ Adicionar Hora Extra</h3>
-                <span class="close" onclick="fecharModalHoraExtra()">&times;</span>
-            </div>
-            
-            <div class="form-group">
-                <label for="dataHoraExtra">Data:</label>
-                <input type="date" id="dataHoraExtra" value="">
-            </div>
-            
-            <div class="form-group">
-                <label for="horaEntradaExtra">Hora de Entrada:</label>
-                <input type="time" id="horaEntradaExtra">
-            </div>
-            
-            <div class="form-group">
-                <label for="horaSaidaExtra">Hora de Saída:</label>
-                <input type="time" id="horaSaidaExtra">
-            </div>
-            
-            <div class="form-group">
-                <label for="localHoraExtra">Local:</label>
-                <input type="text" id="localHoraExtra" placeholder="Digite o local">
-            </div>
-            
-            <div class="form-buttons">
-                <button class="btn btn-primary" onclick="registrarHoraExtra()">Registrar Hora Extra</button>
-                <button class="btn btn-danger" onclick="fecharModalHoraExtra()">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let currentUser = null;
+        // Se for admin, redirecionar para área administrativa
+        if (currentUser.isAdmin) {
+            window.location.href = '/admin';
+            return;
+        }
         
-        // Menu mobile
-        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-            const mobileNav = document.getElementById('mobileNav');
-            const userInfo = document.getElementById('desktopUserInfo');
-            
-            mobileNav.classList.toggle('active');
-            userInfo.classList.toggle('active');
-        });
+        atualizarAvatar();
+        carregarRegistros();
         
-        // Verificar autenticação
-        document.addEventListener('DOMContentLoaded', function() {
-            const userData = localStorage.getItem('currentUser');
-            
-            if (!userData) {
-                window.location.href = '/login';
-                return;
-            }
-            
-            currentUser = JSON.parse(userData);
-            
-            // Se for admin, redirecionar para área administrativa
-            if (currentUser.isAdmin) {
-                window.location.href = '/admin';
-                return;
-            }
-            
-            atualizarAvatar();
-            carregarRegistros();
-            
-            // Definir data atual como padrão no modal
-            document.getElementById('dataHoraExtra').value = new Date().toISOString().split('T')[0];
-        });
+        // Definir data atual como padrão no modal
+        document.getElementById('dataHoraExtra').value = new Date().toISOString().split('T')[0];
+    });
+    
+    // Atualizar avatar no header
+    function atualizarAvatar() {
+        const avatarElement = document.getElementById('userAvatar');
+        const mobileAvatarElement = document.getElementById('mobileUserAvatar');
         
-        // Atualizar avatar no header
-        function atualizarAvatar() {
-            const avatarElement = document.getElementById('userAvatar');
-            const mobileAvatarElement = document.getElementById('mobileUserAvatar');
+        if (currentUser.avatar) {
+            avatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
+            mobileAvatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
+        } else {
+            // Usar iniciais do nome
+            const iniciais = currentUser.nome.split(' ').map(n => n[0]).join('').toUpperCase();
+            avatarElement.textContent = iniciais.substring(0, 2);
+            mobileAvatarElement.textContent = iniciais.substring(0, 2);
+        }
+    }
+    
+    // Registrar ponto - CORRIGIDA
+    async function registrarPonto() {
+        const loading = document.getElementById('loadingPonto');
+        const btnRegistrar = document.getElementById('btnRegistrar');
+        
+        // Validar local
+        const localInput = document.getElementById('localTrabalho');
+        const local = localInput.value.trim();
+        
+        if (!local) {
+            showAlert('Por favor, informe o local de trabalho.', 'error');
+            return;
+        }
+        
+        // Desabilitar botões
+        btnRegistrar.disabled = true;
+        loading.style.display = 'block';
+        
+        try {
+            const agora = new Date();
+            const tipoPonto = calcularTipoPonto(agora);
             
-            if (currentUser.avatar) {
-                avatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
-                mobileAvatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
+            console.log('⏰ Enviando registro de ponto...');
+            
+            const response = await fetch('/api/registrar-ponto', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    usuario_id: currentUser.id,
+                    tipo: tipoPonto.tipo,
+                    local: local,
+                    observacao: tipoPonto.observacao
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showAlert(`✅ Ponto registrado com sucesso! (${tipoPonto.tipo})`, 'success');
+                carregarRegistros();
+                localInput.value = ''; // Limpar campo
             } else {
-                // Usar iniciais do nome
-                const iniciais = currentUser.nome.split(' ').map(n => n[0]).join('').toUpperCase();
-                avatarElement.textContent = iniciais.substring(0, 2);
-                mobileAvatarElement.textContent = iniciais.substring(0, 2);
+                showAlert(`❌ ${data.error}`, 'error');
             }
+        } catch (error) {
+            console.error('💥 Erro:', error);
+            showAlert('❌ Erro de conexão. Tente novamente.', 'error');
+        } finally {
+            btnRegistrar.disabled = false;
+            loading.style.display = 'none';
+        }
+    }
+    
+    // Calcular tipo de ponto baseado no horário
+    function calcularTipoPonto(data) {
+        const hora = data.getHours();
+        const minutos = data.getMinutes();
+        
+        let tipo = 'entrada';
+        let observacao = '';
+        
+        if (hora >= 12) {
+            tipo = 'saida';
+            observacao = 'Saída regular';
+        } else {
+            tipo = 'entrada';
+            observacao = 'Entrada regular';
         }
         
-        // Registrar ponto
-        async function registrarPonto() {
-            const loading = document.getElementById('loadingPonto');
-            const btnRegistrar = document.getElementById('btnRegistrar');
+        return { tipo, observacao };
+    }
+    
+    // Abrir modal para hora extra
+    function abrirModalHoraExtra() {
+        document.getElementById('modalHoraExtra').style.display = 'block';
+    }
+    
+    // Fechar modal para hora extra
+    function fecharModalHoraExtra() {
+        document.getElementById('modalHoraExtra').style.display = 'none';
+    }
+    
+    // Registrar hora extra - CORRIGIDA
+    async function registrarHoraExtra() {
+        const data = document.getElementById('dataHoraExtra').value;
+        const horaEntrada = document.getElementById('horaEntradaExtra').value;
+        const horaSaida = document.getElementById('horaSaidaExtra').value;
+        const local = document.getElementById('localHoraExtra').value.trim();
+        
+        if (!data || !horaEntrada || !horaSaida || !local) {
+            showAlert('❌ Por favor, preencha todos os campos.', 'error');
+            return;
+        }
+        
+        if (horaEntrada >= horaSaida) {
+            showAlert('❌ A hora de entrada deve ser anterior à hora de saída.', 'error');
+            return;
+        }
+        
+        try {
+            console.log('⭐ Registrando hora extra...');
             
-            // Validar local
-            const localInput = document.getElementById('localTrabalho');
-            const local = localInput.value.trim();
+            // Registrar entrada extra
+            const responseEntrada = await fetch('/api/registrar-ponto', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    usuario_id: currentUser.id,
+                    tipo: 'entrada_extra',
+                    local: local,
+                    horas_extras: true,
+                    observacao: 'Hora extra - entrada',
+                    manual: true
+                })
+            });
             
-            if (!local) {
-                showAlert('Por favor, informe o local de trabalho.', 'error');
+            const dataEntrada = await responseEntrada.json();
+            
+            if (!dataEntrada.success) {
+                showAlert(`❌ ${dataEntrada.error}`, 'error');
                 return;
             }
             
-            // Desabilitar botões
-            btnRegistrar.disabled = true;
-            loading.style.display = 'block';
+            // Registrar saída extra
+            const responseSaida = await fetch('/api/registrar-ponto', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    usuario_id: currentUser.id,
+                    tipo: 'saida_extra',
+                    local: local,
+                    horas_extras: true,
+                    observacao: 'Hora extra - saída',
+                    manual: true
+                })
+            });
             
-            try {
-                const agora = new Date();
-                const tipoPonto = calcularTipoPonto(agora);
-                
-                const response = await fetch('/api/registrar-ponto', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        usuario_id: currentUser.id,
-                        tipo: tipoPonto.tipo,
-                        local: local,
-                        observacao: tipoPonto.observacao
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert(`Ponto registrado com sucesso! (${tipoPonto.tipo})`, 'success');
-                    carregarRegistros();
-                    
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
-            } finally {
-                btnRegistrar.disabled = false;
-                loading.style.display = 'none';
-            }
-        }
-        
-        // Calcular tipo de ponto baseado no horário
-        function calcularTipoPonto(data) {
-            const hora = data.getHours();
+            const dataSaida = await responseSaida.json();
             
-            let tipo = 'entrada';
-            let observacao = '';
-            
-            if (hora >= 12) {
-                tipo = 'saida';
-                observacao = 'Saída regular';
+            if (dataSaida.success) {
+                showAlert('✅ Hora extra registrada com sucesso!', 'success');
+                fecharModalHoraExtra();
+                carregarRegistros();
+                
+                // Limpar campos do modal
+                document.getElementById('horaEntradaExtra').value = '';
+                document.getElementById('horaSaidaExtra').value = '';
+                document.getElementById('localHoraExtra').value = '';
+                
             } else {
-                tipo = 'entrada';
-                observacao = 'Entrada regular';
+                showAlert(`❌ ${dataSaida.error}`, 'error');
             }
             
-            return { tipo, observacao };
+        } catch (error) {
+            console.error('💥 Erro:', error);
+            showAlert('❌ Erro de conexão. Tente novamente.', 'error');
         }
+    }
+    
+    // Carregar registros do usuário - CORRIGIDA
+    async function carregarRegistros() {
+        const loading = document.getElementById('loadingRegistros');
+        const registrosList = document.getElementById('registrosList');
         
-        // Abrir modal para hora extra
-        function abrirModalHoraExtra() {
-            document.getElementById('modalHoraExtra').style.display = 'block';
-        }
+        loading.style.display = 'block';
+        registrosList.innerHTML = '';
         
-        // Fechar modal para hora extra
-        function fecharModalHoraExtra() {
-            document.getElementById('modalHoraExtra').style.display = 'none';
-        }
-        
-        // Registrar hora extra
-        async function registrarHoraExtra() {
-            const data = document.getElementById('dataHoraExtra').value;
-            const horaEntrada = document.getElementById('horaEntradaExtra').value;
-            const horaSaida = document.getElementById('horaSaidaExtra').value;
-            const local = document.getElementById('localHoraExtra').value.trim();
+        try {
+            console.log('📋 Carregando registros...');
             
-            if (!data || !horaEntrada || !horaSaida || !local) {
-                showAlert('Por favor, preencha todos os campos.', 'error');
-                return;
-            }
+            const response = await fetch(`/api/registros/${currentUser.id}`);
+            const data = await response.json();
             
-            if (horaEntrada >= horaSaida) {
-                showAlert('A hora de entrada deve ser anterior à hora de saída.', 'error');
-                return;
-            }
-            
-            try {
-                // Registrar entrada extra
-                const responseEntrada = await fetch('/api/registrar-ponto', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        usuario_id: currentUser.id,
-                        tipo: 'entrada_extra',
-                        local: local,
-                        horas_extras: true,
-                        observacao: 'Hora extra - entrada',
-                        data_custom: data,
-                        hora_custom: horaEntrada,
-                        manual: true
-                    })
-                });
+            if (data.success) {
+                atualizarEstatisticas(data.registros);
                 
-                const dataEntrada = await responseEntrada.json();
-                
-                if (!dataEntrada.success) {
-                    showAlert(dataEntrada.error, 'error');
-                    return;
-                }
-                
-                // Registrar saída extra
-                const responseSaida = await fetch('/api/registrar-ponto', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        usuario_id: currentUser.id,
-                        tipo: 'saida_extra',
-                        local: local,
-                        horas_extras: true,
-                        observacao: 'Hora extra - saída',
-                        data_custom: data,
-                        hora_custom: horaSaida,
-                        manual: true
-                    })
-                });
-                
-                const dataSaida = await responseSaida.json();
-                
-                if (dataSaida.success) {
-                    showAlert('Hora extra registrada com sucesso!', 'success');
-                    fecharModalHoraExtra();
-                    carregarRegistros();
-                    
-                    // Limpar campos do modal
-                    document.getElementById('horaEntradaExtra').value = '';
-                    document.getElementById('horaSaidaExtra').value = '';
-                    document.getElementById('localHoraExtra').value = '';
-                    
+                if (data.registros.length === 0) {
+                    registrosList.innerHTML = `
+                        <div class="empty-state">
+                            <p>Nenhum registro encontrado.</p>
+                            <p>Registre seu primeiro ponto acima!</p>
+                        </div>
+                    `;
                 } else {
-                    showAlert(dataSaida.error, 'error');
-                }
-                
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
-            }
-        }
-        
-        // Carregar registros do usuário
-        async function carregarRegistros() {
-            const loading = document.getElementById('loadingRegistros');
-            const registrosList = document.getElementById('registrosList');
-            
-            loading.style.display = 'block';
-            registrosList.innerHTML = '';
-            
-            try {
-                const response = await fetch(`/api/registros/${currentUser.id}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    atualizarEstatisticas(data.registros);
-                    
-                    if (data.registros.length === 0) {
-                        registrosList.innerHTML = `
-                            <div class="empty-state">
-                                <p>Nenhum registro encontrado.</p>
-                                <p>Registre seu primeiro ponto acima!</p>
+                    data.registros.forEach(registro => {
+                        const tipoDisplay = {
+                            'entrada': '🟢 Entrada',
+                            'saida': '🔴 Saída',
+                            'entrada_extra': '🔵 Entrada Extra',
+                            'saida_extra': '🟣 Saída Extra'
+                        }[registro.tipo] || registro.tipo;
+                        
+                        const tipoClass = registro.tipo.includes('entrada') ? 'entrada' : 'saida';
+                        
+                        const registroElement = document.createElement('div');
+                        registroElement.className = 'registro-item';
+                        registroElement.innerHTML = `
+                            <div class="registro-info">
+                                <h4>${tipoDisplay}</h4>
+                                <div class="registro-meta">
+                                    ${registro.data} às ${registro.hora} - ${registro.diaSemana}
+                                    ${registro.local ? `<br>📍 ${registro.local}` : ''}
+                                    ${registro.observacao ? `<br>📝 ${registro.observacao}` : ''}
+                                    ${registro.horas_extras ? '<br>⚡ Horas Extras' : ''}
+                                    ${registro.manual ? '<br>✏️ Registro Manual' : ''}
+                                </div>
+                            </div>
+                            <div class="registro-tipo tipo-${tipoClass}">
+                                ${registro.tipo.toUpperCase()}
                             </div>
                         `;
-                    } else {
-                        data.registros.forEach(registro => {
-                            const tipoDisplay = {
-                                'entrada': '🟢 Entrada',
-                                'saida': '🔴 Saída',
-                                'entrada_extra': '🔵 Entrada Extra',
-                                'saida_extra': '🟣 Saída Extra'
-                            }[registro.tipo] || registro.tipo;
-                            
-                            const tipoClass = registro.tipo.includes('entrada') ? 'entrada' : 'saida';
-                            
-                            const registroElement = document.createElement('div');
-                            registroElement.className = 'registro-item';
-                            registroElement.innerHTML = `
-                                <div class="registro-info">
-                                    <h4>${tipoDisplay}</h4>
-                                    <div class="registro-meta">
-                                        ${registro.data} às ${registro.hora} - ${registro.diaSemana}
-                                        ${registro.local ? `<br>📍 ${registro.local}` : ''}
-                                        ${registro.observacao ? `<br>📝 ${registro.observacao}` : ''}
-                                        ${registro.horas_extras ? '<br>⚡ Horas Extras' : ''}
-                                        ${registro.manual ? '<br>✏️ Registro Manual' : ''}
-                                    </div>
-                                </div>
-                                <div class="registro-tipo tipo-${tipoClass}">
-                                    ${registro.tipo.toUpperCase()}
-                                </div>
-                            `;
-                            registrosList.appendChild(registroElement);
-                        });
-                    }
-                } else {
-                    showAlert(data.error, 'error');
+                        registrosList.appendChild(registroElement);
+                    });
                 }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro ao carregar registros.', 'error');
-            } finally {
-                loading.style.display = 'none';
+            } else {
+                showAlert(`❌ ${data.error}`, 'error');
             }
+        } catch (error) {
+            console.error('💥 Erro:', error);
+            showAlert('❌ Erro ao carregar registros.', 'error');
+        } finally {
+            loading.style.display = 'none';
         }
+    }
+    
+    // Atualizar estatísticas
+    function atualizarEstatisticas(registros) {
+        const horasExtrasCount = registros.filter(r => r.horas_extras).length;
+        document.getElementById('horasExtrasCount').textContent = horasExtrasCount;
+    }
+    
+    // Mostrar alertas
+    function showAlert(message, type) {
+        const alert = document.getElementById('alert');
+        alert.textContent = message;
+        alert.className = `alert alert-${type}`;
+        alert.style.display = 'block';
         
-        // Atualizar estatísticas
-        function atualizarEstatisticas(registros) {
-            const horasExtrasCount = registros.filter(r => r.horas_extras).length;
-            document.getElementById('horasExtrasCount').textContent = horasExtrasCount;
+        // Auto-esconder após 5 segundos
+        setTimeout(() => {
+            alert.style.display = 'none';
+        }, 5000);
+    }
+    
+    // Logout
+    function logout() {
+        localStorage.removeItem('currentUser');
+        window.location.href = '/';
+    }
+    
+    // Fechar modal ao clicar fora
+    window.onclick = function(event) {
+        const modal = document.getElementById('modalHoraExtra');
+        if (event.target === modal) {
+            fecharModalHoraExtra();
         }
-        
-        // Mostrar alertas
-        function showAlert(message, type) {
-            const alert = document.getElementById('alert');
-            alert.textContent = message;
-            alert.className = `alert alert-${type}`;
-            alert.style.display = 'block';
-            
-            // Auto-esconder após 5 segundos
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Logout
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/';
-        }
-        
-        // Fechar modal ao clicar fora
-        window.onclick = function(event) {
-            const modal = document.getElementById('modalHoraExtra');
-            if (event.target === modal) {
-                fecharModalHoraExtra();
-            }
-        }
-    </script>
-</body>
-</html>
+    }
+</script>
