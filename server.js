@@ -7,12 +7,15 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurações do PostgreSQL
+// Configurações do PostgreSQL CORRIGIDAS
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Configurações adicionais para melhor estabilidade
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  maxUses: 7500,
 });
 
 // Middleware
@@ -25,17 +28,24 @@ app.use(express.static('.'));
 const testarConexaoBanco = async () => {
   try {
     console.log('🔄 Testando conexão com o banco...');
+    console.log('📊 Database URL:', process.env.DATABASE_URL ? '✅ Configurada' : '❌ Não configurada');
+    
     const client = await pool.connect();
-    console.log('✅ Conexão com PostgreSQL bem-sucedida!');
+    const result = await client.query('SELECT NOW() as current_time');
+    console.log('✅ Conexão com PostgreSQL bem-sucedida!', result.rows[0].current_time);
     client.release();
     return true;
   } catch (error) {
     console.error('❌ ERRO NA CONEXÃO COM O BANCO:', error.message);
+    console.error('🔧 Dica: Verifique se:');
+    console.error('   1. A URL do banco está correta no Render');
+    console.error('   2. O banco PostgreSQL está ativo');
+    console.error('   3. As credenciais estão corretas');
     return false;
   }
 };
 
-// Inicializar banco de dados
+// Inicializar banco de dados CORRIGIDO
 const initializeDatabase = async () => {
   try {
     console.log('🔄 Inicializando banco de dados...');
@@ -70,6 +80,26 @@ const initializeDatabase = async () => {
       )
     `);
     console.log('✅ Tabela registros_ponto criada/verificada');
+
+    // Verificar se existe algum usuário
+    const usersResult = await pool.query('SELECT COUNT(*) FROM users');
+    const userCount = parseInt(usersResult.rows[0].count);
+
+    if (userCount === 0) {
+      // Criar usuário admin padrão se não existir nenhum usuário
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const adminId = 'admin-' + Date.now();
+      
+      await pool.query(
+        `INSERT INTO users (id, nome, email, senha, cargo) 
+         VALUES ($1, $2, $3, $4, $5)`,
+        [adminId, 'Administrador', 'admin@admin.com', hashedPassword, 'CEO Administrativo']
+      );
+      
+      console.log('👑 Usuário administrador criado: admin@admin.com / admin123');
+    } else {
+      console.log(`👥 ${userCount} usuário(s) encontrado(s) no banco`);
+    }
 
     console.log('✅ Banco de dados inicializado com sucesso!');
   } catch (error) {
@@ -196,7 +226,7 @@ app.post('/api/registrar-ponto', async (req, res) => {
     }
 
     // Verificar se usuário existe
-    const userCheck = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [usuario_id]);
     if (userCheck.rows.length === 0) {
       return res.status(400).json({ success: false, error: 'Usuário não encontrado' });
     }
@@ -259,7 +289,7 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
       observacao: reg.observacao,
       horas_extras: reg.horas_extras,
       manual: reg.manual,
-      data: reg.data_formatada,
+      data: new Date(reg.data_formatada).toLocaleDateString('pt-BR'),
       hora: reg.hora_formatada,
       diaSemana: new Date(reg.data_formatada).toLocaleDateString('pt-BR', { weekday: 'long' }),
       criadoEm: reg.criado_em
@@ -278,6 +308,9 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
 // Rota pública de status
 app.get('/api/status', async (req, res) => {
   try {
+    // Teste simples de conexão
+    await pool.query('SELECT 1');
+    
     const usersCount = await pool.query('SELECT COUNT(*) FROM users');
     const registrosCount = await pool.query('SELECT COUNT(*) FROM registros_ponto');
     
@@ -286,11 +319,16 @@ app.get('/api/status', async (req, res) => {
       timestamp: new Date().toISOString(),
       usersCount: parseInt(usersCount.rows[0].count),
       registrosCount: parseInt(registrosCount.rows[0].count),
-      version: '4.0.0'
+      version: '4.0.0',
+      database: 'connected'
     });
   } catch (error) {
     console.error('💥 Erro no status:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ 
+      status: 'online',
+      database: 'disconnected',
+      error: 'Banco de dados offline'
+    });
   }
 });
 
@@ -320,21 +358,29 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Middleware de tratamento de erro para conexões do pool
+pool.on('error', (err, client) => {
+  console.error('💥 Erro inesperado no pool de conexões:', err);
+});
+
 // Inicializar servidor
 const startServer = async () => {
   console.log('🚀 Iniciando servidor...');
-  console.log('📊 Configuração do banco:', process.env.DATABASE_URL ? '✅ Configurado' : '❌ Não configurado');
+  console.log('🔧 Ambiente:', process.env.NODE_ENV || 'development');
+  console.log('📊 Database URL:', process.env.DATABASE_URL ? '✅ Configurada' : '❌ Não configurada');
   
   // Testar conexão com banco primeiro
   const bancoConectado = await testarConexaoBanco();
   
   if (!bancoConectado) {
-    console.log('⚠️  Servidor iniciando sem conexão com banco');
+    console.log('⚠️  AVISO: Servidor iniciando sem conexão com banco');
+    console.log('📝 As funcionalidades podem não funcionar corretamente');
   }
   
-  // Inicializar banco
+  // Inicializar banco (mesmo que falhe, o servidor sobe)
   try {
     await initializeDatabase();
+    console.log('✅ Sistema pronto para uso!');
   } catch (error) {
     console.log('⚠️  Erro na inicialização do banco, mas servidor continua...');
   }
@@ -342,6 +388,8 @@ const startServer = async () => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor rodando na porta ${PORT}`);
     console.log(`🌐 Acesse: http://localhost:${PORT}`);
+    console.log('========================================');
+    console.log('👑 Usuário padrão: admin@admin.com / admin123');
     console.log('========================================');
   });
 };
