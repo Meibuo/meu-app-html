@@ -1,298 +1,138 @@
-<script>
-    let currentUser = null;
-    
-    // Menu mobile
-    document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-        const mobileNav = document.getElementById('mobileNav');
-        const userInfo = document.getElementById('desktopUserInfo');
-        
-        mobileNav.classList.toggle('active');
-        userInfo.classList.toggle('active');
-    });
-    
-    // Verificar autenticação
-    document.addEventListener('DOMContentLoaded', function() {
-        const userData = localStorage.getItem('currentUser');
-        
-        if (!userData) {
-            window.location.href = '/login';
-            return;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Ponto</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: linear-gradient(135deg, #667eea, #764ba2); 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; padding: 20px; font-family: Arial, sans-serif;
         }
-        
-        currentUser = JSON.parse(userData);
-        
-        atualizarAvatar();
-        carregarRegistros();
-        
-        // Definir data atual como padrão no modal
-        document.getElementById('dataHoraExtra').value = new Date().toISOString().split('T')[0];
-    });
-    
-    // Atualizar avatar no header
-    function atualizarAvatar() {
-        const avatarElement = document.getElementById('userAvatar');
-        const mobileAvatarElement = document.getElementById('mobileUserAvatar');
-        
-        // Usar iniciais do nome
-        const iniciais = currentUser.nome.split(' ').map(n => n[0]).join('').toUpperCase();
-        avatarElement.textContent = iniciais.substring(0, 2);
-        mobileAvatarElement.textContent = iniciais.substring(0, 2);
-    }
-    
-    // Registrar ponto - CORRIGIDA
-    async function registrarPonto() {
-        const loading = document.getElementById('loadingPonto');
-        const btnRegistrar = document.getElementById('btnRegistrar');
-        
-        // Validar local
-        const localInput = document.getElementById('localTrabalho');
-        const local = localInput.value.trim();
-        
-        if (!local) {
-            showAlert('Por favor, informe o local de trabalho.', 'error');
-            return;
+        .container { 
+            background: white; padding: 40px; border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; width: 100%; 
+            text-align: center;
         }
-        
-        // Desabilitar botões
-        btnRegistrar.disabled = true;
-        loading.style.display = 'block';
-        
-        try {
-            const agora = new Date();
-            const tipoPonto = calcularTipoPonto(agora);
-            
-            const response = await fetch('/api/registrar-ponto', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    usuario_id: currentUser.id,
-                    tipo: tipoPonto.tipo,
-                    local: local,
-                    observacao: tipoPonto.observacao
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                showAlert(`Ponto registrado com sucesso! (${tipoPonto.tipo})`, 'success');
-                carregarRegistros();
-                localInput.value = ''; // Limpar campo
-            } else {
-                showAlert(data.error, 'error');
-            }
-        } catch (error) {
-            console.error('Erro:', error);
-            showAlert('Erro de conexão. Tente novamente.', 'error');
-        } finally {
-            btnRegistrar.disabled = false;
-            loading.style.display = 'none';
+        .logo { 
+            font-size: 28px; color: #2c3e50; margin-bottom: 10px; 
         }
-    }
-    
-    // Calcular tipo de ponto baseado no horário
-    function calcularTipoPonto(data) {
-        const hora = data.getHours();
-        
-        let tipo = 'entrada';
-        let observacao = '';
-        
-        if (hora >= 12) {
-            tipo = 'saida';
-            observacao = 'Saída regular';
-        } else {
-            tipo = 'entrada';
-            observacao = 'Entrada regular';
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 5px; color: #2c3e50; font-weight: bold; }
+        input { 
+            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; 
+            font-size: 16px; 
         }
-        
-        return { tipo, observacao };
-    }
-    
-    // Abrir modal para hora extra
-    function abrirModalHoraExtra() {
-        document.getElementById('modalHoraExtra').style.display = 'block';
-    }
-    
-    // Fechar modal para hora extra
-    function fecharModalHoraExtra() {
-        document.getElementById('modalHoraExtra').style.display = 'none';
-    }
-    
-    // Registrar hora extra - CORRIGIDA
-    async function registrarHoraExtra() {
-        const data = document.getElementById('dataHoraExtra').value;
-        const horaEntrada = document.getElementById('horaEntradaExtra').value;
-        const horaSaida = document.getElementById('horaSaidaExtra').value;
-        const local = document.getElementById('localHoraExtra').value.trim();
-        
-        if (!data || !horaEntrada || !horaSaida || !local) {
-            showAlert('Por favor, preencha todos os campos.', 'error');
-            return;
+        input:focus { border-color: #3498db; outline: none; }
+        .btn { 
+            width: 100%; padding: 15px; background: #3498db; color: white; 
+            border: none; border-radius: 8px; font-size: 16px; font-weight: bold; 
+            cursor: pointer; margin-top: 10px;
         }
-        
-        if (horaEntrada >= horaSaida) {
-            showAlert('A hora de entrada deve ser anterior à hora de saída.', 'error');
-            return;
+        .btn:hover { background: #2980b9; }
+        .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .alert { 
+            padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; 
         }
+        .alert-error { background: #ffeaea; color: #e74c3c; border: 1px solid #ffcdd2; }
+        .alert-success { background: #e8f5e9; color: #2ecc71; border: 1px solid #c8e6c9; }
+        .loading { display: none; text-align: center; margin: 10px 0; }
+        .links { text-align: center; margin-top: 20px; }
+        .links a { color: #3498db; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">⏰ Sistema de Ponto</div>
+        <p>Controle seus horários de trabalho</p>
         
-        try {
-            // Registrar entrada extra
-            const responseEntrada = await fetch('/api/registrar-ponto', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    usuario_id: currentUser.id,
-                    tipo: 'entrada_extra',
-                    local: local,
-                    horas_extras: true,
-                    observacao: 'Hora extra - entrada',
-                    manual: true
-                })
-            });
-            
-            const dataEntrada = await responseEntrada.json();
-            
-            if (!dataEntrada.success) {
-                showAlert(dataEntrada.error, 'error');
-                return;
-            }
-            
-            // Registrar saída extra
-            const responseSaida = await fetch('/api/registrar-ponto', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    usuario_id: currentUser.id,
-                    tipo: 'saida_extra',
-                    local: local,
-                    horas_extras: true,
-                    observacao: 'Hora extra - saída',
-                    manual: true
-                })
-            });
-            
-            const dataSaida = await responseSaida.json();
-            
-            if (dataSaida.success) {
-                showAlert('Hora extra registrada com sucesso!', 'success');
-                fecharModalHoraExtra();
-                carregarRegistros();
-                
-                // Limpar campos do modal
-                document.getElementById('horaEntradaExtra').value = '';
-                document.getElementById('horaSaidaExtra').value = '';
-                document.getElementById('localHoraExtra').value = '';
-                
-            } else {
-                showAlert(dataSaida.error, 'error');
-            }
-            
-        } catch (error) {
-            console.error('Erro:', error);
-            showAlert('Erro de conexão. Tente novamente.', 'error');
-        }
-    }
-    
-    // Carregar registros do usuário - CORRIGIDA
-    async function carregarRegistros() {
-        const loading = document.getElementById('loadingRegistros');
-        const registrosList = document.getElementById('registrosList');
+        <div id="alert" class="alert"></div>
         
-        loading.style.display = 'block';
-        registrosList.innerHTML = '';
-        
-        try {
-            const response = await fetch(`/api/registros/${currentUser.id}`);
-            const data = await response.json();
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" name="email" required autofocus>
+            </div>
             
-            if (data.success) {
-                atualizarEstatisticas(data.registros);
-                
-                if (data.registros.length === 0) {
-                    registrosList.innerHTML = `
-                        <div class="empty-state">
-                            <p>Nenhum registro encontrado.</p>
-                            <p>Registre seu primeiro ponto acima!</p>
-                        </div>
-                    `;
-                } else {
-                    data.registros.forEach(registro => {
-                        const tipoDisplay = {
-                            'entrada': '🟢 Entrada',
-                            'saida': '🔴 Saída',
-                            'entrada_extra': '🔵 Entrada Extra',
-                            'saida_extra': '🟣 Saída Extra'
-                        }[registro.tipo] || registro.tipo;
-                        
-                        const tipoClass = registro.tipo.includes('entrada') ? 'entrada' : 'saida';
-                        
-                        const registroElement = document.createElement('div');
-                        registroElement.className = 'registro-item';
-                        registroElement.innerHTML = `
-                            <div class="registro-info">
-                                <h4>${tipoDisplay}</h4>
-                                <div class="registro-meta">
-                                    ${registro.data} às ${registro.hora} - ${registro.diaSemana}
-                                    ${registro.local ? `<br>📍 ${registro.local}` : ''}
-                                    ${registro.observacao ? `<br>📝 ${registro.observacao}` : ''}
-                                    ${registro.horas_extras ? '<br>⚡ Horas Extras' : ''}
-                                    ${registro.manual ? '<br>✏️ Registro Manual' : ''}
-                                </div>
-                            </div>
-                            <div class="registro-tipo tipo-${tipoClass}">
-                                ${registro.tipo.toUpperCase()}
-                            </div>
-                        `;
-                        registrosList.appendChild(registroElement);
-                    });
-                }
-            } else {
-                showAlert(data.error, 'error');
-            }
-        } catch (error) {
-            console.error('Erro:', error);
-            showAlert('Erro ao carregar registros.', 'error');
-        } finally {
-            loading.style.display = 'none';
-        }
-    }
-    
-    // Atualizar estatísticas
-    function atualizarEstatisticas(registros) {
-        const horasExtrasCount = registros.filter(r => r.horas_extras).length;
-        document.getElementById('horasExtrasCount').textContent = horasExtrasCount;
-    }
-    
-    // Mostrar alertas
-    function showAlert(message, type) {
-        const alert = document.getElementById('alert');
-        alert.textContent = message;
-        alert.className = `alert alert-${type}`;
-        alert.style.display = 'block';
+            <div class="form-group">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" name="senha" required>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div>Entrando...</div>
+            </div>
+            
+            <button type="submit" class="btn" id="submitBtn">Entrar no Sistema</button>
+        </form>
         
-        // Auto-esconder após 5 segundos
-        setTimeout(() => {
+        <div class="links">
+            <a href="/cadastro">Primeiro acesso? Criar conta</a>
+        </div>
+    </div>
+
+    <script>
+        console.log('🔍 Página de login carregada');
+        
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('🔐 Tentando fazer login...');
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const alert = document.getElementById('alert');
+            
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
             alert.style.display = 'none';
-        }, 5000);
-    }
-    
-    // Logout
-    function logout() {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/';
-    }
-    
-    // Fechar modal ao clicar fora
-    window.onclick = function(event) {
-        const modal = document.getElementById('modalHoraExtra');
-        if (event.target === modal) {
-            fecharModalHoraExtra();
+            
+            const formData = {
+                email: document.getElementById('email').value.trim(),
+                senha: document.getElementById('senha').value
+            };
+            
+            try {
+                console.log('📤 Enviando para API...');
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(formData)
+                });
+                
+                console.log('📥 Resposta recebida');
+                const data = await response.json();
+                console.log('Dados:', data);
+                
+                if (data.success) {
+                    showAlert('✅ Login realizado! Redirecionando...', 'success');
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    setTimeout(() => window.location.href = '/dashboard', 1000);
+                } else {
+                    showAlert('❌ ' + data.error, 'error');
+                }
+            } catch (error) {
+                console.error('💥 Erro:', error);
+                showAlert('❌ Erro de conexão', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+        
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
         }
-    }
-</script>
+
+        // Testar API
+        fetch('/api/status')
+            .then(r => r.json())
+            .then(data => console.log('✅ API Status:', data))
+            .catch(err => console.error('❌ API Error:', err));
+    </script>
+</body>
+</html>

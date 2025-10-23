@@ -7,57 +7,34 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// VERIFICAR VARIÁVEIS DE AMBIENTE ANTES DE TUDO
-console.log('🔧 Verificando configurações...');
-console.log('📊 DATABASE_URL:', process.env.DATABASE_URL ? '✅ Configurada' : '❌ NÃO CONFIGURADA');
-
-if (!process.env.DATABASE_URL) {
-  console.error('💥 ERRO CRÍTICO: DATABASE_URL não está configurada!');
-  console.error('📝 Configure a variável DATABASE_URL no Render:');
-  console.error('   postgresql://usuario:senha@host:porta/database');
-  process.exit(1);
-}
+// VERIFICAR SE ESTAMOS NO RENDER
+const isRender = process.env.RENDER || process.env.NODE_ENV === 'production';
+console.log('🔧 Ambiente:', isRender ? 'Render (Production)' : 'Local');
 
 // Configurações do PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { 
-    rejectUnauthorized: false 
-  }
+  ssl: { rejectUnauthorized: false }
 });
 
-// Middleware
+// Middleware IMPORTANTE para o Render
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.'));
+app.use(express.urlencoded({ extended: true }));
 
-// Testar conexão com o banco - AGORA CRÍTICO
+// SERVIR ARQUIVOS ESTÁTICOS CORRETAMENTE
+app.use(express.static(__dirname));
+
+// Testar conexão com o banco
 const testarConexaoBanco = async () => {
   try {
     console.log('🔄 Testando conexão com o banco...');
-    console.log('🔗 Database URL:', process.env.DATABASE_URL);
-    
     const client = await pool.connect();
-    const result = await client.query('SELECT NOW() as current_time');
-    console.log('✅ Conexão com PostgreSQL bem-sucedida!', result.rows[0].current_time);
-    
-    // Verificar tabelas
-    const tables = await client.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-    `);
-    console.log('📊 Tabelas encontradas:', tables.rows.map(t => t.table_name));
-    
+    console.log('✅ Conexão com PostgreSQL bem-sucedida!');
     client.release();
     return true;
   } catch (error) {
     console.error('❌ ERRO NA CONEXÃO COM O BANCO:', error.message);
-    console.error('🔧 Problema possíveis:');
-    console.error('   1. URL do banco incorreta');
-    console.error('   2. Banco não existe ou foi deletado');
-    console.error('   3. Credenciais inválidas');
-    console.error('   4. Banco não está aceitando conexões');
     return false;
   }
 };
@@ -67,7 +44,6 @@ const initializeDatabase = async () => {
   try {
     console.log('🔄 Inicializando banco de dados...');
     
-    // Criar tabela users se não existir
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(100) PRIMARY KEY,
@@ -81,7 +57,6 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Tabela users criada/verificada');
 
-    // Criar tabela de registros de ponto
     await pool.query(`
       CREATE TABLE IF NOT EXISTS registros_ponto (
         id VARCHAR(100) PRIMARY KEY,
@@ -103,7 +78,6 @@ const initializeDatabase = async () => {
     const userCount = parseInt(usersResult.rows[0].count);
 
     if (userCount === 0) {
-      // Criar usuário admin padrão
       const hashedPassword = await bcrypt.hash('admin123', 10);
       const adminId = 'admin-' + Date.now();
       
@@ -114,8 +88,6 @@ const initializeDatabase = async () => {
       );
       
       console.log('👑 Usuário administrador criado: admin@admin.com / admin123');
-    } else {
-      console.log(`👥 ${userCount} usuário(s) encontrado(s) no banco`);
     }
 
     console.log('✅ Banco de dados inicializado com sucesso!');
@@ -128,7 +100,7 @@ const initializeDatabase = async () => {
 
 // ========== ROTAS DA API ==========
 
-// Rota simples de status
+// Rota de status
 app.get('/api/status', async (req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -151,6 +123,8 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
     
+    console.log('🔐 Tentativa de login:', email);
+    
     if (!email || !senha) {
       return res.status(400).json({ success: false, error: 'E-mail e senha são obrigatórios' });
     }
@@ -163,7 +137,6 @@ app.post('/api/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Verificar senha
     const senhaValida = await bcrypt.compare(senha, user.senha);
     if (!senhaValida) {
       return res.status(400).json({ success: false, error: 'E-mail ou senha incorretos' });
@@ -198,17 +171,14 @@ app.post('/api/cadastro', async (req, res) => {
 
     const emailLimpo = email.toLowerCase().trim();
 
-    // Verificar se usuário já existe
     const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [emailLimpo]);
     if (userExists.rows.length > 0) {
       return res.status(400).json({ success: false, error: 'E-mail já cadastrado' });
     }
 
-    // Hash da senha
     const hashedPassword = await bcrypt.hash(senha, 10);
     const userId = 'user-' + Date.now();
 
-    // Inserir usuário
     await pool.query(
       `INSERT INTO users (id, nome, email, telefone, senha) 
        VALUES ($1, $2, $3, $4, $5)`,
@@ -242,7 +212,6 @@ app.post('/api/registrar-ponto', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Usuário, tipo e local são obrigatórios' });
     }
 
-    // Verificar se usuário existe
     const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [usuario_id]);
     if (userCheck.rows.length === 0) {
       return res.status(400).json({ success: false, error: 'Usuário não encontrado' });
@@ -306,59 +275,57 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
   }
 });
 
-// Rotas para servir páginas HTML
+// ========== ROTAS PARA PÁGINAS HTML ==========
+
+// Rota para página inicial
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Rota para login
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
 
+// Rota para cadastro
 app.get('/cadastro', (req, res) => {
   res.sendFile(path.join(__dirname, 'cadastro.html'));
 });
 
+// Rota para dashboard
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
+// Rota para perfil
 app.get('/perfil', (req, res) => {
   res.sendFile(path.join(__dirname, 'perfil.html'));
 });
 
-// Rota de fallback
+// Rota de fallback - IMPORTANTE para SPA no Render
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Inicializar servidor - AGORA PARA SE HOUVER ERRO
+// Inicializar servidor
 const startServer = async () => {
   console.log('🚀 Iniciando servidor...');
   
-  // Testar conexão com banco PRIMEIRO
   const bancoConectado = await testarConexaoBanco();
   
   if (!bancoConectado) {
-    console.error('💥 ERRO CRÍTICO: Não foi possível conectar ao banco de dados!');
-    console.error('🛑 Servidor NÃO será iniciado.');
-    console.error('📝 Verifique:');
-    console.error('   1. Se o banco PostgreSQL existe no Render');
-    console.error('   2. Se a DATABASE_URL está correta');
-    console.error('   3. Se as credenciais estão válidas');
+    console.error('💥 ERRO: Não foi possível conectar ao banco de dados!');
     process.exit(1);
   }
   
-  // Inicializar banco
   try {
     await initializeDatabase();
     console.log('✅ Sistema inicializado com sucesso!');
   } catch (error) {
-    console.error('💥 Erro na inicialização do banco:', error);
+    console.error('💥 Erro na inicialização:', error);
     process.exit(1);
   }
   
-  // Iniciar servidor APENAS se tudo estiver ok
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor rodando na porta ${PORT}`);
     console.log(`🌐 Acesse: https://seu-app.onrender.com`);
@@ -366,7 +333,6 @@ const startServer = async () => {
   });
 };
 
-// Iniciar servidor
 startServer().catch(error => {
   console.error('💥 ERRO AO INICIAR SERVIDOR:', error);
   process.exit(1);
