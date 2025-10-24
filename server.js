@@ -437,14 +437,19 @@ app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
 
 // ========== ROTAS DE REGISTRO DE PONTO ==========
 
-// Registrar ponto
+// ROTA DE REGISTRO DE PONTO - CORRIGIDA
 app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
   try {
     const { tipo, local, observacao, horas_extras, data_custom, hora_custom, manual } = req.body;
     const usuario_id = req.user.id;
     
+    console.log('📍 Tentativa de registro de ponto:', { usuario_id, tipo, local });
+
     if (!tipo || !local) {
-      return res.status(400).json({ success: false, error: 'Tipo e local são obrigatórios' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Tipo e local são obrigatórios' 
+      });
     }
 
     const registroId = 'reg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
@@ -455,19 +460,29 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
       [registroId, usuario_id, tipo, local, observacao || null, horas_extras || false, manual || false, data_custom || null, hora_custom || null]
     );
 
+    console.log('✅ Ponto registrado com sucesso');
+
     res.json({ 
       success: true, 
-      message: 'Ponto registrado com sucesso!' 
+      message: 'Ponto registrado com sucesso!',
+      registro: {
+        id: registroId,
+        tipo: tipo,
+        local: local
+      }
     });
 
   } catch (error) {
-    console.error('Erro ao registrar ponto:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    console.error('❌ Erro ao registrar ponto:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro interno do servidor' 
+    });
   }
 });
 
-// Obter registros do usuário - CORRIGIDO
-app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
+// OBTER ÚLTIMO REGISTRO DO USUÁRIO
+app.get('/api/ultimo-registro/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
     
@@ -476,8 +491,48 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
     }
 
     const result = await pool.query(
-      'SELECT * FROM registros_ponto WHERE usuario_id = $1 ORDER BY criado_em DESC',
+      'SELECT * FROM registros_ponto WHERE usuario_id = $1 ORDER BY criado_em DESC LIMIT 1',
       [usuario_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: true, ultimoRegistro: null });
+    }
+
+    const ultimoRegistro = result.rows[0];
+    
+    res.json({
+      success: true,
+      ultimoRegistro: {
+        tipo: ultimoRegistro.tipo,
+        local: ultimoRegistro.local,
+        data: new Date(ultimoRegistro.criado_em).toLocaleDateString('pt-BR'),
+        hora: new Date(ultimoRegistro.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar último registro:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// Obter registros do usuário - CORRIGIDA
+app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    const { limit = 50 } = req.query;
+    
+    if (usuario_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
+    }
+
+    const result = await pool.query(
+      `SELECT * FROM registros_ponto 
+       WHERE usuario_id = $1 
+       ORDER BY criado_em DESC 
+       LIMIT $2`,
+      [usuario_id, parseInt(limit)]
     );
 
     const registros = result.rows.map(reg => ({
@@ -487,9 +542,9 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
       observacao: reg.observacao,
       horas_extras: reg.horas_extras,
       manual: reg.manual,
-      data: reg.data_custom || (reg.criado_em ? new Date(reg.criado_em).toLocaleDateString('pt-BR') : ''),
-      hora: reg.hora_custom || (reg.criado_em ? new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''),
-      diaSemana: reg.criado_em ? new Date(reg.criado_em).toLocaleDateString('pt-BR', { weekday: 'long' }) : '',
+      data: reg.data_custom || new Date(reg.criado_em).toLocaleDateString('pt-BR'),
+      hora: reg.hora_custom || new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      diaSemana: new Date(reg.criado_em).toLocaleDateString('pt-BR', { weekday: 'long' }),
       criadoEm: reg.criado_em
     }));
 
@@ -497,6 +552,40 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao buscar registros:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ESTATÍSTICAS SIMPLES DO USUÁRIO
+app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    
+    if (usuario_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
+    }
+
+    const totalResult = await pool.query(
+      'SELECT COUNT(*) FROM registros_ponto WHERE usuario_id = $1',
+      [usuario_id]
+    );
+
+    const hojeResult = await pool.query(
+      `SELECT COUNT(*) FROM registros_ponto 
+       WHERE usuario_id = $1 AND DATE(criado_em) = CURRENT_DATE`,
+      [usuario_id]
+    );
+
+    res.json({
+      success: true,
+      estatisticas: {
+        totalRegistros: parseInt(totalResult.rows[0].count),
+        registrosHoje: parseInt(hojeResult.rows[0].count)
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
