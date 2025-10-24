@@ -101,7 +101,13 @@ const initializeDatabase = async () => {
 // Middleware de autenticação SIMPLIFICADO
 const requireAuth = async (req, res, next) => {
   try {
-    const usuario_id = req.body.usuario_id || req.query.usuario_id;
+    // Tentar obter usuario_id de diferentes lugares
+    let usuario_id = req.body.usuario_id || req.query.usuario_id;
+    
+    // Se não encontrou no body ou query, tentar na URL para rotas GET
+    if (!usuario_id && req.params.usuario_id) {
+      usuario_id = req.params.usuario_id;
+    }
     
     if (!usuario_id) {
       return res.status(401).json({ success: false, error: 'Usuário não autenticado' });
@@ -594,8 +600,8 @@ app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
   }
 });
 
-// ROTA DE DEBUG - Verificar registros no banco
-app.get('/api/debug/registros/:usuario_id', async (req, res) => {
+// ROTA DE DEBUG - Verificar registros no banco (COM AUTENTICAÇÃO)
+app.get('/api/debug/registros/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
     

@@ -778,23 +778,32 @@
             }
         }
 
-        // TESTE TEMPORÁRIO - Diagnóstico
+        // TESTE TEMPORÁRIO - Diagnóstico (COM AUTENTICAÇÃO)
         async function testarRegistros() {
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
+                console.log('🔍 TESTE: Usuário ID:', usuario.id);
+                
+                // Testar rota de debug
                 const response = await fetch(`/api/debug/registros/${usuario.id}`);
                 const data = await response.json();
                 
                 console.log('🔍 TESTE DIAGNÓSTICO:', data);
-                alert(`Diagnóstico: ${data.total} registros encontrados no banco. Verifique o console.`);
                 
-                // Se há registros no banco mas não aparecem, force o carregamento
-                if (data.total > 0) {
-                    console.log('🔄 Forçando recarregamento dos registros...');
-                    await carregarRegistros();
+                if (data.success) {
+                    alert(`✅ Diagnóstico: ${data.total} registros encontrados no banco. Verifique o console.`);
+                    
+                    // Se há registros no banco mas não aparecem, force o carregamento
+                    if (data.total > 0) {
+                        console.log('🔄 Forçando recarregamento dos registros...');
+                        await carregarRegistros();
+                    }
+                } else {
+                    alert(`❌ Erro no teste: ${data.error}`);
                 }
             } catch (error) {
                 console.error('❌ Erro no teste:', error);
+                alert('❌ Erro ao testar registros. Verifique o console.');
             }
         }
 
