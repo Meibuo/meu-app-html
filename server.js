@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,11 +15,40 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Configuração do Multer para upload de imagens
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = 'uploads/avatars';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const usuario_id = req.body.usuario_id;
+    const ext = path.extname(file.originalname);
+    cb(null, `avatar-${usuario_id}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas!'));
+    }
+  }
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
+app.use('/uploads', express.static('uploads'));
 
 // Testar conexão com o banco
 const testarConexaoBanco = async () => {
@@ -286,6 +317,45 @@ app.put('/api/perfil', requireAuth, async (req, res) => {
   }
 });
 
+// ROTA PARA UPLOAD DE AVATAR
+app.post('/api/upload-avatar', requireAuth, upload.single('avatar'), async (req, res) => {
+  try {
+    const usuario_id = req.body.usuario_id;
+    
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Nenhuma imagem enviada' });
+    }
+
+    const avatarPath = `/uploads/avatars/${req.file.filename}`;
+
+    // Atualizar no banco de dados
+    await pool.query(
+      'UPDATE users SET avatar = $1 WHERE id = $2',
+      [avatarPath, usuario_id]
+    );
+
+    // Buscar usuário atualizado
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    const updatedUser = result.rows[0];
+
+    res.json({ 
+      success: true, 
+      message: 'Avatar atualizado com sucesso!',
+      avatar: avatarPath,
+      user: {
+        id: updatedUser.id,
+        nome: updatedUser.nome,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro no upload de avatar:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
+  }
+});
+
 // ROTA PARA ALTERAR SENHA
 app.put('/api/alterar-senha', requireAuth, async (req, res) => {
   try {
@@ -319,23 +389,6 @@ app.put('/api/alterar-senha', requireAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao alterar senha:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
-  }
-});
-
-// ROTA PARA UPLOAD DE AVATAR
-app.post('/api/upload-avatar', requireAuth, async (req, res) => {
-  try {
-    const usuario_id = req.user.id;
-
-    res.json({ 
-      success: true, 
-      message: 'Upload de avatar realizado com sucesso!',
-      avatar: null
-    });
-
-  } catch (error) {
-    console.error('Erro no upload de avatar:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
@@ -443,7 +496,7 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
     const { tipo, local, observacao, horas_extras, data_custom, hora_custom, manual } = req.body;
     const usuario_id = req.user.id;
     
-    console.log('📍 Tentativa de registro de ponto:', { usuario_id, tipo, local });
+    console.log('📍 Tentativa de registro de ponto:', { usuario_id, tipo, local, horas_extras });
 
     if (!tipo || !local) {
       return res.status(400).json({ 
@@ -462,13 +515,16 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
 
     console.log('✅ Ponto registrado com sucesso');
 
+    const message = horas_extras ? 'Hora extra registrada com sucesso!' : 'Ponto registrado com sucesso!';
+
     res.json({ 
       success: true, 
-      message: 'Ponto registrado com sucesso!',
+      message: message,
       registro: {
         id: registroId,
         tipo: tipo,
-        local: local
+        local: local,
+        horas_extras: horas_extras || false
       }
     });
 
@@ -507,7 +563,8 @@ app.get('/api/ultimo-registro/:usuario_id', requireAuth, async (req, res) => {
         tipo: ultimoRegistro.tipo,
         local: ultimoRegistro.local,
         data: new Date(ultimoRegistro.criado_em).toLocaleDateString('pt-BR'),
-        hora: new Date(ultimoRegistro.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        hora: new Date(ultimoRegistro.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        horas_extras: ultimoRegistro.horas_extras
       }
     });
 
@@ -576,11 +633,18 @@ app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
       [usuario_id]
     );
 
+    const horasExtrasResult = await pool.query(
+      `SELECT COUNT(*) FROM registros_ponto 
+       WHERE usuario_id = $1 AND horas_extras = true`,
+      [usuario_id]
+    );
+
     res.json({
       success: true,
       estatisticas: {
         totalRegistros: parseInt(totalResult.rows[0].count),
-        registrosHoje: parseInt(hojeResult.rows[0].count)
+        registrosHoje: parseInt(hojeResult.rows[0].count),
+        horasExtras: parseInt(horasExtrasResult.rows[0].count)
       }
     });
 

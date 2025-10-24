@@ -7,22 +7,68 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+        }
+        
         .card-hover:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
             transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        .badge {
-            font-size: 0.8em;
-        }
+        
         .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+        }
+        
+        .horario-card {
+            background: white;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .btn-action {
+            padding: 12px 20px;
+            font-size: 1em;
+            margin: 5px;
+            border-radius: 8px;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
         }
-        .btn-action {
-            padding: 15px 25px;
-            font-size: 1.1em;
-            margin: 5px;
+        
+        .btn-success-custom {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
         }
+        
+        .btn-warning-custom {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+        }
+        
+        .btn-danger-custom {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+            color: white;
+        }
+        
         #alert-container {
             position: fixed;
             top: 20px;
@@ -30,8 +76,94 @@
             z-index: 9999;
             min-width: 300px;
         }
+        
         .alert {
+            border: none;
+            border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .badge {
+            font-size: 0.75em;
+            padding: 6px 10px;
+            border-radius: 20px;
+        }
+        
+        .table-responsive {
+            border-radius: 10px;
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+            background-color: #f8f9fa;
+        }
+        
+        /* Responsividade melhorada */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .btn-action {
+                padding: 10px 15px;
+                font-size: 0.9em;
+                margin: 3px;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.85em;
+            }
+            
+            #alert-container {
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .btn-action {
+                width: 100%;
+                margin: 5px 0;
+            }
+            
+            .stats-card .card-body {
+                padding: 1rem;
+            }
+            
+            .horario-card .card-body {
+                padding: 1rem;
+            }
+        }
+        
+        .avatar-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #dee2e6;
+        }
+        
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            padding: 10px 15px;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
     </style>
 </head>
@@ -42,20 +174,28 @@
             <a class="navbar-brand" href="#">
                 <i class="fas fa-clock"></i> Sistema de Ponto
             </a>
-            <div class="navbar-nav ms-auto">
-                <span class="navbar-text me-3">
-                    Olá, <span id="user-name">Usuário</span>
-                </span>
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
-                        <i class="fas fa-user"></i>
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="perfil"><i class="fas fa-cog"></i> Meu Perfil</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="alterarSenha()"><i class="fas fa-key"></i> Alterar Senha</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
-                    </ul>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3 d-none d-md-block">
+                        Olá, <span id="user-name">Usuário</span>
+                    </span>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
+                            <img id="user-avatar" src="" class="avatar-img me-2" onerror="this.style.display='none'">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="perfil"><i class="fas fa-cog"></i> Meu Perfil</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="alterarSenha()"><i class="fas fa-key"></i> Alterar Senha</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
@@ -67,8 +207,8 @@
     <div class="container mt-4">
         <!-- Cards de Estatísticas -->
         <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card stats-card text-white">
+            <div class="col-md-3 mb-3">
+                <div class="card stats-card card-hover">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
@@ -76,14 +216,14 @@
                                 <p class="mb-0">Total de Registros</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="fas fa-list fa-2x"></i>
+                                <i class="fas fa-list fa-2x opacity-75"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white card-hover">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
@@ -91,17 +231,59 @@
                                 <p class="mb-0">Registros Hoje</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="fas fa-calendar-day fa-2x"></i>
+                                <i class="fas fa-calendar-day fa-2x opacity-75"></i>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card bg-info text-white">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-white card-hover">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 id="horas-extras">0</h4>
+                                <p class="mb-0">Horas Extras</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-clock fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info text-white card-hover">
                     <div class="card-body">
                         <div id="ultimo-registro">
-                            <strong>Último registro:</strong> Nenhum registro encontrado
+                            <small><strong>Último registro:</strong><br>Nenhum registro</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Horários de Trabalho -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card horario-card card-hover">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0"><i class="fas fa-calendar-alt"></i> Horários de Trabalho</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-2">
+                                <strong>Segunda a Quinta:</strong><br>
+                                <span class="text-success">07:00 12:00 13:00 17:00</span>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <strong>Sexta:</strong><br>
+                                <span class="text-primary">07:00 12:00 13:00 16:00</span>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <strong>Sab/Dom/Feriado:</strong><br>
+                                <span class="text-muted">Folga</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -111,47 +293,19 @@
         <!-- Botões de Ação -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
+                <div class="card card-hover">
+                    <div class="card-header bg-white">
                         <h5 class="card-title mb-0"><i class="fas fa-play-circle"></i> Registrar Ponto</h5>
                     </div>
-                    <div class="card-body text-center">
-                        <div class="row">
-                            <div class="col-md-3 mb-2">
-                                <button class="btn btn-success btn-action w-100" onclick="registrarPonto('entrada')">
-                                    <i class="fas fa-sign-in-alt"></i><br>
-                                    Entrada
-                                </button>
-                            </div>
-                            <div class="col-md-3 mb-2">
-                                <button class="btn btn-warning btn-action w-100" onclick="registrarPonto('intervalo')">
-                                    <i class="fas fa-coffee"></i><br>
-                                    Intervalo
-                                </button>
-                            </div>
-                            <div class="col-md-3 mb-2">
-                                <button class="btn btn-info btn-action w-100" onclick="registrarPonto('retorno')">
-                                    <i class="fas fa-undo"></i><br>
-                                    Retorno
-                                </button>
-                            </div>
-                            <div class="col-md-3 mb-2">
-                                <button class="btn btn-danger btn-action w-100" onclick="registrarPonto('saida')">
-                                    <i class="fas fa-sign-out-alt"></i><br>
-                                    Saída
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Local e Observação -->
-                        <div class="row mt-3">
-                            <div class="col-md-6">
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-2">
                                 <div class="mb-3">
                                     <label for="local" class="form-label">Local *</label>
-                                    <input type="text" class="form-control" id="local" placeholder="Ex: Escritório, Home Office, etc." required>
+                                    <input type="text" class="form-control" id="local" placeholder="Ex: Escritório, Home Office, Obra, etc." required>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-2">
                                 <div class="mb-3">
                                     <label for="observacao" class="form-label">Observação (opcional)</label>
                                     <textarea class="form-control" id="observacao" rows="1" placeholder="Observações adicionais"></textarea>
@@ -159,15 +313,43 @@
                             </div>
                         </div>
 
-                        <!-- Horas Extras -->
                         <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-success-custom btn-action w-100" onclick="registrarPonto('entrada')">
+                                    <i class="fas fa-sign-in-alt"></i><br>
+                                    <span class="d-none d-sm-inline">Entrada</span>
+                                    <small class="d-block d-sm-none">Entrada</small>
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-warning-custom btn-action w-100" onclick="registrarPonto('intervalo')">
+                                    <i class="fas fa-coffee"></i><br>
+                                    <span class="d-none d-sm-inline">Intervalo</span>
+                                    <small class="d-block d-sm-none">Intervalo</small>
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-info btn-action w-100" onclick="registrarPonto('retorno')">
+                                    <i class="fas fa-undo"></i><br>
+                                    <span class="d-none d-sm-inline">Retorno</span>
+                                    <small class="d-block d-sm-none">Retorno</small>
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <button class="btn btn-danger-custom btn-action w-100" onclick="registrarPonto('saida')">
+                                    <i class="fas fa-sign-out-alt"></i><br>
+                                    <span class="d-none d-sm-inline">Saída</span>
+                                    <small class="d-block d-sm-none">Saída</small>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Botão de Hora Extra -->
+                        <div class="row mt-3">
                             <div class="col-12">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="horas-extras">
-                                    <label class="form-check-label" for="horas-extras">
-                                        Marcar como horas extras
-                                    </label>
-                                </div>
+                                <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#modalHoraExtra">
+                                    <i class="fas fa-plus-circle"></i> Registrar Hora Extra
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -178,11 +360,11 @@
         <!-- Histórico de Registros -->
         <div class="row">
             <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card card-hover">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0"><i class="fas fa-history"></i> Histórico de Registros</h5>
                         <button class="btn btn-sm btn-outline-primary" onclick="carregarRegistros()">
-                            <i class="fas fa-sync-alt"></i> Atualizar
+                            <i class="fas fa-sync-alt"></i> <span class="d-none d-sm-inline">Atualizar</span>
                         </button>
                     </div>
                     <div class="card-body">
@@ -195,8 +377,7 @@
                                         <th>Tipo</th>
                                         <th>Local</th>
                                         <th>Observação</th>
-                                        <th>Horas Extras</th>
-                                        <th>Manual</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="registros-body">
@@ -209,6 +390,57 @@
                             <p class="text-muted">Nenhum registro encontrado</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Hora Extra -->
+    <div class="modal fade" id="modalHoraExtra" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Hora Extra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-hora-extra">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="data-hora-extra" class="form-label">Data *</label>
+                                <input type="date" class="form-control" id="data-hora-extra" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tipo-hora-extra" class="form-label">Tipo *</label>
+                                <select class="form-select" id="tipo-hora-extra" required>
+                                    <option value="entrada">Entrada</option>
+                                    <option value="saida">Saída</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="hora-inicio" class="form-label">Hora de Início *</label>
+                                <input type="time" class="form-control" id="hora-inicio" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="hora-fim" class="form-label">Hora de Término *</label>
+                                <input type="time" class="form-control" id="hora-fim" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="local-hora-extra" class="form-label">Local *</label>
+                            <input type="text" class="form-control" id="local-hora-extra" placeholder="Local da hora extra" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="observacao-hora-extra" class="form-label">Observação (opcional)</label>
+                            <textarea class="form-control" id="observacao-hora-extra" rows="2" placeholder="Observações sobre a hora extra"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="registrarHoraExtra()">Registrar Hora Extra</button>
                 </div>
             </div>
         </div>
@@ -257,9 +489,20 @@
             }
 
             document.getElementById('user-name').textContent = usuario.nome;
+            
+            // Carregar avatar se existir
+            if (usuario.avatar) {
+                const avatarImg = document.getElementById('user-avatar');
+                avatarImg.src = usuario.avatar;
+                avatarImg.style.display = 'inline-block';
+            }
+            
             carregarRegistros();
             carregarUltimoRegistro();
             atualizarEstatisticas(usuario.id);
+            
+            // Configurar data atual no modal de hora extra
+            document.getElementById('data-hora-extra').valueAsDate = new Date();
             
             // Atualizar a cada 30 segundos
             setInterval(() => {
@@ -298,7 +541,6 @@
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
                 const local = document.getElementById('local').value;
                 const observacao = document.getElementById('observacao').value;
-                const horasExtras = document.getElementById('horas-extras').checked;
 
                 if (!local) {
                     showAlert('Por favor, informe o local', 'warning');
@@ -315,7 +557,7 @@
                         tipo: tipo,
                         local: local,
                         observacao: observacao,
-                        horas_extras: horasExtras
+                        horas_extras: false
                     })
                 });
 
@@ -326,7 +568,6 @@
                     
                     // Limpar campos
                     document.getElementById('observacao').value = '';
-                    document.getElementById('horas-extras').checked = false;
                     
                     // Atualizar dados
                     await carregarRegistros();
@@ -341,11 +582,92 @@
             }
         }
 
+        // Função para registrar hora extra
+        async function registrarHoraExtra() {
+            try {
+                const usuario = JSON.parse(localStorage.getItem('usuario'));
+                const dataHoraExtra = document.getElementById('data-hora-extra').value;
+                const tipoHoraExtra = document.getElementById('tipo-hora-extra').value;
+                const horaInicio = document.getElementById('hora-inicio').value;
+                const horaFim = document.getElementById('hora-fim').value;
+                const localHoraExtra = document.getElementById('local-hora-extra').value;
+                const observacaoHoraExtra = document.getElementById('observacao-hora-extra').value;
+
+                if (!dataHoraExtra || !horaInicio || !horaFim || !localHoraExtra) {
+                    showAlert('Por favor, preencha todos os campos obrigatórios', 'warning');
+                    return;
+                }
+
+                // Registrar entrada da hora extra
+                const responseEntrada = await fetch('/api/registrar-ponto', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        usuario_id: usuario.id,
+                        tipo: tipoHoraExtra === 'entrada' ? 'entrada' : 'saida',
+                        local: localHoraExtra,
+                        observacao: observacaoHoraExtra + ' (Hora Extra - Início)',
+                        horas_extras: true,
+                        data_custom: dataHoraExtra,
+                        hora_custom: horaInicio
+                    })
+                });
+
+                const dataEntrada = await responseEntrada.json();
+
+                if (dataEntrada.success) {
+                    // Registrar saída da hora extra
+                    const responseSaida = await fetch('/api/registrar-ponto', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            usuario_id: usuario.id,
+                            tipo: tipoHoraExtra === 'entrada' ? 'saida' : 'entrada',
+                            local: localHoraExtra,
+                            observacao: observacaoHoraExtra + ' (Hora Extra - Término)',
+                            horas_extras: true,
+                            data_custom: dataHoraExtra,
+                            hora_custom: horaFim
+                        })
+                    });
+
+                    const dataSaida = await responseSaida.json();
+
+                    if (dataSaida.success) {
+                        showAlert('✅ Hora extra registrada com sucesso!', 'success');
+                        
+                        // Fechar modal e limpar formulário
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalHoraExtra'));
+                        modal.hide();
+                        document.getElementById('form-hora-extra').reset();
+                        document.getElementById('data-hora-extra').valueAsDate = new Date();
+                        
+                        // Atualizar dados
+                        await carregarRegistros();
+                        await carregarUltimoRegistro();
+                        await atualizarEstatisticas(usuario.id);
+                    } else {
+                        showAlert('❌ Erro ao registrar término da hora extra', 'danger');
+                    }
+                } else {
+                    showAlert('❌ Erro ao registrar início da hora extra', 'danger');
+                }
+
+            } catch (error) {
+                console.error('Erro ao registrar hora extra:', error);
+                showAlert('❌ Erro ao registrar hora extra', 'danger');
+            }
+        }
+
         // Função para carregar registros
         async function carregarRegistros() {
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
-                const response = await fetch(`/api/registros/${usuario.id}?limit=100`);
+                const response = await fetch(`/api/registros/${usuario.id}?limit=50`);
                 const data = await response.json();
 
                 if (data.success) {
@@ -380,8 +702,12 @@
                     </td>
                     <td>${registro.local || '-'}</td>
                     <td>${registro.observacao || '-'}</td>
-                    <td>${registro.horas_extras ? '<span class="badge bg-warning">Sim</span>' : 'Não'}</td>
-                    <td>${registro.manual ? '<span class="badge bg-secondary">Sim</span>' : 'Não'}</td>
+                    <td>
+                        ${registro.horas_extras ? 
+                            '<span class="badge bg-warning">Hora Extra</span>' : 
+                            '<span class="badge bg-success">Normal</span>'
+                        }
+                    </td>
                 </tr>
             `).join('');
         }
@@ -397,9 +723,14 @@
                     const ultimo = data.ultimoRegistro;
                     const elemento = document.getElementById('ultimo-registro');
                     if (elemento) {
+                        const tipoFormatado = formatarTipo(ultimo.tipo);
+                        const statusHoraExtra = ultimo.horas_extras ? ' (Hora Extra)' : '';
                         elemento.innerHTML = `
-                            <strong>Último registro:</strong> ${formatarTipo(ultimo.tipo)} 
-                            às ${ultimo.hora} em ${ultimo.local}
+                            <small>
+                                <strong>Último registro:</strong><br>
+                                ${tipoFormatado} às ${ultimo.hora}<br>
+                                <em>${ultimo.local}${statusHoraExtra}</em>
+                            </small>
                         `;
                     }
                 }
@@ -418,9 +749,11 @@
                     const stats = data.estatisticas;
                     const totalElement = document.getElementById('total-registros');
                     const hojeElement = document.getElementById('registros-hoje');
+                    const horasExtrasElement = document.getElementById('horas-extras');
                     
                     if (totalElement) totalElement.textContent = stats.totalRegistros;
                     if (hojeElement) hojeElement.textContent = stats.registrosHoje;
+                    if (horasExtrasElement) horasExtrasElement.textContent = stats.horasExtras;
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
