@@ -57,6 +57,23 @@
             box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
         }
         
+        .btn-hora-extra {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-hora-extra:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+        
         #alert-container {
             position: fixed;
             top: 20px;
@@ -94,7 +111,7 @@
                 padding: 0 10px;
             }
             
-            .btn-registrar {
+            .btn-registrar, .btn-hora-extra {
                 padding: 12px 20px;
                 font-size: 1.1em;
             }
@@ -115,7 +132,7 @@
         }
         
         @media (max-width: 576px) {
-            .btn-registrar {
+            .btn-registrar, .btn-hora-extra {
                 width: 100%;
             }
             
@@ -152,6 +169,7 @@
             background: #f8fff9;
             margin-bottom: 10px;
             border-radius: 8px;
+            padding: 15px;
         }
         
         .registro-item.saida {
@@ -167,6 +185,16 @@
         .registro-item.retorno {
             border-left-color: #17a2b8;
             background: #f0fdff;
+        }
+        
+        .registro-item.hora-extra {
+            border-left-color: #ff6b6b;
+            background: #fff0f0;
+        }
+        
+        .hora-extra-badge {
+            background: #ff6b6b;
+            color: white;
         }
     </style>
 </head>
@@ -305,6 +333,10 @@
                             <i class="fas fa-fingerprint"></i> REGISTRAR PONTO
                         </button>
 
+                        <button class="btn btn-hora-extra" data-bs-toggle="modal" data-bs-target="#modalHoraExtra">
+                            <i class="fas fa-clock"></i> REGISTRAR HORA EXTRA
+                        </button>
+
                         <div class="mt-3 text-center">
                             <small class="text-muted">
                                 O sistema detecta automaticamente o tipo de registro baseado no horário atual
@@ -337,6 +369,63 @@
                             <small class="text-muted">Clique em "REGISTRAR PONTO" para fazer seu primeiro registro</small>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Hora Extra -->
+    <div class="modal fade" id="modalHoraExtra" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-clock"></i> Registrar Hora Extra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-hora-extra">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="data-hora-extra" class="form-label">Data *</label>
+                                <input type="date" class="form-control" id="data-hora-extra" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tipo-registro" class="form-label">Tipo de Registro *</label>
+                                <select class="form-select" id="tipo-registro" required>
+                                    <option value="entrada">Entrada</option>
+                                    <option value="saida">Saída</option>
+                                    <option value="intervalo">Intervalo</option>
+                                    <option value="retorno">Retorno</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="hora-inicio" class="form-label">Hora *</label>
+                                <input type="time" class="form-control" id="hora-inicio" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Horário Atual</label>
+                                <div class="form-control" style="background-color: #f8f9fa;">
+                                    <strong id="hora-atual">--:--</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="local-hora-extra" class="form-label">Local *</label>
+                            <input type="text" class="form-control" id="local-hora-extra" placeholder="Local da hora extra" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="observacao-hora-extra" class="form-label">Observação (opcional)</label>
+                            <textarea class="form-control" id="observacao-hora-extra" rows="3" placeholder="Descreva a atividade da hora extra"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="registrarHoraExtra()">
+                        <i class="fas fa-save"></i> Registrar Hora Extra
+                    </button>
                 </div>
             </div>
         </div>
@@ -393,6 +482,14 @@
                 avatarImg.style.display = 'inline-block';
             }
             
+            // Configurar data atual no modal de hora extra
+            const hoje = new Date();
+            document.getElementById('data-hora-extra').valueAsDate = hoje;
+            
+            // Atualizar hora atual
+            atualizarHoraAtual();
+            setInterval(atualizarHoraAtual, 60000);
+            
             carregarRegistros();
             carregarUltimoRegistro();
             atualizarEstatisticas(usuario.id);
@@ -404,6 +501,16 @@
                 atualizarEstatisticas(usuario.id);
             }, 30000);
         });
+
+        function atualizarHoraAtual() {
+            const agora = new Date();
+            const horaFormatada = agora.toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            document.getElementById('hora-atual').textContent = horaFormatada;
+            document.getElementById('hora-inicio').value = horaFormatada;
+        }
 
         // Função para mostrar alertas
         function showAlert(message, type = 'info') {
@@ -428,7 +535,7 @@
             }, 5000);
         }
 
-        // Função para registrar ponto
+        // Função para registrar ponto NORMAL
         async function registrarPonto() {
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
@@ -454,7 +561,8 @@
                     body: JSON.stringify({
                         usuario_id: usuario.id,
                         local: local,
-                        observacao: observacao
+                        observacao: observacao,
+                        horas_extras: false
                     })
                 });
 
@@ -491,18 +599,82 @@
             }
         }
 
+        // Função para registrar HORA EXTRA
+        async function registrarHoraExtra() {
+            try {
+                const usuario = JSON.parse(localStorage.getItem('usuario'));
+                const dataHoraExtra = document.getElementById('data-hora-extra').value;
+                const tipoRegistro = document.getElementById('tipo-registro').value;
+                const horaInicio = document.getElementById('hora-inicio').value;
+                const localHoraExtra = document.getElementById('local-hora-extra').value;
+                const observacaoHoraExtra = document.getElementById('observacao-hora-extra').value;
+
+                if (!dataHoraExtra || !horaInicio || !localHoraExtra) {
+                    showAlert('Por favor, preencha todos os campos obrigatórios', 'warning');
+                    return;
+                }
+
+                const response = await fetch('/api/registrar-ponto', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        usuario_id: usuario.id,
+                        local: localHoraExtra,
+                        observacao: observacaoHoraExtra,
+                        horas_extras: true,
+                        data_custom: dataHoraExtra,
+                        hora_custom: horaInicio
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✅ ' + data.message, 'success');
+                    
+                    // Fechar modal e limpar formulário
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalHoraExtra'));
+                    modal.hide();
+                    document.getElementById('form-hora-extra').reset();
+                    document.getElementById('data-hora-extra').valueAsDate = new Date();
+                    atualizarHoraAtual();
+                    
+                    // Atualizar dados
+                    await carregarRegistros();
+                    await carregarUltimoRegistro();
+                    await atualizarEstatisticas(usuario.id);
+                    
+                } else {
+                    showAlert('❌ ' + data.error, 'danger');
+                }
+
+            } catch (error) {
+                console.error('Erro ao registrar hora extra:', error);
+                showAlert('❌ Erro ao registrar hora extra', 'danger');
+            }
+        }
+
         // Função para carregar registros
         async function carregarRegistros() {
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
+                console.log('🔄 Carregando registros para usuário:', usuario.id);
+                
                 const response = await fetch(`/api/registros/${usuario.id}?limit=20`);
                 const data = await response.json();
 
+                console.log('📊 Resposta da API:', data);
+
                 if (data.success) {
                     exibirRegistros(data.registros);
+                } else {
+                    console.error('Erro na API:', data.error);
                 }
             } catch (error) {
                 console.error('Erro ao carregar registros:', error);
+                showAlert('❌ Erro ao carregar registros', 'danger');
             }
         }
 
@@ -511,6 +683,8 @@
             const lista = document.getElementById('lista-registros');
             const semRegistros = document.getElementById('sem-registros');
             
+            console.log('🎯 Exibindo registros:', registros);
+
             if (registros.length === 0) {
                 if (semRegistros) semRegistros.style.display = 'block';
                 lista.innerHTML = '';
@@ -520,20 +694,23 @@
             if (semRegistros) semRegistros.style.display = 'none';
 
             lista.innerHTML = registros.map(registro => `
-                <div class="registro-item ${registro.tipo} p-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>${formatarTipo(registro.tipo)}</strong>
-                            <br>
-                            <small class="text-muted">
-                                ${registro.data} às ${registro.hora}
-                                ${registro.local ? ` | ${registro.local}` : ''}
-                                ${registro.observacao ? ` | ${registro.observacao}` : ''}
-                            </small>
+                <div class="registro-item ${registro.horas_extras ? 'hora-extra' : registro.tipo}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <strong class="me-2">${formatarTipo(registro.tipo)}</strong>
+                                ${registro.horas_extras ? '<span class="badge hora-extra-badge me-2">HORA EXTRA</span>' : ''}
+                                <span class="badge ${getBadgeClass(registro.tipo)}">
+                                    ${registro.tipo.toUpperCase()}
+                                </span>
+                            </div>
+                            <div class="text-muted small">
+                                <i class="fas fa-calendar me-1"></i>${registro.data}
+                                <i class="fas fa-clock ms-2 me-1"></i>${registro.hora}
+                                ${registro.local ? `<br><i class="fas fa-map-marker-alt me-1"></i>${registro.local}` : ''}
+                                ${registro.observacao ? `<br><i class="fas fa-sticky-note me-1"></i>${registro.observacao}` : ''}
+                            </div>
                         </div>
-                        <span class="badge ${getBadgeClass(registro.tipo)}">
-                            ${registro.tipo.toUpperCase()}
-                        </span>
                     </div>
                 </div>
             `).join('');
@@ -551,11 +728,12 @@
                     const elemento = document.getElementById('ultimo-registro');
                     if (elemento) {
                         const tipoFormatado = formatarTipo(ultimo.tipo);
+                        const statusHoraExtra = ultimo.horas_extras ? ' (Hora Extra)' : '';
                         elemento.innerHTML = `
                             <small>
                                 <strong>Último registro:</strong><br>
                                 ${tipoFormatado} às ${ultimo.hora}<br>
-                                <em>${ultimo.local}</em>
+                                <em>${ultimo.local}${statusHoraExtra}</em>
                             </small>
                         `;
                     }

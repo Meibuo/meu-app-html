@@ -202,7 +202,7 @@ app.post('/api/login', async (req, res) => {
 // ROTA DE CADASTRO (para admin)
 app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
   try {
-    const { nome, email, telefone, senha, cargo } = req.body;
+    const { nome, email, telefone, senha, cargo, status } = req.body;
     
     if (!nome || !email || !senha) {
       return res.status(400).json({ success: false, error: 'Nome, e-mail e senha são obrigatórios' });
@@ -219,9 +219,9 @@ app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
     const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
     await pool.query(
-      `INSERT INTO users (id, nome, email, telefone, senha, cargo) 
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [userId, nome, emailLimpo, telefone || null, hashedPassword, cargo || 'Terceiro']
+      `INSERT INTO users (id, nome, email, telefone, senha, cargo, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [userId, nome, emailLimpo, telefone || null, hashedPassword, cargo || 'Terceiro', status || 'ativo']
     );
 
     res.json({ 
@@ -232,7 +232,8 @@ app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
         nome,
         email: emailLimpo,
         telefone: telefone || null,
-        cargo: cargo || 'Terceiro'
+        cargo: cargo || 'Terceiro',
+        status: status || 'ativo'
       }
     });
 
@@ -276,6 +277,7 @@ app.put('/api/perfil', requireAuth, async (req, res) => {
         cargo: updatedUser.cargo,
         perfilEditado: updatedUser.perfil_editado,
         isAdmin: updatedUser.is_admin,
+        status: updatedUser.status,
         criadoEm: updatedUser.criado_em
       }
     });
@@ -323,15 +325,115 @@ app.put('/api/alterar-senha', requireAuth, async (req, res) => {
   }
 });
 
+// ROTA PARA UPLOAD DE AVATAR (SIMPLIFICADA)
+app.post('/api/upload-avatar', requireAuth, async (req, res) => {
+  try {
+    const { usuario_id, avatar_url } = req.body;
+
+    // Simular upload - apenas salvar URL
+    await pool.query(
+      'UPDATE users SET avatar = $1 WHERE id = $2',
+      [avatar_url, usuario_id]
+    );
+
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    const updatedUser = result.rows[0];
+
+    res.json({ 
+      success: true, 
+      message: 'Avatar atualizado com sucesso!',
+      avatar: avatar_url,
+      user: {
+        id: updatedUser.id,
+        nome: updatedUser.nome,
+        email: updatedUser.email,
+        avatar: updatedUser.avatar
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro no upload de avatar:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ========== ROTAS DE ADMINISTRAÇÃO ==========
+
+// Listar todos os usuários (apenas admin)
+app.get('/api/admin/usuarios', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users ORDER BY criado_em DESC');
+    
+    const usuarios = result.rows.map(user => ({
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      telefone: user.telefone,
+      cargo: user.cargo,
+      avatar: user.avatar,
+      perfilEditado: user.perfil_editado,
+      isAdmin: user.is_admin,
+      status: user.status,
+      criadoEm: user.criado_em
+    }));
+    
+    res.json({ success: true, usuarios });
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// Atualizar usuário (apenas admin)
+app.put('/api/admin/usuarios/:id', requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { nome, email, telefone, cargo, status } = req.body;
+    
+    if (!nome || !email) {
+      return res.status(400).json({ success: false, error: 'Nome e e-mail são obrigatórios' });
+    }
+
+    const emailCheck = await pool.query(
+      'SELECT * FROM users WHERE email = $1 AND id != $2',
+      [email, userId]
+    );
+    
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ success: false, error: 'E-mail já está em uso por outro usuário' });
+    }
+
+    await pool.query(
+      'UPDATE users SET nome = $1, email = $2, telefone = $3, cargo = $4, status = $5 WHERE id = $6',
+      [nome, email, telefone || null, cargo || 'Terceiro', status || 'ativo', userId]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Usuário atualizado com sucesso!' 
+    });
+
+  } catch (error) {
+    console.error('Erro ao atualizar usuário:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
 // ========== ROTAS DE REGISTRO DE PONTO ==========
 
-// ROTA DE REGISTRO DE PONTO - SIMPLIFICADA
+// ROTA DE REGISTRO DE PONTO - CORRIGIDA
 app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
   try {
-    const { local, observacao } = req.body;
+    const { local, observacao, horas_extras, data_custom, hora_custom } = req.body;
     const usuario_id = req.user.id;
     
-    console.log('📍 Tentativa de registro de ponto:', { usuario_id, local });
+    console.log('📍 Tentativa de registro de ponto:', { 
+      usuario_id, 
+      local, 
+      horas_extras,
+      data_custom,
+      hora_custom 
+    });
 
     if (!local) {
       return res.status(400).json({ 
@@ -348,22 +450,31 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
     // Definir tipo baseado no dia e hora
     let tipo = '';
     
-    if (diaSemana >= 1 && diaSemana <= 4) { // Segunda a Quinta
-      if (hora < 12) {
-        tipo = 'entrada';
-      } else if (hora >= 12 && hora < 13) {
-        tipo = 'intervalo';
-      } else if (hora >= 13 && hora < 17) {
-        tipo = 'retorno';
+    if (horas_extras) {
+      // Para horas extras, usar o tipo baseado na hora customizada
+      if (hora_custom) {
+        const [horaCustom] = hora_custom.split(':');
+        const horaNum = parseInt(horaCustom);
+        
+        if (horaNum < 12) {
+          tipo = 'entrada';
+        } else if (horaNum >= 12 && horaNum < 13) {
+          tipo = 'intervalo';
+        } else if (horaNum >= 13 && horaNum < (diaSemana === 5 ? 16 : 17)) {
+          tipo = 'retorno';
+        } else {
+          tipo = 'saida';
+        }
       } else {
-        tipo = 'saida';
+        tipo = 'entrada'; // padrão para hora extra
       }
-    } else { // Sexta, Sábado, Domingo
+    } else {
+      // Ponto normal
       if (hora < 12) {
         tipo = 'entrada';
       } else if (hora >= 12 && hora < 13) {
         tipo = 'intervalo';
-      } else if (hora >= 13 && hora < 16) {
+      } else if (hora >= 13 && hora < (diaSemana === 5 ? 16 : 17)) {
         tipo = 'retorno';
       } else {
         tipo = 'saida';
@@ -373,22 +484,38 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
     const registroId = 'reg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
     await pool.query(
-      `INSERT INTO registros_ponto (id, usuario_id, tipo, local, observacao, horas_extras) 
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [registroId, usuario_id, tipo, local, observacao || null, false]
+      `INSERT INTO registros_ponto (id, usuario_id, tipo, local, observacao, horas_extras, data_custom, hora_custom) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        registroId, 
+        usuario_id, 
+        tipo, 
+        local, 
+        observacao || null, 
+        horas_extras || false,
+        data_custom || null,
+        hora_custom || null
+      ]
     );
 
-    console.log('✅ Ponto registrado com sucesso - Tipo:', tipo);
+    console.log('✅ Ponto registrado com sucesso - Tipo:', tipo, 'Hora Extra:', horas_extras);
+
+    const message = horas_extras ? 'Hora extra registrada com sucesso!' : 'Ponto registrado com sucesso!';
+
+    // Buscar o registro recém-criado para retornar
+    const result = await pool.query('SELECT * FROM registros_ponto WHERE id = $1', [registroId]);
+    const novoRegistro = result.rows[0];
 
     res.json({ 
       success: true, 
-      message: 'Ponto registrado com sucesso!',
+      message: message,
       registro: {
         id: registroId,
         tipo: tipo,
         local: local,
-        data: agora.toLocaleDateString('pt-BR'),
-        hora: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        data: data_custom || new Date(novoRegistro.criado_em).toLocaleDateString('pt-BR'),
+        hora: hora_custom || new Date(novoRegistro.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        horas_extras: horas_extras || false
       }
     });
 
@@ -396,7 +523,7 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
     console.error('❌ Erro ao registrar ponto:', error);
     res.status(500).json({ 
       success: false, 
-      error: 'Erro interno do servidor' 
+      error: 'Erro interno do servidor: ' + error.message 
     });
   }
 });
@@ -426,8 +553,9 @@ app.get('/api/ultimo-registro/:usuario_id', requireAuth, async (req, res) => {
       ultimoRegistro: {
         tipo: ultimoRegistro.tipo,
         local: ultimoRegistro.local,
-        data: new Date(ultimoRegistro.criado_em).toLocaleDateString('pt-BR'),
-        hora: new Date(ultimoRegistro.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        data: ultimoRegistro.data_custom || new Date(ultimoRegistro.criado_em).toLocaleDateString('pt-BR'),
+        hora: ultimoRegistro.hora_custom || new Date(ultimoRegistro.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        horas_extras: ultimoRegistro.horas_extras
       }
     });
 
@@ -437,7 +565,7 @@ app.get('/api/ultimo-registro/:usuario_id', requireAuth, async (req, res) => {
   }
 });
 
-// Obter registros do usuário
+// Obter registros do usuário - CORRIGIDA
 app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
@@ -455,13 +583,16 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
       [usuario_id, parseInt(limit)]
     );
 
+    console.log(`📊 Buscando registros para usuário ${usuario_id}. Encontrados: ${result.rows.length}`);
+
     const registros = result.rows.map(reg => ({
       id: reg.id,
       tipo: reg.tipo,
       local: reg.local,
       observacao: reg.observacao,
-      data: new Date(reg.criado_em).toLocaleDateString('pt-BR'),
-      hora: new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      horas_extras: reg.horas_extras,
+      data: reg.data_custom || new Date(reg.criado_em).toLocaleDateString('pt-BR'),
+      hora: reg.hora_custom || new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       diaSemana: new Date(reg.criado_em).toLocaleDateString('pt-BR', { weekday: 'long' }),
       criadoEm: reg.criado_em
     }));
@@ -494,11 +625,18 @@ app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
       [usuario_id]
     );
 
+    const horasExtrasResult = await pool.query(
+      `SELECT COUNT(*) FROM registros_ponto 
+       WHERE usuario_id = $1 AND horas_extras = true`,
+      [usuario_id]
+    );
+
     res.json({
       success: true,
       estatisticas: {
         totalRegistros: parseInt(totalResult.rows[0].count),
-        registrosHoje: parseInt(hojeResult.rows[0].count)
+        registrosHoje: parseInt(hojeResult.rows[0].count),
+        horasExtras: parseInt(horasExtrasResult.rows[0].count)
       }
     });
 

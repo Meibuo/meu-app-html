@@ -45,6 +45,7 @@
             border: 4px solid white;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             overflow: hidden;
+            cursor: pointer;
         }
         
         .profile-avatar img {
@@ -126,6 +127,33 @@
             box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
         }
         
+        /* Status badges */
+        .badge-status {
+            font-size: 0.9em;
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        
+        .status-ativo {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status-inativo {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .status-ferias {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .status-afastado {
+            background: #ffc107;
+            color: black;
+        }
+        
         /* Responsividade */
         @media (max-width: 768px) {
             .profile-header {
@@ -164,12 +192,6 @@
             }
         }
         
-        .badge {
-            font-size: 0.8em;
-            padding: 6px 12px;
-            border-radius: 20px;
-        }
-        
         .upload-progress {
             height: 4px;
             background: #e9ecef;
@@ -183,6 +205,33 @@
             background: var(--primary-color);
             border-radius: 2px;
             transition: width 0.3s ease;
+        }
+        
+        .avatar-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .avatar-option {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-option:hover {
+            transform: scale(1.1);
+            border-color: var(--primary-color);
+        }
+        
+        .avatar-option.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
         }
     </style>
 </head>
@@ -210,14 +259,13 @@
                 <div class="card profile-card">
                     <div class="profile-header">
                         <div class="avatar-upload">
-                            <div class="profile-avatar" id="profile-avatar-container">
+                            <div class="profile-avatar" id="profile-avatar-container" onclick="abrirSelecaoAvatar()">
                                 <!-- Avatar será carregado aqui -->
                                 <i class="fas fa-user" id="avatar-icon"></i>
                             </div>
-                            <button class="avatar-upload-btn" onclick="document.getElementById('avatar-input').click()">
+                            <button class="avatar-upload-btn" onclick="abrirSelecaoAvatar()">
                                 <i class="fas fa-camera"></i>
                             </button>
-                            <input type="file" id="avatar-input" accept="image/*" style="display: none;" onchange="uploadAvatar(this.files[0])">
                         </div>
                         <h3 id="profile-name">Carregando...</h3>
                         <p id="profile-email" class="mb-0">carregando...</p>
@@ -236,6 +284,9 @@
                                     </a>
                                     <a class="nav-link" href="#" onclick="showTab('senha')">
                                         <i class="fas fa-key"></i> Alterar Senha
+                                    </a>
+                                    <a class="nav-link" href="#" onclick="showTab('avatar')">
+                                        <i class="fas fa-camera"></i> Foto de Perfil
                                     </a>
                                 </div>
                             </div>
@@ -272,9 +323,9 @@
                                         <div class="mb-3">
                                             <label class="form-label">Status do Perfil</label>
                                             <div>
-                                                <span id="perfil-status" class="badge bg-secondary">Carregando...</span>
+                                                <span id="perfil-status" class="badge-status status-ativo">Ativo</span>
                                                 <small class="text-muted d-block mt-1" id="perfil-msg">
-                                                    Carregando...
+                                                    Status definido pelo administrador
                                                 </small>
                                             </div>
                                         </div>
@@ -307,6 +358,47 @@
                                         </button>
                                     </form>
                                 </div>
+
+                                <!-- Tab Avatar -->
+                                <div id="avatar-tab" style="display: none;">
+                                    <h4 class="mb-4">Foto de Perfil</h4>
+                                    <div class="text-center">
+                                        <div class="profile-avatar mb-3" style="width: 150px; height: 150px; font-size: 4rem;" id="avatar-preview">
+                                            <i class="fas fa-user" id="avatar-preview-icon"></i>
+                                        </div>
+                                        
+                                        <p class="text-muted mb-3">
+                                            Selecione uma das opções abaixo ou use sua foto atual
+                                        </p>
+                                        
+                                        <div class="avatar-options">
+                                            <div class="avatar-option bg-primary text-white d-flex align-items-center justify-content-center" onclick="selecionarAvatar('👨‍💼')">
+                                                👨‍💼
+                                            </div>
+                                            <div class="avatar-option bg-success text-white d-flex align-items-center justify-content-center" onclick="selecionarAvatar('👩‍💼')">
+                                                👩‍💼
+                                            </div>
+                                            <div class="avatar-option bg-warning text-dark d-flex align-items-center justify-content-center" onclick="selecionarAvatar('👷‍♂️')">
+                                                👷‍♂️
+                                            </div>
+                                            <div class="avatar-option bg-info text-white d-flex align-items-center justify-content-center" onclick="selecionarAvatar('👷‍♀️')">
+                                                👷‍♀️
+                                            </div>
+                                            <div class="avatar-option bg-secondary text-white d-flex align-items-center justify-content-center" onclick="selecionarAvatar('🦸‍♂️')">
+                                                🦸‍♂️
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-4">
+                                            <button class="btn btn-primary" onclick="aplicarAvatar()">
+                                                <i class="fas fa-check"></i> Aplicar Avatar Selecionado
+                                            </button>
+                                            <button class="btn btn-outline-secondary ms-2" onclick="manterAvatarAtual()">
+                                                <i class="fas fa-times"></i> Manter Foto Atual
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -317,6 +409,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let avatarSelecionado = null;
+        let usuarioAtual = null;
+
         // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
             const usuario = JSON.parse(localStorage.getItem('usuario'));
@@ -325,6 +420,7 @@
                 return;
             }
 
+            usuarioAtual = usuario;
             carregarDadosUsuario(usuario);
         });
 
@@ -345,27 +441,53 @@
                 
                 avatarIcon.style.display = 'none';
                 avatarContainer.innerHTML = `<img src="${usuario.avatar}" alt="Avatar" onerror="this.style.display='none'; document.getElementById('avatar-icon').style.display='flex';">`;
+                
+                // Atualizar preview também
+                const avatarPreview = document.getElementById('avatar-preview');
+                const avatarPreviewIcon = document.getElementById('avatar-preview-icon');
+                avatarPreviewIcon.style.display = 'none';
+                avatarPreview.innerHTML = `<img src="${usuario.avatar}" alt="Avatar" onerror="this.style.display='none'; document.getElementById('avatar-preview-icon').style.display='flex';">`;
             }
             
-            // Status do perfil
+            // Status do perfil - AGORA MOSTRA O STATUS DO ADMIN
             const statusElement = document.getElementById('perfil-status');
             const msgElement = document.getElementById('perfil-msg');
             
-            if (usuario.perfilEditado) {
-                statusElement.className = 'badge bg-success';
-                statusElement.textContent = 'Editado';
-                msgElement.textContent = 'Seu perfil já foi editado. Para novas alterações, entre em contato com o administrador.';
+            // Definir classe CSS baseada no status
+            statusElement.className = 'badge-status ';
+            
+            if (usuario.status === 'ativo') {
+                statusElement.classList.add('status-ativo');
+                statusElement.textContent = 'Ativo';
+                msgElement.textContent = 'Seu perfil está ativo no sistema';
+            } else if (usuario.status === 'inativo') {
+                statusElement.classList.add('status-inativo');
+                statusElement.textContent = 'Inativo';
+                msgElement.textContent = 'Seu perfil está inativo. Entre em contato com o administrador.';
+            } else if (usuario.status === 'ferias') {
+                statusElement.classList.add('status-ferias');
+                statusElement.textContent = 'Férias';
+                msgElement.textContent = 'Você está em período de férias';
+            } else if (usuario.status === 'afastado') {
+                statusElement.classList.add('status-afastado');
+                statusElement.textContent = 'Afastado';
+                msgElement.textContent = 'Você está afastado temporariamente';
             } else {
-                statusElement.className = 'badge bg-warning';
-                statusElement.textContent = 'Não editado';
-                msgElement.textContent = 'Você pode editar seu perfil uma vez. Escolha cuidadosamente as informações.';
+                statusElement.classList.add('status-ativo');
+                statusElement.textContent = usuario.status || 'Ativo';
+                msgElement.textContent = 'Status do perfil';
             }
 
-            // Se for admin, pode editar livremente
+            // Mensagem adicional para perfil editado (apenas se não for admin)
+            if (usuario.perfilEditado && !usuario.isAdmin) {
+                msgElement.textContent += '. Perfil já editado - para novas alterações, entre em contato com o administrador.';
+            }
+
+            // Se for admin, mostrar mensagem especial
             if (usuario.isAdmin) {
-                statusElement.className = 'badge bg-info';
+                statusElement.classList.add('status-ativo');
                 statusElement.textContent = 'Administrador';
-                msgElement.textContent = 'Como administrador, você pode editar seu perfil quantas vezes quiser.';
+                msgElement.textContent = 'Como administrador, você tem acesso total ao sistema';
             }
         }
 
@@ -374,6 +496,7 @@
             // Esconder todas as tabs
             document.getElementById('info-tab').style.display = 'none';
             document.getElementById('senha-tab').style.display = 'none';
+            document.getElementById('avatar-tab').style.display = 'none';
             
             // Mostrar tab selecionada
             document.getElementById(tabName + '-tab').style.display = 'block';
@@ -385,83 +508,85 @@
             event.target.classList.add('active');
         }
 
-        // Upload de avatar
-        async function uploadAvatar(file) {
-            if (!file) return;
+        // Abrir seleção de avatar
+        function abrirSelecaoAvatar() {
+            showTab('avatar');
+        }
+
+        // Selecionar avatar
+        function selecionarAvatar(emoji) {
+            avatarSelecionado = emoji;
             
-            // Validar tipo de arquivo
-            if (!file.type.startsWith('image/')) {
-                showAlert('❌ Por favor, selecione uma imagem válida', 'warning');
+            // Remover seleção anterior
+            document.querySelectorAll('.avatar-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Adicionar seleção atual
+            event.target.classList.add('selected');
+            
+            // Atualizar preview
+            const avatarPreview = document.getElementById('avatar-preview');
+            avatarPreview.innerHTML = `<div style="font-size: 4rem;">${emoji}</div>`;
+        }
+
+        // Aplicar avatar selecionado
+        async function aplicarAvatar() {
+            if (!avatarSelecionado) {
+                showAlert('❌ Selecione um avatar primeiro', 'warning');
                 return;
             }
-            
-            // Validar tamanho (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                showAlert('❌ A imagem deve ter no máximo 5MB', 'warning');
-                return;
-            }
-            
-            const usuario = JSON.parse(localStorage.getItem('usuario'));
-            const formData = new FormData();
-            formData.append('avatar', file);
-            formData.append('usuario_id', usuario.id);
-            
-            // Mostrar progresso
-            const progressBar = document.getElementById('upload-progress-bar');
-            const progressContainer = document.getElementById('upload-progress');
-            progressContainer.style.display = 'block';
-            progressBar.style.width = '0%';
-            
+
             try {
-                const xhr = new XMLHttpRequest();
-                
-                xhr.upload.addEventListener('progress', function(e) {
-                    if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
-                        progressBar.style.width = percentComplete + '%';
-                    }
+                // Criar uma imagem base64 simples do emoji (simulação)
+                const avatarUrl = `data:image/svg+xml;base64,${btoa(`
+                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100%" height="100%" fill="#667eea"/>
+                        <text x="50%" y="50%" font-size="80" text-anchor="middle" dy=".3em" fill="white">${avatarSelecionado}</text>
+                    </svg>
+                `)}`;
+
+                const response = await fetch('/api/upload-avatar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        usuario_id: usuarioAtual.id,
+                        avatar_url: avatarUrl
+                    })
                 });
-                
-                xhr.addEventListener('load', function() {
-                    if (xhr.status === 200) {
-                        const response = JSON.parse(xhr.responseText);
-                        
-                        if (response.success) {
-                            showAlert('✅ ' + response.message, 'success');
-                            
-                            // Atualizar avatar na interface
-                            const avatarContainer = document.getElementById('profile-avatar-container');
-                            const avatarIcon = document.getElementById('avatar-icon');
-                            
-                            avatarIcon.style.display = 'none';
-                            avatarContainer.innerHTML = `<img src="${response.avatar}?t=${Date.now()}" alt="Avatar" onerror="this.style.display='none'; document.getElementById('avatar-icon').style.display='flex';">`;
-                            
-                            // Atualizar dados locais
-                            localStorage.setItem('usuario', JSON.stringify(response.user));
-                            
-                        } else {
-                            showAlert('❌ ' + response.error, 'danger');
-                        }
-                    } else {
-                        showAlert('❌ Erro no upload da imagem', 'danger');
-                    }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✅ ' + data.message, 'success');
                     
-                    progressContainer.style.display = 'none';
-                });
-                
-                xhr.addEventListener('error', function() {
-                    showAlert('❌ Erro de conexão durante o upload', 'danger');
-                    progressContainer.style.display = 'none';
-                });
-                
-                xhr.open('POST', '/api/upload-avatar');
-                xhr.send(formData);
-                
+                    // Atualizar avatar na interface
+                    const avatarContainer = document.getElementById('profile-avatar-container');
+                    const avatarIcon = document.getElementById('avatar-icon');
+                    
+                    avatarIcon.style.display = 'none';
+                    avatarContainer.innerHTML = `<img src="${avatarUrl}" alt="Avatar">`;
+                    
+                    // Atualizar dados locais
+                    localStorage.setItem('usuario', JSON.stringify(data.user));
+                    
+                    // Voltar para a tab de informações
+                    showTab('info');
+                    
+                } else {
+                    showAlert('❌ ' + data.error, 'danger');
+                }
             } catch (error) {
-                console.error('Erro no upload:', error);
-                showAlert('❌ Erro ao fazer upload da imagem', 'danger');
-                progressContainer.style.display = 'none';
+                console.error('Erro ao aplicar avatar:', error);
+                showAlert('❌ Erro ao aplicar avatar', 'danger');
             }
+        }
+
+        // Manter avatar atual
+        function manterAvatarAtual() {
+            showTab('info');
         }
 
         // Salvar perfil
