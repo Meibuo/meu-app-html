@@ -145,14 +145,6 @@
             }
         }
         
-        .avatar-img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #dee2e6;
-        }
-        
         .form-control {
             border-radius: 8px;
             border: 1px solid #dee2e6;
@@ -217,7 +209,6 @@
                     </span>
                     <div class="dropdown">
                         <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
-                            <img id="user-avatar" src="" class="avatar-img me-2" onerror="this.style.display='none'">
                             <i class="fas fa-user"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -390,25 +381,20 @@
                                 <input type="date" class="form-control" id="data-hora-extra" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="tipo-registro" class="form-label">Tipo de Registro *</label>
-                                <select class="form-select" id="tipo-registro" required>
-                                    <option value="entrada">Entrada</option>
-                                    <option value="saida">Saída</option>
-                                    <option value="intervalo">Intervalo</option>
-                                    <option value="retorno">Retorno</option>
-                                </select>
+                                <label class="form-label">Data Atual</label>
+                                <div class="form-control" style="background-color: #f8f9fa;">
+                                    <strong id="data-atual">--/--/----</strong>
+                                </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="hora-inicio" class="form-label">Hora *</label>
-                                <input type="time" class="form-control" id="hora-inicio" required>
+                                <label for="hora-entrada" class="form-label">Hora de Entrada *</label>
+                                <input type="time" class="form-control" id="hora-entrada" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Horário Atual</label>
-                                <div class="form-control" style="background-color: #f8f9fa;">
-                                    <strong id="hora-atual">--:--</strong>
-                                </div>
+                                <label for="hora-saida" class="form-label">Hora de Saída *</label>
+                                <input type="time" class="form-control" id="hora-saida" required>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -475,20 +461,18 @@
 
             document.getElementById('user-name').textContent = usuario.nome;
             
-            // Carregar avatar se existir
-            if (usuario.avatar) {
-                const avatarImg = document.getElementById('user-avatar');
-                avatarImg.src = usuario.avatar;
-                avatarImg.style.display = 'inline-block';
-            }
-            
             // Configurar data atual no modal de hora extra
             const hoje = new Date();
             document.getElementById('data-hora-extra').valueAsDate = hoje;
+            document.getElementById('data-atual').textContent = hoje.toLocaleDateString('pt-BR');
             
-            // Atualizar hora atual
-            atualizarHoraAtual();
-            setInterval(atualizarHoraAtual, 60000);
+            // Configurar hora atual como padrão
+            const horaAtual = hoje.toTimeString().slice(0, 5);
+            document.getElementById('hora-entrada').value = horaAtual;
+            
+            // Hora de saída padrão: 1 hora depois
+            const horaSaida = new Date(hoje.getTime() + 60 * 60 * 1000).toTimeString().slice(0, 5);
+            document.getElementById('hora-saida').value = horaSaida;
             
             carregarRegistros();
             carregarUltimoRegistro();
@@ -501,16 +485,6 @@
                 atualizarEstatisticas(usuario.id);
             }, 30000);
         });
-
-        function atualizarHoraAtual() {
-            const agora = new Date();
-            const horaFormatada = agora.toLocaleTimeString('pt-BR', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-            document.getElementById('hora-atual').textContent = horaFormatada;
-            document.getElementById('hora-inicio').value = horaFormatada;
-        }
 
         // Função para mostrar alertas
         function showAlert(message, type = 'info') {
@@ -604,13 +578,18 @@
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
                 const dataHoraExtra = document.getElementById('data-hora-extra').value;
-                const tipoRegistro = document.getElementById('tipo-registro').value;
-                const horaInicio = document.getElementById('hora-inicio').value;
+                const horaEntrada = document.getElementById('hora-entrada').value;
+                const horaSaida = document.getElementById('hora-saida').value;
                 const localHoraExtra = document.getElementById('local-hora-extra').value;
                 const observacaoHoraExtra = document.getElementById('observacao-hora-extra').value;
 
-                if (!dataHoraExtra || !horaInicio || !localHoraExtra) {
+                if (!dataHoraExtra || !horaEntrada || !horaSaida || !localHoraExtra) {
                     showAlert('Por favor, preencha todos os campos obrigatórios', 'warning');
+                    return;
+                }
+
+                if (horaEntrada >= horaSaida) {
+                    showAlert('❌ A hora de entrada deve ser anterior à hora de saída', 'warning');
                     return;
                 }
 
@@ -625,7 +604,8 @@
                         observacao: observacaoHoraExtra,
                         horas_extras: true,
                         data_custom: dataHoraExtra,
-                        hora_custom: horaInicio
+                        hora_entrada: horaEntrada,
+                        hora_saida: horaSaida
                     })
                 });
 
@@ -638,8 +618,15 @@
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalHoraExtra'));
                     modal.hide();
                     document.getElementById('form-hora-extra').reset();
-                    document.getElementById('data-hora-extra').valueAsDate = new Date();
-                    atualizarHoraAtual();
+                    
+                    // Restaurar valores padrão
+                    const hoje = new Date();
+                    document.getElementById('data-hora-extra').valueAsDate = hoje;
+                    document.getElementById('data-atual').textContent = hoje.toLocaleDateString('pt-BR');
+                    const horaAtual = hoje.toTimeString().slice(0, 5);
+                    document.getElementById('hora-entrada').value = horaAtual;
+                    const horaSaidaPadrao = new Date(hoje.getTime() + 60 * 60 * 1000).toTimeString().slice(0, 5);
+                    document.getElementById('hora-saida').value = horaSaidaPadrao;
                     
                     // Atualizar dados
                     await carregarRegistros();

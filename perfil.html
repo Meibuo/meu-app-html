@@ -31,49 +31,19 @@
             text-align: center;
         }
         
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
+        .profile-icon {
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             background: white;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1rem;
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: var(--primary-color);
             border: 4px solid white;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            cursor: pointer;
-        }
-        
-        .profile-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .avatar-upload {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .avatar-upload-btn {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
         .nav-pills .nav-link {
@@ -154,16 +124,21 @@
             color: black;
         }
         
+        .status-administrador {
+            background: #6f42c1;
+            color: white;
+        }
+        
         /* Responsividade */
         @media (max-width: 768px) {
             .profile-header {
                 padding: 1.5rem;
             }
             
-            .profile-avatar {
-                width: 100px;
-                height: 100px;
-                font-size: 2.5rem;
+            .profile-icon {
+                width: 70px;
+                height: 70px;
+                font-size: 2rem;
             }
             
             .nav-pills .nav-link {
@@ -179,59 +154,11 @@
         }
         
         @media (max-width: 576px) {
-            .profile-avatar {
-                width: 80px;
-                height: 80px;
-                font-size: 2rem;
+            .profile-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.8rem;
             }
-            
-            .avatar-upload-btn {
-                width: 30px;
-                height: 30px;
-                font-size: 0.8em;
-            }
-        }
-        
-        .upload-progress {
-            height: 4px;
-            background: #e9ecef;
-            border-radius: 2px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-        
-        .upload-progress-bar {
-            height: 100%;
-            background: var(--primary-color);
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
-        
-        .avatar-options {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .avatar-option {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            cursor: pointer;
-            border: 3px solid transparent;
-            transition: all 0.3s ease;
-        }
-        
-        .avatar-option:hover {
-            transform: scale(1.1);
-            border-color: var(--primary-color);
-        }
-        
-        .avatar-option.selected {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
         }
     </style>
 </head>
@@ -258,19 +185,13 @@
             <div class="col-md-10">
                 <div class="card profile-card">
                     <div class="profile-header">
-                        <div class="avatar-upload">
-                            <div class="profile-avatar" id="profile-avatar-container" onclick="abrirSelecaoAvatar()">
-                                <!-- Avatar será carregado aqui -->
-                                <i class="fas fa-user" id="avatar-icon"></i>
-                            </div>
-                            <button class="avatar-upload-btn" onclick="abrirSelecaoAvatar()">
-                                <i class="fas fa-camera"></i>
-                            </button>
+                        <div class="profile-icon">
+                            <i class="fas fa-user"></i>
                         </div>
                         <h3 id="profile-name">Carregando...</h3>
                         <p id="profile-email" class="mb-0">carregando...</p>
-                        <div class="upload-progress mt-2" id="upload-progress" style="display: none;">
-                            <div class="upload-progress-bar" id="upload-progress-bar" style="width: 0%"></div>
+                        <div id="profile-status" class="mt-2">
+                            <!-- Status será carregado aqui -->
                         </div>
                     </div>
                     
@@ -284,9 +205,6 @@
                                     </a>
                                     <a class="nav-link" href="#" onclick="showTab('senha')">
                                         <i class="fas fa-key"></i> Alterar Senha
-                                    </a>
-                                    <a class="nav-link" href="#" onclick="showTab('avatar')">
-                                        <i class="fas fa-camera"></i> Foto de Perfil
                                     </a>
                                 </div>
                             </div>
@@ -323,7 +241,7 @@
                                         <div class="mb-3">
                                             <label class="form-label">Status do Perfil</label>
                                             <div>
-                                                <span id="perfil-status" class="badge-status status-ativo">Ativo</span>
+                                                <span id="perfil-status" class="badge-status status-ativo">Carregando...</span>
                                                 <small class="text-muted d-block mt-1" id="perfil-msg">
                                                     Status definido pelo administrador
                                                 </small>
@@ -358,47 +276,6 @@
                                         </button>
                                     </form>
                                 </div>
-
-                                <!-- Tab Avatar -->
-                                <div id="avatar-tab" style="display: none;">
-                                    <h4 class="mb-4">Foto de Perfil</h4>
-                                    <div class="text-center">
-                                        <div class="profile-avatar mb-3" style="width: 150px; height: 150px; font-size: 4rem;" id="avatar-preview">
-                                            <i class="fas fa-user" id="avatar-preview-icon"></i>
-                                        </div>
-                                        
-                                        <p class="text-muted mb-3">
-                                            Selecione uma das opções abaixo ou use sua foto atual
-                                        </p>
-                                        
-                                        <div class="avatar-options">
-                                            <div class="avatar-option bg-primary text-white d-flex align-items-center justify-content-center" onclick="selecionarAvatar('👨‍💼')">
-                                                👨‍💼
-                                            </div>
-                                            <div class="avatar-option bg-success text-white d-flex align-items-center justify-content-center" onclick="selecionarAvatar('👩‍💼')">
-                                                👩‍💼
-                                            </div>
-                                            <div class="avatar-option bg-warning text-dark d-flex align-items-center justify-content-center" onclick="selecionarAvatar('👷‍♂️')">
-                                                👷‍♂️
-                                            </div>
-                                            <div class="avatar-option bg-info text-white d-flex align-items-center justify-content-center" onclick="selecionarAvatar('👷‍♀️')">
-                                                👷‍♀️
-                                            </div>
-                                            <div class="avatar-option bg-secondary text-white d-flex align-items-center justify-content-center" onclick="selecionarAvatar('🦸‍♂️')">
-                                                🦸‍♂️
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mt-4">
-                                            <button class="btn btn-primary" onclick="aplicarAvatar()">
-                                                <i class="fas fa-check"></i> Aplicar Avatar Selecionado
-                                            </button>
-                                            <button class="btn btn-outline-secondary ms-2" onclick="manterAvatarAtual()">
-                                                <i class="fas fa-times"></i> Manter Foto Atual
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -409,9 +286,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let avatarSelecionado = null;
-        let usuarioAtual = null;
-
         // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
             const usuario = JSON.parse(localStorage.getItem('usuario'));
@@ -420,7 +294,6 @@
                 return;
             }
 
-            usuarioAtual = usuario;
             carregarDadosUsuario(usuario);
         });
 
@@ -434,60 +307,47 @@
             document.getElementById('edit-telefone').value = usuario.telefone || '';
             document.getElementById('edit-cargo').value = usuario.cargo;
             
-            // Carregar avatar se existir
-            if (usuario.avatar) {
-                const avatarContainer = document.getElementById('profile-avatar-container');
-                const avatarIcon = document.getElementById('avatar-icon');
-                
-                avatarIcon.style.display = 'none';
-                avatarContainer.innerHTML = `<img src="${usuario.avatar}" alt="Avatar" onerror="this.style.display='none'; document.getElementById('avatar-icon').style.display='flex';">`;
-                
-                // Atualizar preview também
-                const avatarPreview = document.getElementById('avatar-preview');
-                const avatarPreviewIcon = document.getElementById('avatar-preview-icon');
-                avatarPreviewIcon.style.display = 'none';
-                avatarPreview.innerHTML = `<img src="${usuario.avatar}" alt="Avatar" onerror="this.style.display='none'; document.getElementById('avatar-preview-icon').style.display='flex';">`;
-            }
-            
             // Status do perfil - AGORA MOSTRA O STATUS DO ADMIN
             const statusElement = document.getElementById('perfil-status');
             const msgElement = document.getElementById('perfil-msg');
+            const profileStatus = document.getElementById('profile-status');
             
             // Definir classe CSS baseada no status
-            statusElement.className = 'badge-status ';
-            
-            if (usuario.status === 'ativo') {
-                statusElement.classList.add('status-ativo');
+            if (usuario.isAdmin) {
+                statusElement.className = 'badge-status status-administrador';
+                statusElement.textContent = 'Administrador';
+                msgElement.textContent = 'Como administrador, você tem acesso total ao sistema';
+                profileStatus.innerHTML = '<span class="badge bg-purple">Administrador</span>';
+            } else if (usuario.status === 'ativo') {
+                statusElement.className = 'badge-status status-ativo';
                 statusElement.textContent = 'Ativo';
                 msgElement.textContent = 'Seu perfil está ativo no sistema';
+                profileStatus.innerHTML = '<span class="badge bg-success">Ativo</span>';
             } else if (usuario.status === 'inativo') {
-                statusElement.classList.add('status-inativo');
+                statusElement.className = 'badge-status status-inativo';
                 statusElement.textContent = 'Inativo';
                 msgElement.textContent = 'Seu perfil está inativo. Entre em contato com o administrador.';
+                profileStatus.innerHTML = '<span class="badge bg-danger">Inativo</span>';
             } else if (usuario.status === 'ferias') {
-                statusElement.classList.add('status-ferias');
+                statusElement.className = 'badge-status status-ferias';
                 statusElement.textContent = 'Férias';
                 msgElement.textContent = 'Você está em período de férias';
+                profileStatus.innerHTML = '<span class="badge bg-info">Férias</span>';
             } else if (usuario.status === 'afastado') {
-                statusElement.classList.add('status-afastado');
+                statusElement.className = 'badge-status status-afastado';
                 statusElement.textContent = 'Afastado';
                 msgElement.textContent = 'Você está afastado temporariamente';
+                profileStatus.innerHTML = '<span class="badge bg-warning">Afastado</span>';
             } else {
-                statusElement.classList.add('status-ativo');
+                statusElement.className = 'badge-status status-ativo';
                 statusElement.textContent = usuario.status || 'Ativo';
                 msgElement.textContent = 'Status do perfil';
+                profileStatus.innerHTML = `<span class="badge bg-secondary">${usuario.status || 'Ativo'}</span>`;
             }
 
             // Mensagem adicional para perfil editado (apenas se não for admin)
             if (usuario.perfilEditado && !usuario.isAdmin) {
                 msgElement.textContent += '. Perfil já editado - para novas alterações, entre em contato com o administrador.';
-            }
-
-            // Se for admin, mostrar mensagem especial
-            if (usuario.isAdmin) {
-                statusElement.classList.add('status-ativo');
-                statusElement.textContent = 'Administrador';
-                msgElement.textContent = 'Como administrador, você tem acesso total ao sistema';
             }
         }
 
@@ -496,7 +356,6 @@
             // Esconder todas as tabs
             document.getElementById('info-tab').style.display = 'none';
             document.getElementById('senha-tab').style.display = 'none';
-            document.getElementById('avatar-tab').style.display = 'none';
             
             // Mostrar tab selecionada
             document.getElementById(tabName + '-tab').style.display = 'block';
@@ -506,87 +365,6 @@
                 link.classList.remove('active');
             });
             event.target.classList.add('active');
-        }
-
-        // Abrir seleção de avatar
-        function abrirSelecaoAvatar() {
-            showTab('avatar');
-        }
-
-        // Selecionar avatar
-        function selecionarAvatar(emoji) {
-            avatarSelecionado = emoji;
-            
-            // Remover seleção anterior
-            document.querySelectorAll('.avatar-option').forEach(option => {
-                option.classList.remove('selected');
-            });
-            
-            // Adicionar seleção atual
-            event.target.classList.add('selected');
-            
-            // Atualizar preview
-            const avatarPreview = document.getElementById('avatar-preview');
-            avatarPreview.innerHTML = `<div style="font-size: 4rem;">${emoji}</div>`;
-        }
-
-        // Aplicar avatar selecionado
-        async function aplicarAvatar() {
-            if (!avatarSelecionado) {
-                showAlert('❌ Selecione um avatar primeiro', 'warning');
-                return;
-            }
-
-            try {
-                // Criar uma imagem base64 simples do emoji (simulação)
-                const avatarUrl = `data:image/svg+xml;base64,${btoa(`
-                    <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100%" height="100%" fill="#667eea"/>
-                        <text x="50%" y="50%" font-size="80" text-anchor="middle" dy=".3em" fill="white">${avatarSelecionado}</text>
-                    </svg>
-                `)}`;
-
-                const response = await fetch('/api/upload-avatar', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        usuario_id: usuarioAtual.id,
-                        avatar_url: avatarUrl
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showAlert('✅ ' + data.message, 'success');
-                    
-                    // Atualizar avatar na interface
-                    const avatarContainer = document.getElementById('profile-avatar-container');
-                    const avatarIcon = document.getElementById('avatar-icon');
-                    
-                    avatarIcon.style.display = 'none';
-                    avatarContainer.innerHTML = `<img src="${avatarUrl}" alt="Avatar">`;
-                    
-                    // Atualizar dados locais
-                    localStorage.setItem('usuario', JSON.stringify(data.user));
-                    
-                    // Voltar para a tab de informações
-                    showTab('info');
-                    
-                } else {
-                    showAlert('❌ ' + data.error, 'danger');
-                }
-            } catch (error) {
-                console.error('Erro ao aplicar avatar:', error);
-                showAlert('❌ Erro ao aplicar avatar', 'danger');
-            }
-        }
-
-        // Manter avatar atual
-        function manterAvatarAtual() {
-            showTab('info');
         }
 
         // Salvar perfil
