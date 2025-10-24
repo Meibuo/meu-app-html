@@ -328,6 +328,11 @@
                             <i class="fas fa-clock"></i> REGISTRAR HORA EXTRA
                         </button>
 
+                        <!-- Botão de teste temporário -->
+                        <button class="btn btn-warning mt-2" onclick="testarRegistros()">
+                            <i class="fas fa-bug"></i> TESTAR REGISTROS
+                        </button>
+
                         <div class="mt-3 text-center">
                             <small class="text-muted">
                                 O sistema detecta automaticamente o tipo de registro baseado no horário atual
@@ -643,64 +648,88 @@
             }
         }
 
-        // Função para carregar registros
+        // Função para carregar registros - VERSÃO CORRIGIDA
         async function carregarRegistros() {
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
                 console.log('🔄 Carregando registros para usuário:', usuario.id);
                 
-                const response = await fetch(`/api/registros/${usuario.id}?limit=20`);
+                const response = await fetch(`/api/registros/${usuario.id}?limit=50`);
                 const data = await response.json();
 
-                console.log('📊 Resposta da API:', data);
+                console.log('📊 Resposta completa da API:', data);
+                console.log('📋 Registros recebidos:', data.registros);
 
                 if (data.success) {
-                    exibirRegistros(data.registros);
+                    if (data.registros && data.registros.length > 0) {
+                        console.log('✅ Registros carregados:', data.registros.length);
+                        exibirRegistros(data.registros);
+                    } else {
+                        console.log('ℹ️ Nenhum registro encontrado');
+                        exibirRegistros([]);
+                    }
                 } else {
-                    console.error('Erro na API:', data.error);
+                    console.error('❌ Erro na API:', data.error);
+                    showAlert('❌ Erro ao carregar registros: ' + data.error, 'danger');
                 }
             } catch (error) {
-                console.error('Erro ao carregar registros:', error);
+                console.error('💥 Erro ao carregar registros:', error);
                 showAlert('❌ Erro ao carregar registros', 'danger');
             }
         }
 
-        // Função para exibir registros em lista
+        // Função para exibir registros em lista - VERSÃO CORRIGIDA
         function exibirRegistros(registros) {
             const lista = document.getElementById('lista-registros');
             const semRegistros = document.getElementById('sem-registros');
             
             console.log('🎯 Exibindo registros:', registros);
 
-            if (registros.length === 0) {
+            // Limpar lista
+            lista.innerHTML = '';
+
+            if (!registros || registros.length === 0) {
                 if (semRegistros) semRegistros.style.display = 'block';
-                lista.innerHTML = '';
+                lista.style.display = 'none';
                 return;
             }
 
             if (semRegistros) semRegistros.style.display = 'none';
+            lista.style.display = 'block';
 
-            lista.innerHTML = registros.map(registro => `
-                <div class="registro-item ${registro.horas_extras ? 'hora-extra' : registro.tipo}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <div class="d-flex align-items-center mb-2">
-                                <strong class="me-2">${formatarTipo(registro.tipo)}</strong>
-                                ${registro.horas_extras ? '<span class="badge hora-extra-badge me-2">HORA EXTRA</span>' : ''}
-                                <span class="badge ${getBadgeClass(registro.tipo)}">
-                                    ${registro.tipo.toUpperCase()}
-                                </span>
-                            </div>
-                            <div class="text-muted small">
-                                <i class="fas fa-calendar me-1"></i>${registro.data}
-                                <i class="fas fa-clock ms-2 me-1"></i>${registro.hora}
-                                ${registro.local ? `<br><i class="fas fa-map-marker-alt me-1"></i>${registro.local}` : ''}
-                                ${registro.observacao ? `<br><i class="fas fa-sticky-note me-1"></i>${registro.observacao}` : ''}
+            // Ordenar registros por data/hora (mais recentes primeiro)
+            registros.sort((a, b) => new Date(b.criadoEm) - new Date(a.criadoEm));
+
+            lista.innerHTML = registros.map(registro => {
+                console.log('📝 Processando registro:', registro);
+                
+                const tipoFormatado = formatarTipo(registro.tipo);
+                const badgeClass = getBadgeClass(registro.tipo);
+                const isHoraExtra = registro.horas_extras;
+                
+                return `
+                    <div class="registro-item ${isHoraExtra ? 'hora-extra' : registro.tipo}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <strong class="me-2">${tipoFormatado}</strong>
+                                    ${isHoraExtra ? '<span class="badge hora-extra-badge me-2">HORA EXTRA</span>' : ''}
+                                    <span class="badge ${badgeClass}">
+                                        ${registro.tipo.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div class="text-muted small">
+                                    <i class="fas fa-calendar me-1"></i>${registro.data}
+                                    <i class="fas fa-clock ms-2 me-1"></i>${registro.hora}
+                                    ${registro.local ? `<br><i class="fas fa-map-marker-alt me-1"></i>${registro.local}` : ''}
+                                    ${registro.observacao ? `<br><i class="fas fa-sticky-note me-1"></i>${registro.observacao}` : ''}
+                                    <br><small class="text-muted">ID: ${registro.id.substring(0, 8)}...</small>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Função para carregar último registro
@@ -746,6 +775,26 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        // TESTE TEMPORÁRIO - Diagnóstico
+        async function testarRegistros() {
+            try {
+                const usuario = JSON.parse(localStorage.getItem('usuario'));
+                const response = await fetch(`/api/debug/registros/${usuario.id}`);
+                const data = await response.json();
+                
+                console.log('🔍 TESTE DIAGNÓSTICO:', data);
+                alert(`Diagnóstico: ${data.total} registros encontrados no banco. Verifique o console.`);
+                
+                // Se há registros no banco mas não aparecem, force o carregamento
+                if (data.total > 0) {
+                    console.log('🔄 Forçando recarregamento dos registros...');
+                    await carregarRegistros();
+                }
+            } catch (error) {
+                console.error('❌ Erro no teste:', error);
             }
         }
 

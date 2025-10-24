@@ -484,7 +484,7 @@ app.get('/api/ultimo-registro/:usuario_id', requireAuth, async (req, res) => {
   }
 });
 
-// Obter registros do usuário
+// Obter registros do usuário - VERSÃO CORRIGIDA
 app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
@@ -494,6 +494,8 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
     }
 
+    console.log(`📊 Buscando registros para usuário ${usuario_id}. Limite: ${limit}`);
+
     const result = await pool.query(
       `SELECT * FROM registros_ponto 
        WHERE usuario_id = $1 
@@ -502,25 +504,52 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
       [usuario_id, parseInt(limit)]
     );
 
-    console.log(`📊 Buscando registros para usuário ${usuario_id}. Encontrados: ${result.rows.length}`);
+    console.log(`✅ Encontrados ${result.rows.length} registros para usuário ${usuario_id}`);
 
-    const registros = result.rows.map(reg => ({
-      id: reg.id,
-      tipo: reg.tipo,
-      local: reg.local,
-      observacao: reg.observacao,
-      horas_extras: reg.horas_extras,
-      data: reg.data_custom || new Date(reg.criado_em).toLocaleDateString('pt-BR'),
-      hora: reg.hora_custom || new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      diaSemana: new Date(reg.criado_em).toLocaleDateString('pt-BR', { weekday: 'long' }),
-      criadoEm: reg.criado_em
-    }));
+    const registros = result.rows.map(reg => {
+      // Usar data_custom/hora_custom se existir, senão usar criado_em
+      const data = reg.data_custom || new Date(reg.criado_em).toISOString().split('T')[0];
+      const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
+      
+      let horaFormatada;
+      if (reg.hora_custom) {
+        // Formatar hora custom (HH:MM:SS para HH:MM)
+        horaFormatada = reg.hora_custom.substring(0, 5);
+      } else {
+        horaFormatada = new Date(reg.criado_em).toLocaleTimeString('pt-BR', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          timeZone: 'America/Sao_Paulo'
+        });
+      }
 
-    res.json({ success: true, registros });
+      return {
+        id: reg.id,
+        tipo: reg.tipo,
+        local: reg.local,
+        observacao: reg.observacao,
+        horas_extras: reg.horas_extras,
+        data: dataFormatada,
+        hora: horaFormatada,
+        diaSemana: new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }),
+        criadoEm: reg.criado_em
+      };
+    });
+
+    console.log('📋 Primeiros registros formatados:', registros.slice(0, 3));
+
+    res.json({ 
+      success: true, 
+      registros,
+      total: result.rows.length
+    });
 
   } catch (error) {
-    console.error('Erro ao buscar registros:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    console.error('❌ Erro ao buscar registros:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro interno do servidor: ' + error.message 
+    });
   }
 });
 
@@ -562,6 +591,47 @@ app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA DE DEBUG - Verificar registros no banco
+app.get('/api/debug/registros/:usuario_id', async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    
+    console.log('🔍 DEBUG: Buscando registros para usuário:', usuario_id);
+    
+    const result = await pool.query(
+      `SELECT id, tipo, local, observacao, horas_extras, data_custom, hora_custom, criado_em 
+       FROM registros_ponto 
+       WHERE usuario_id = $1 
+       ORDER BY criado_em DESC 
+       LIMIT 20`,
+      [usuario_id]
+    );
+
+    console.log('📋 DEBUG - Registros encontrados:', result.rows.length);
+    result.rows.forEach((reg, index) => {
+      console.log(`📝 Registro ${index + 1}:`, {
+        id: reg.id,
+        tipo: reg.tipo,
+        local: reg.local,
+        horas_extras: reg.horas_extras,
+        data_custom: reg.data_custom,
+        hora_custom: reg.hora_custom,
+        criado_em: reg.criado_em
+      });
+    });
+
+    res.json({
+      success: true,
+      total: result.rows.length,
+      registros: result.rows
+    });
+
+  } catch (error) {
+    console.error('❌ DEBUG - Erro:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
