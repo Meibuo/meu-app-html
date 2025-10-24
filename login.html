@@ -3,50 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Ponto</title>
+    <title>Sistema de Ponto Eletrônico - Login</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body { 
             background: linear-gradient(135deg, #667eea, #764ba2); 
             display: flex; justify-content: center; align-items: center; 
-            min-height: 100vh; padding: 20px; font-family: Arial, sans-serif;
+            min-height: 100vh; padding: 20px; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        
         .container { 
             background: white; padding: 40px; border-radius: 15px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 400px; width: 100%; 
-            text-align: center;
         }
+        
         .logo { 
             font-size: 28px; color: #2c3e50; margin-bottom: 10px; 
+            text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px;
         }
-        .form-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; margin-bottom: 5px; color: #2c3e50; font-weight: bold; }
+        
+        .subtitle {
+            color: #7f8c8d; text-align: center; margin-bottom: 30px; font-size: 16px;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        
+        label { display: block; margin-bottom: 5px; color: #2c3e50; font-weight: 500; }
+        
         input { 
             width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; 
-            font-size: 16px; 
+            font-size: 16px; transition: border-color 0.3s; 
         }
+        
         input:focus { border-color: #3498db; outline: none; }
+        
         .btn { 
             width: 100%; padding: 15px; background: #3498db; color: white; 
             border: none; border-radius: 8px; font-size: 16px; font-weight: bold; 
-            cursor: pointer; margin-top: 10px;
+            cursor: pointer; transition: background 0.3s; margin-top: 10px;
         }
+        
         .btn:hover { background: #2980b9; }
+        
         .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+        
+        .links { text-align: center; margin-top: 20px; }
+        
+        .links a { color: #3498db; text-decoration: none; }
+        
+        .links a:hover { text-decoration: underline; }
+        
         .alert { 
             padding: 12px; border-radius: 8px; margin-bottom: 20px; display: none; 
         }
+        
         .alert-error { background: #ffeaea; color: #e74c3c; border: 1px solid #ffcdd2; }
         .alert-success { background: #e8f5e9; color: #2ecc71; border: 1px solid #c8e6c9; }
+        
         .loading { display: none; text-align: center; margin: 10px 0; }
-        .links { text-align: center; margin-top: 20px; }
-        .links a { color: #3498db; text-decoration: none; }
+        
+        .spinner { 
+            border: 3px solid #f3f3f3; border-top: 3px solid #3498db; 
+            border-radius: 50%; width: 20px; height: 20px; 
+            animation: spin 1s linear infinite; display: inline-block; 
+        }
+        
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">⏰ Sistema de Ponto</div>
-        <p>Controle seus horários de trabalho</p>
+        <div class="logo">
+            <span>⏰</span>
+            Sistema de Ponto
+        </div>
+        <p class="subtitle">Controle seus horários de trabalho</p>
         
         <div id="alert" class="alert"></div>
         
@@ -62,7 +98,8 @@
             </div>
             
             <div class="loading" id="loading">
-                <div>Entrando...</div>
+                <div class="spinner"></div>
+                <span>Entrando...</span>
             </div>
             
             <button type="submit" class="btn" id="submitBtn">Entrar no Sistema</button>
@@ -74,16 +111,43 @@
     </div>
 
     <script>
-        console.log('🔍 Página de login carregada');
-        
+        // Verificar se já está logado
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 Página de login carregada');
+            
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                console.log('👤 Usuário já logado, redirecionando...');
+                window.location.href = '/dashboard';
+                return;
+            }
+            
+            // Testar conexão com a API
+            testarConexaoAPI();
+        });
+
+        // Testar conexão com a API
+        async function testarConexaoAPI() {
+            try {
+                console.log('🔗 Testando conexão com a API...');
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                console.log('✅ API online:', data);
+            } catch (error) {
+                console.error('❌ Erro na conexão com API:', error);
+                showAlert('⚠️ Servidor em inicialização. Aguarde alguns segundos.', 'error');
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            console.log('🔐 Tentando fazer login...');
+            console.log('🔐 Iniciando processo de login...');
             
             const submitBtn = document.getElementById('submitBtn');
             const loading = document.getElementById('loading');
             const alert = document.getElementById('alert');
             
+            // Mostrar loading
             submitBtn.disabled = true;
             loading.style.display = 'block';
             alert.style.display = 'none';
@@ -93,28 +157,46 @@
                 senha: document.getElementById('senha').value
             };
             
+            console.log('📤 Enviando dados:', formData.email);
+            
             try {
-                console.log('📤 Enviando para API...');
                 const response = await fetch('/api/login', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify(formData)
                 });
                 
-                console.log('📥 Resposta recebida');
+                console.log('📥 Resposta recebida, status:', response.status);
+                
                 const data = await response.json();
-                console.log('Dados:', data);
+                console.log('📨 Dados da resposta:', data);
                 
                 if (data.success) {
-                    showAlert('✅ Login realizado! Redirecionando...', 'success');
+                    console.log('✅ Login bem-sucedido!');
+                    showAlert('Login realizado com sucesso! Redirecionando...', 'success');
+                    
+                    // Salvar usuário
                     localStorage.setItem('currentUser', JSON.stringify(data.user));
-                    setTimeout(() => window.location.href = '/dashboard', 1000);
+                    console.log('💾 Usuário salvo no localStorage');
+                    
+                    // Redirecionar baseado no tipo de usuário
+                    setTimeout(() => {
+                        console.log('🔄 Redirecionando...');
+                        if (data.user.isAdmin) {
+                            window.location.href = '/admin';
+                        } else {
+                            window.location.href = '/dashboard';
+                        }
+                    }, 1000);
                 } else {
-                    showAlert('❌ ' + data.error, 'error');
+                    console.log('❌ Erro no login:', data.error);
+                    showAlert(data.error || 'Erro no login', 'error');
                 }
             } catch (error) {
-                console.error('💥 Erro:', error);
-                showAlert('❌ Erro de conexão', 'error');
+                console.error('💥 Erro na requisição:', error);
+                showAlert('Erro de conexão. Verifique se o servidor está online.', 'error');
             } finally {
                 submitBtn.disabled = false;
                 loading.style.display = 'none';
@@ -122,17 +204,12 @@
         });
         
         function showAlert(message, type) {
+            console.log('📢 Alert:', message, type);
             const alert = document.getElementById('alert');
             alert.textContent = message;
             alert.className = `alert alert-${type}`;
             alert.style.display = 'block';
         }
-
-        // Testar API
-        fetch('/api/status')
-            .then(r => r.json())
-            .then(data => console.log('✅ API Status:', data))
-            .catch(err => console.error('❌ API Error:', err));
     </script>
 </body>
 </html>

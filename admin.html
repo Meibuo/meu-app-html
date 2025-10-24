@@ -674,7 +674,6 @@
                 }
             };
             
-            // Adicionar usuario_id ao body para POST/PUT ou aos parâmetros para GET
             let mergedOptions = {
                 ...defaultOptions,
                 ...options,
@@ -685,13 +684,10 @@
             };
             
             try {
-                // Para requisições GET, adicionar usuario_id como query parameter
                 if (options.method === 'GET' || !options.method) {
                     const separator = url.includes('?') ? '&' : '?';
                     url = `${url}${separator}usuario_id=${currentUser.id}`;
-                } 
-                // Para outras requisições, adicionar usuario_id ao body
-                else if (options.body) {
+                } else if (options.body) {
                     const bodyData = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
                     bodyData.usuario_id = currentUser.id;
                     mergedOptions.body = JSON.stringify(bodyData);
@@ -738,7 +734,6 @@
                 return;
             }
             
-            // Verificar se o usuário é admin
             if (!currentUser.isAdmin) {
                 showAlert('Acesso negado. Apenas administradores podem acessar esta página.', 'error');
                 setTimeout(() => {
@@ -747,7 +742,6 @@
                 return;
             }
             
-            // Atualizar informações do usuário na interface
             document.getElementById('userName').textContent = currentUser.nome;
             document.getElementById('userNameMobile').textContent = currentUser.nome;
             
@@ -791,7 +785,6 @@
             usuarios.forEach(usuario => {
                 const tr = document.createElement('tr');
                 
-                // Avatar
                 let avatarHtml;
                 if (usuario.avatar) {
                     avatarHtml = `<img src="${usuario.avatar}" class="avatar-small" alt="${usuario.nome}">`;
@@ -800,21 +793,23 @@
                     avatarHtml = `<div class="avatar-placeholder">${iniciais.substring(0, 2)}</div>`;
                 }
                 
-                // Status (usando perfilEditado como indicador de status ativo)
-                const status = usuario.perfilEditado ? 'ativo' : 'ativo';
+                const status = usuario.status || 'ativo';
                 const statusText = {
                     'ativo': 'Ativo',
-                    'inativo': 'Inativo'
+                    'inativo': 'Inativo',
+                    'ferias': 'Férias',
+                    'bloqueado': 'Bloqueado'
                 };
                 
                 const statusClass = {
                     'ativo': 'status-ativo',
-                    'inativo': 'status-inativo'
+                    'inativo': 'status-inativo',
+                    'ferias': 'status-ferias',
+                    'bloqueado': 'status-bloqueado'
                 };
                 
                 const statusHtml = `<span class="status-badge ${statusClass[status]}">${statusText[status]}</span>`;
                 
-                // Data de contratação
                 let dataContratacao = '-';
                 if (usuario.criadoEm) {
                     const data = new Date(usuario.criadoEm);
@@ -850,13 +845,14 @@
         
         // Atualizar estatísticas
         function atualizarEstatisticas(usuarios) {
-            const usuariosAtivos = usuarios.filter(u => !u.isAdmin).length;
+            const usuariosAtivos = usuarios.filter(u => u.status === 'ativo').length;
             const usuariosAdmin = usuarios.filter(u => u.isAdmin).length;
-            const totalRegistros = 0; // Em produção, buscar do banco de dados
+            const usuariosFerias = usuarios.filter(u => u.status === 'ferias').length;
+            const totalRegistros = 0;
             
             document.getElementById('totalUsuarios').textContent = usuarios.length;
             document.getElementById('usuariosAtivos').textContent = usuariosAtivos;
-            document.getElementById('usuariosFerias').textContent = usuariosAdmin;
+            document.getElementById('usuariosFerias').textContent = usuariosFerias;
             document.getElementById('totalRegistros').textContent = totalRegistros;
         }
         
@@ -883,7 +879,6 @@
                     document.getElementById('editUserNome').value = usuario.nome;
                     document.getElementById('editUserEmail').value = usuario.email;
                     
-                    // Configurar select de cargo
                     const selectCargo = document.getElementById('editUserCargo');
                     if (selectCargo && usuario.cargo) {
                         selectCargo.value = usuario.cargo;
@@ -1050,7 +1045,6 @@
             alert.className = `alert alert-${type}`;
             alert.style.display = 'block';
             
-            // Auto-esconder após 5 segundos
             setTimeout(() => {
                 alert.style.display = 'none';
             }, 5000);

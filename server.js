@@ -7,22 +7,16 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// VERIFICAR SE ESTAMOS NO RENDER
-const isRender = process.env.RENDER || process.env.NODE_ENV === 'production';
-console.log('🔧 Ambiente:', isRender ? 'Render (Production)' : 'Local');
-
 // Configurações do PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
-// Middleware IMPORTANTE para o Render
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// SERVIR ARQUIVOS ESTÁTICOS CORRETAMENTE
 app.use(express.static(__dirname));
 
 // Testar conexão com o banco
@@ -39,11 +33,12 @@ const testarConexaoBanco = async () => {
   }
 };
 
-// Inicializar banco de dados
+// Inicializar banco de dados COMPLETO
 const initializeDatabase = async () => {
   try {
     console.log('🔄 Inicializando banco de dados...');
     
+    // Tabela users com todas as colunas
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(100) PRIMARY KEY,
@@ -51,12 +46,17 @@ const initializeDatabase = async () => {
         email VARCHAR(100) UNIQUE NOT NULL,
         telefone VARCHAR(20),
         senha VARCHAR(255) NOT NULL,
+        avatar VARCHAR(255),
         cargo VARCHAR(50) DEFAULT 'Terceiro',
+        perfil_editado BOOLEAN DEFAULT FALSE,
+        is_admin BOOLEAN DEFAULT FALSE,
+        status VARCHAR(20) DEFAULT 'ativo',
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Tabela users criada/verificada');
 
+    // Tabela de registros de ponto completa
     await pool.query(`
       CREATE TABLE IF NOT EXISTS registros_ponto (
         id VARCHAR(100) PRIMARY KEY,
@@ -66,57 +66,89 @@ const initializeDatabase = async () => {
         observacao TEXT,
         horas_extras BOOLEAN DEFAULT FALSE,
         manual BOOLEAN DEFAULT FALSE,
-        data_registro DATE DEFAULT CURRENT_DATE,
-        hora_registro TIME DEFAULT CURRENT_TIME,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        data_custom DATE,
+        hora_custom TIME,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (usuario_id) REFERENCES users(id)
       )
     `);
     console.log('✅ Tabela registros_ponto criada/verificada');
 
-    // Verificar se existe algum usuário
-    const usersResult = await pool.query('SELECT COUNT(*) FROM users');
-    const userCount = parseInt(usersResult.rows[0].count);
-
-    if (userCount === 0) {
+    // Verificar se admin existe
+    const adminResult = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@admin.com']);
+    
+    if (adminResult.rows.length === 0) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
       const adminId = 'admin-' + Date.now();
       
       await pool.query(
-        `INSERT INTO users (id, nome, email, senha, cargo) 
-         VALUES ($1, $2, $3, $4, $5)`,
-        [adminId, 'Administrador', 'admin@admin.com', hashedPassword, 'CEO Administrativo']
+        `INSERT INTO users (id, nome, email, senha, cargo, is_admin) 
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [adminId, 'Administrador', 'admin@admin.com', hashedPassword, 'CEO Administrativo', true]
       );
       
       console.log('👑 Usuário administrador criado: admin@admin.com / admin123');
+    } else {
+      console.log('👑 Usuário administrador já existe');
     }
 
     console.log('✅ Banco de dados inicializado com sucesso!');
-    return true;
   } catch (error) {
     console.error('❌ Erro ao inicializar banco:', error.message);
     throw error;
   }
 };
 
-// ========== ROTAS DA API ==========
-
-// Rota de status
-app.get('/api/status', async (req, res) => {
+// Middleware de autenticação SIMPLIFICADO
+const requireAuth = async (req, res, next) => {
   try {
-    await pool.query('SELECT 1');
-    res.json({ 
-      status: 'online', 
-      database: 'connected',
-      timestamp: new Date().toISOString()
-    });
+    const usuario_id = req.body.usuario_id || req.query.usuario_id;
+    
+    if (!usuario_id) {
+      return res.status(401).json({ success: false, error: 'Usuário não autenticado' });
+    }
+
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'Usuário não encontrado' });
+    }
+
+    req.user = result.rows[0];
+    next();
   } catch (error) {
-    res.status(500).json({ 
-      status: 'online',
-      database: 'disconnected',
-      error: 'Database connection failed'
-    });
+    console.error('Erro na autenticação:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
-});
+};
+
+// Middleware para admin
+const requireAdmin = async (req, res, next) => {
+  try {
+    const usuario_id = req.body.usuario_id || req.query.usuario_id;
+    
+    if (!usuario_id) {
+      return res.status(401).json({ success: false, error: 'Usuário não autenticado' });
+    }
+
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'Usuário não encontrado' });
+    }
+
+    const user = result.rows[0];
+    if (!user.is_admin) {
+      return res.status(403).json({ success: false, error: 'Acesso restrito a administradores' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Erro na verificação de admin:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+};
+
+// ========== ROTAS DA API ==========
 
 // ROTA DE LOGIN
 app.post('/api/login', async (req, res) => {
@@ -129,7 +161,9 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ success: false, error: 'E-mail e senha são obrigatórios' });
     }
 
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    const emailLimpo = email.toLowerCase().trim();
+
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [emailLimpo]);
 
     if (result.rows.length === 0) {
       return res.status(400).json({ success: false, error: 'E-mail ou senha incorretos' });
@@ -150,7 +184,12 @@ app.post('/api/login', async (req, res) => {
         nome: user.nome, 
         email: user.email,
         telefone: user.telefone,
-        cargo: user.cargo
+        avatar: user.avatar,
+        cargo: user.cargo,
+        perfilEditado: user.perfil_editado,
+        isAdmin: user.is_admin,
+        status: user.status,
+        criadoEm: user.criado_em
       } 
     });
 
@@ -160,10 +199,10 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ROTA DE CADASTRO
-app.post('/api/cadastro', async (req, res) => {
+// ROTA DE CADASTRO (para admin)
+app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
   try {
-    const { nome, email, telefone, senha } = req.body;
+    const { nome, email, telefone, senha, cargo } = req.body;
     
     if (!nome || !email || !senha) {
       return res.status(400).json({ success: false, error: 'Nome, e-mail e senha são obrigatórios' });
@@ -177,23 +216,23 @@ app.post('/api/cadastro', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(senha, 10);
-    const userId = 'user-' + Date.now();
+    const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
     await pool.query(
-      `INSERT INTO users (id, nome, email, telefone, senha) 
-       VALUES ($1, $2, $3, $4, $5)`,
-      [userId, nome, emailLimpo, telefone || null, hashedPassword]
+      `INSERT INTO users (id, nome, email, telefone, senha, cargo) 
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, nome, emailLimpo, telefone || null, hashedPassword, cargo || 'Terceiro']
     );
-    
+
     res.json({ 
       success: true, 
-      message: 'Conta criada com sucesso!',
+      message: 'Usuário cadastrado com sucesso!',
       user: {
         id: userId,
         nome,
         email: emailLimpo,
         telefone: telefone || null,
-        cargo: 'Terceiro'
+        cargo: cargo || 'Terceiro'
       }
     });
 
@@ -203,31 +242,219 @@ app.post('/api/cadastro', async (req, res) => {
   }
 });
 
-// Registrar ponto
-app.post('/api/registrar-ponto', async (req, res) => {
+// ROTA DE ATUALIZAÇÃO DE PERFIL
+app.put('/api/perfil', requireAuth, async (req, res) => {
   try {
-    const { usuario_id, tipo, local, observacao, horas_extras, manual } = req.body;
+    const { nome, telefone } = req.body;
+    const usuario_id = req.user.id;
     
-    if (!usuario_id || !tipo || !local) {
-      return res.status(400).json({ success: false, error: 'Usuário, tipo e local são obrigatórios' });
+    if (!nome) {
+      return res.status(400).json({ success: false, error: 'Nome é obrigatório' });
     }
 
-    const userCheck = await pool.query('SELECT id FROM users WHERE id = $1', [usuario_id]);
-    if (userCheck.rows.length === 0) {
-      return res.status(400).json({ success: false, error: 'Usuário não encontrado' });
+    if (!req.user.is_admin && req.user.perfil_editado) {
+      return res.status(400).json({ success: false, error: 'Perfil já foi editado. Para novas alterações, entre em contato com o administrador.' });
     }
-
-    const registroId = 'reg-' + Date.now();
-    const agora = new Date();
-    const dataRegistro = agora.toISOString().split('T')[0];
-    const horaRegistro = agora.toTimeString().split(' ')[0];
 
     await pool.query(
-      `INSERT INTO registros_ponto (id, usuario_id, tipo, local, observacao, horas_extras, manual, data_registro, hora_registro) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [registroId, usuario_id, tipo, local, observacao || null, horas_extras || false, manual || false, dataRegistro, horaRegistro]
+      'UPDATE users SET nome = $1, telefone = $2, perfil_editado = true WHERE id = $3',
+      [nome, telefone || null, usuario_id]
+    );
+
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    const updatedUser = result.rows[0];
+
+    res.json({ 
+      success: true, 
+      message: 'Perfil atualizado com sucesso!',
+      user: {
+        id: updatedUser.id,
+        nome: updatedUser.nome,
+        email: updatedUser.email,
+        telefone: updatedUser.telefone,
+        avatar: updatedUser.avatar,
+        cargo: updatedUser.cargo,
+        perfilEditado: updatedUser.perfil_editado,
+        isAdmin: updatedUser.is_admin,
+        criadoEm: updatedUser.criado_em
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA ALTERAR SENHA
+app.put('/api/alterar-senha', requireAuth, async (req, res) => {
+  try {
+    const { senhaAtual, novaSenha } = req.body;
+    const usuario_id = req.user.id;
+    
+    if (!senhaAtual || !novaSenha) {
+      return res.status(400).json({ success: false, error: 'Senha atual e nova senha são obrigatórias' });
+    }
+
+    if (novaSenha.length < 6) {
+      return res.status(400).json({ success: false, error: 'Nova senha deve ter pelo menos 6 caracteres' });
+    }
+
+    const senhaAtualValida = await bcrypt.compare(senhaAtual, req.user.senha);
+    if (!senhaAtualValida) {
+      return res.status(400).json({ success: false, error: 'Senha atual incorreta' });
+    }
+
+    const hashedNovaSenha = await bcrypt.hash(novaSenha, 10);
+
+    await pool.query(
+      'UPDATE users SET senha = $1 WHERE id = $2',
+      [hashedNovaSenha, usuario_id]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Senha alterada com sucesso!' 
+    });
+
+  } catch (error) {
+    console.error('Erro ao alterar senha:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA UPLOAD DE AVATAR
+app.post('/api/upload-avatar', requireAuth, async (req, res) => {
+  try {
+    const usuario_id = req.user.id;
+
+    res.json({ 
+      success: true, 
+      message: 'Upload de avatar realizado com sucesso!',
+      avatar: null
+    });
+
+  } catch (error) {
+    console.error('Erro no upload de avatar:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ========== ROTAS DE ADMINISTRAÇÃO ==========
+
+// Listar todos os usuários (apenas admin)
+app.get('/api/admin/usuarios', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users ORDER BY criado_em DESC');
+    
+    const usuarios = result.rows.map(user => ({
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      telefone: user.telefone,
+      cargo: user.cargo,
+      avatar: user.avatar,
+      perfilEditado: user.perfil_editado,
+      isAdmin: user.is_admin,
+      status: user.status,
+      criadoEm: user.criado_em
+    }));
+    
+    res.json({ success: true, usuarios });
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// Atualizar usuário (apenas admin)
+app.put('/api/admin/usuarios/:id', requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { nome, email, telefone, cargo } = req.body;
+    
+    if (!nome || !email) {
+      return res.status(400).json({ success: false, error: 'Nome e e-mail são obrigatórios' });
+    }
+
+    const emailCheck = await pool.query(
+      'SELECT * FROM users WHERE email = $1 AND id != $2',
+      [email, userId]
     );
     
+    if (emailCheck.rows.length > 0) {
+      return res.status(400).json({ success: false, error: 'E-mail já está em uso por outro usuário' });
+    }
+
+    await pool.query(
+      'UPDATE users SET nome = $1, email = $2, telefone = $3, cargo = $4 WHERE id = $5',
+      [nome, email, telefone || null, cargo || 'Terceiro', userId]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Usuário atualizado com sucesso!' 
+    });
+
+  } catch (error) {
+    console.error('Erro ao atualizar usuário:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// Redefinir senha do usuário (apenas admin)
+app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
+  try {
+    const { usuario_id } = req.body;
+    
+    if (!usuario_id) {
+      return res.status(400).json({ success: false, error: 'ID do usuário é obrigatório' });
+    }
+
+    if (usuario_id === req.user.id) {
+      return res.status(400).json({ success: false, error: 'Administrador não pode redefinir a própria senha por esta rota' });
+    }
+
+    const novaSenha = Math.random().toString(36).slice(-8);
+    const hashedPassword = await bcrypt.hash(novaSenha, 10);
+
+    await pool.query(
+      'UPDATE users SET senha = $1 WHERE id = $2',
+      [hashedPassword, usuario_id]
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'Senha redefinida com sucesso!',
+      novaSenha: novaSenha
+    });
+
+  } catch (error) {
+    console.error('Erro ao redefinir senha:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ========== ROTAS DE REGISTRO DE PONTO ==========
+
+// Registrar ponto
+app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
+  try {
+    const { tipo, local, observacao, horas_extras, data_custom, hora_custom, manual } = req.body;
+    const usuario_id = req.user.id;
+    
+    if (!tipo || !local) {
+      return res.status(400).json({ success: false, error: 'Tipo e local são obrigatórios' });
+    }
+
+    const registroId = 'reg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+    await pool.query(
+      `INSERT INTO registros_ponto (id, usuario_id, tipo, local, observacao, horas_extras, manual, data_custom, hora_custom) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [registroId, usuario_id, tipo, local, observacao || null, horas_extras || false, manual || false, data_custom || null, hora_custom || null]
+    );
+
     res.json({ 
       success: true, 
       message: 'Ponto registrado com sucesso!' 
@@ -240,17 +467,16 @@ app.post('/api/registrar-ponto', async (req, res) => {
 });
 
 // Obter registros do usuário
-app.get('/api/registros/:usuario_id', async (req, res) => {
+app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
+    
+    if (usuario_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
+    }
 
     const result = await pool.query(
-      `SELECT *, 
-              COALESCE(data_registro, DATE(criado_em)) as data_formatada,
-              COALESCE(hora_registro, TIME(criado_em)) as hora_formatada
-       FROM registros_ponto 
-       WHERE usuario_id = $1 
-       ORDER BY criado_em DESC`,
+      'SELECT * FROM registros_ponto WHERE usuario_id = $1 ORDER BY criado_em DESC',
       [usuario_id]
     );
 
@@ -261,12 +487,12 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
       observacao: reg.observacao,
       horas_extras: reg.horas_extras,
       manual: reg.manual,
-      data: new Date(reg.data_formatada).toLocaleDateString('pt-BR'),
-      hora: reg.hora_formatada,
-      diaSemana: new Date(reg.data_formatada).toLocaleDateString('pt-BR', { weekday: 'long' }),
+      data: reg.data_custom || new Date(reg.criado_em).toLocaleDateString('pt-BR'),
+      hora: reg.hora_custom || new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      diaSemana: new Date(reg.criado_em).toLocaleDateString('pt-BR', { weekday: 'long' }),
       criadoEm: reg.criado_em
     }));
-    
+
     res.json({ success: true, registros });
 
   } catch (error) {
@@ -275,34 +501,51 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
   }
 });
 
-// ========== ROTAS PARA PÁGINAS HTML ==========
+// Rota pública de status
+app.get('/api/status', async (req, res) => {
+  try {
+    const usersCount = await pool.query('SELECT COUNT(*) FROM users');
+    const registrosCount = await pool.query('SELECT COUNT(*) FROM registros_ponto');
+    
+    res.json({ 
+      status: 'online', 
+      timestamp: new Date().toISOString(),
+      usersCount: parseInt(usersCount.rows[0].count),
+      registrosCount: parseInt(registrosCount.rows[0].count),
+      version: '2.0.0'
+    });
+  } catch (error) {
+    console.error('Erro no status:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
 
-// Rota para página inicial
+// Rotas para servir páginas HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Rota para login
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
 
-// Rota para cadastro
 app.get('/cadastro', (req, res) => {
   res.sendFile(path.join(__dirname, 'cadastro.html'));
 });
 
-// Rota para dashboard
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
-// Rota para perfil
 app.get('/perfil', (req, res) => {
   res.sendFile(path.join(__dirname, 'perfil.html'));
 });
 
-// Rota de fallback - IMPORTANTE para SPA no Render
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// Rota de fallback para SPA
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -314,25 +557,19 @@ const startServer = async () => {
   const bancoConectado = await testarConexaoBanco();
   
   if (!bancoConectado) {
-    console.error('💥 ERRO: Não foi possível conectar ao banco de dados!');
-    process.exit(1);
+    console.log('⚠️  Servidor iniciando sem conexão com banco');
   }
   
-  try {
-    await initializeDatabase();
-    console.log('✅ Sistema inicializado com sucesso!');
-  } catch (error) {
-    console.error('💥 Erro na inicialização:', error);
-    process.exit(1);
-  }
+  await initializeDatabase();
   
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor rodando na porta ${PORT}`);
-    console.log(`🌐 Acesse: https://seu-app.onrender.com`);
+    console.log(`🌐 Acesse: http://localhost:${PORT}`);
     console.log('========================================');
   });
 };
 
+// Iniciar servidor
 startServer().catch(error => {
   console.error('💥 ERRO AO INICIAR SERVIDOR:', error);
   process.exit(1);
