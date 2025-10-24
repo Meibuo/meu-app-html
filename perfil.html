@@ -4,1199 +4,318 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meu Perfil - Sistema de Ponto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
-            --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --error-color: #e74c3c;
-            --text-color: #2c3e50;
-            --bg-color: #f8f9fa;
+        .profile-card {
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            background: var(--bg-color); 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        .header {
-            background: white;
-            padding: 15px 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .logo { 
-            font-size: clamp(18px, 4vw, 24px); 
-            color: var(--text-color); 
-            font-weight: bold; 
-        }
-        
-        .user-info { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .nav-link {
-            color: var(--text-color);
-            text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            transition: background 0.3s;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-        
-        .nav-link:hover {
-            background: #f8f9fa;
-        }
-        
-        .nav-link.active {
-            background: var(--primary-color);
-            color: white;
-        }
-        
-        .admin-badge {
-            background: var(--warning-color);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            padding: 20px;
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-        
-        @media (min-width: 1024px) {
-            .container {
-                grid-template-columns: 300px 1fr;
-            }
-        }
-        
-        .sidebar {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            height: fit-content;
-            order: 2;
-        }
-        
-        @media (min-width: 1024px) {
-            .sidebar {
-                order: 1;
-            }
-        }
-        
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            order: 1;
-        }
-        
-        @media (min-width: 1024px) {
-            .main-content {
-                order: 2;
-            }
-        }
-        
-        .card {
-            background: white;
-            padding: clamp(20px, 4vw, 25px);
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
         .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            padding: 2rem;
             text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
         }
-        
         .profile-avatar {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            background: var(--primary-color);
-            margin: 0 auto 15px;
+            background: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 40px;
-            font-weight: bold;
-            position: relative;
-            cursor: pointer;
-            overflow: hidden;
+            margin: 0 auto 1rem;
+            font-size: 2.5rem;
+            color: #667eea;
         }
-        
-        .profile-avatar img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
-        .avatar-upload {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 5px;
-            font-size: 12px;
-            text-align: center;
-            display: none;
-        }
-        
-        .profile-avatar:hover .avatar-upload {
-            display: block;
-        }
-        
-        .user-cargo {
-            color: var(--primary-color);
-            font-weight: 600;
-            margin: 5px 0;
-            font-size: 16px;
-            padding: 5px 10px;
-            background: #f8f9fa;
-            border-radius: 20px;
-            display: inline-block;
-        }
-        
-        .user-status {
-            margin-top: 5px;
-            font-size: 14px;
-            color: #7f8c8d;
-            font-weight: 500;
-        }
-        
-        .profile-info {
-            margin-bottom: 20px;
-        }
-        
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-            align-items: flex-start;
-        }
-        
-        .info-item:last-child {
-            border-bottom: none;
-        }
-        
-        .info-label {
-            font-weight: 500;
-            color: var(--text-color);
-            min-width: 120px;
-        }
-        
-        .info-value {
-            color: #7f8c8d;
-            text-align: right;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 5px;
-        }
-        
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: clamp(14px, 2vw, 16px);
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            width: 100%;
-        }
-        
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        
-        .btn-success { background: var(--success-color); color: white; }
-        .btn-success:hover { background: #27ae60; }
-        
-        .btn-warning { background: var(--warning-color); color: white; }
-        .btn-warning:hover { background: #e67e22; }
-        
-        .btn-danger { background: var(--error-color); color: white; }
-        .btn-danger:hover { background: #c0392b; }
-        
-        .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
-        
-        .form-group { margin-bottom: 20px; }
-        
-        label { 
-            display: block; 
-            margin-bottom: 5px; 
-            color: var(--text-color); 
-            font-weight: 500; 
-            font-size: 14px;
-        }
-        
-        input, select, textarea { 
-            width: 100%; 
-            padding: 12px; 
-            border: 2px solid #ddd; 
-            border-radius: 8px; 
-            font-size: 14px; 
-            transition: border-color 0.3s; 
-        }
-        
-        input:focus, select:focus, textarea:focus { 
-            border-color: var(--primary-color); 
-            outline: none; 
-        }
-        
-        .alert {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .alert-success { background: #e8f5e9; color: var(--success-color); border: 1px solid #c8e6c9; }
-        .alert-error { background: #ffeaea; color: var(--error-color); border: 1px solid #ffcdd2; }
-        .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .menu-list {
-            list-style: none;
-        }
-        
-        .menu-item {
-            padding: 12px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: none;
-            background: none;
-            width: 100%;
-            text-align: left;
-            font-size: 14px;
-        }
-        
-        .menu-item:hover {
-            background: #f8f9fa;
-            transform: translateX(5px);
-        }
-        
-        .menu-item.active {
-            background: var(--primary-color);
-            color: white;
-            transform: translateX(10px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-        }
-        
-        .section {
-            display: none;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        .section.active {
-            display: block;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .warning-box {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            color: #856404;
-        }
-        
-        .file-input {
-            display: none;
-        }
-        
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        .mobile-nav {
-            display: none;
-            background: white;
-            padding: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .mobile-nav.active {
-            display: block;
-        }
-        
-        .dados-pessoais-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
-        
-        @media (min-width: 768px) {
-            .dados-pessoais-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-        
-        .info-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid var(--primary-color);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .info-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        
-        .info-card h4 {
-            margin-bottom: 10px;
-            color: var(--text-color);
-            font-size: 16px;
-        }
-        
-        .info-card p {
-            color: #7f8c8d;
-            margin: 5px 0;
-            font-size: 14px;
-        }
-        
-        .floating-section {
-            background: white;
+        .nav-pills .nav-link {
+            color: #495057;
             border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            margin-bottom: 20px;
-            border-left: 4px solid var(--primary-color);
-            animation: slideIn 0.3s ease-out;
+            margin: 5px 0;
         }
-        
-        @keyframes slideIn {
-            from { 
-                opacity: 0; 
-                transform: translateY(-10px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
-        
-        .floating-section h3 {
-            margin-bottom: 20px;
-            color: var(--text-color);
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .floating-section h3::before {
-            content: '';
-            width: 4px;
-            height: 20px;
-            background: var(--primary-color);
-            border-radius: 2px;
-        }
-        
-        @media (max-width: 768px) {
-            .header {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .mobile-menu-btn {
-                display: block;
-            }
-            
-            .user-info {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                margin-top: 10px;
-                display: none;
-            }
-            
-            .user-info.active {
-                display: flex;
-            }
-            
-            .container {
-                padding: 15px;
-                grid-template-columns: 1fr;
-            }
-            
-            .card {
-                padding: 15px;
-            }
-            
-            .info-item {
-                flex-direction: column;
-                gap: 5px;
-            }
-            
-            .info-value {
-                text-align: left;
-                justify-content: flex-start;
-            }
-            
-            .menu-item:hover {
-                transform: none;
-            }
-            
-            .menu-item.active {
-                transform: none;
-            }
-            
-            .sidebar {
-                position: fixed;
-                top: 0;
-                left: -100%;
-                width: 85%;
-                max-width: 320px;
-                height: 100vh;
-                z-index: 1000;
-                overflow-y: auto;
-                transition: left 0.3s ease;
-                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-                padding: 20px;
-            }
-            
-            .sidebar.active {
-                left: 0;
-            }
-            
-            .overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                z-index: 999;
-            }
-            
-            .overlay.active {
-                display: block;
-            }
-            
-            .profile-menu-btn {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-                padding: 15px;
-                background: white;
-                border: none;
-                border-radius: 8px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                margin-bottom: 20px;
-            }
-            
-            .profile-menu-btn span:last-child {
-                font-size: 20px;
-                transition: transform 0.3s;
-            }
-            
-            .profile-menu-btn.active span:last-child {
-                transform: rotate(180deg);
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .mobile-nav {
-                display: none !important;
-            }
-            
-            .nav-links {
-                display: flex !important;
-            }
-            
-            .profile-menu-btn, .overlay {
-                display: none !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .profile-avatar {
-                width: 100px;
-                height: 100px;
-                font-size: 30px;
-            }
-            
-            .btn {
-                padding: 10px 15px;
-            }
+        #alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">⏰ Sistema de Ponto</div>
-        
-        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-        
-        <div class="nav-links" id="desktopNav">
-            <a href="/dashboard" class="nav-link" id="dashboardLink">Dashboard</a>
-            <a href="/perfil" class="nav-link active">Meu Perfil</a>
-            <span id="adminLink" style="display: none;">
-                <a href="/admin" class="nav-link">👑 Administração</a>
-            </span>
-        </div>
-        
-        <div class="user-info" id="desktopUserInfo">
-            <div class="user-avatar" onclick="window.location.href='/perfil'" id="userAvatar">
-                <!-- Avatar será carregado aqui -->
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-clock"></i> Sistema de Ponto
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="dashboard">
+                    <i class="fas fa-arrow-left"></i> Voltar ao Dashboard
+                </a>
             </div>
-            <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 8px 16px;">Sair</button>
         </div>
-    </div>
-    
-    <!-- Menu Mobile -->
-    <div class="mobile-nav" id="mobileNav">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="/dashboard" class="nav-link" id="mobileDashboardLink">Dashboard</a>
-            <a href="/perfil" class="nav-link active">Meu Perfil</a>
-            <span id="mobileAdminLink" style="display: none;">
-                <a href="/admin" class="nav-link">👑 Administração</a>
-            </span>
-        </div>
-        <div class="user-info" style="justify-content: center; margin-top: 15px;">
-            <div class="user-avatar" onclick="window.location.href='/perfil'" id="mobileUserAvatar">
-                <!-- Avatar será carregado aqui -->
-            </div>
-            <button class="btn btn-danger" onclick="logout()" style="width: auto; padding: 8px 16px;">Sair</button>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div id="alert" class="alert"></div>
-        
-        <!-- Botão para abrir menu no mobile -->
-        <button class="profile-menu-btn" id="profileMenuBtn">
-            <span>Menu do Perfil</span>
-            <span>▼</span>
-        </button>
-        
-        <div class="sidebar" id="sidebar">
-            <div class="profile-header">
-                <div class="profile-avatar" id="profileAvatar">
-                    <!-- Avatar grande será carregado aqui -->
-                    <div class="avatar-upload">Alterar Foto</div>
-                </div>
-                <h2 id="userName">Usuário</h2>
-                <div class="user-cargo" id="userCargo">Cargo</div>
-                <div class="user-status" id="userStatus">🟢 Ativo</div>
-                <div id="adminBadge" class="admin-badge" style="display: none;">ADMIN</div>
-            </div>
-            
-            <div class="profile-info">
-                <div class="info-item">
-                    <span class="info-label">E-mail:</span>
-                    <span class="info-value" id="infoEmail">email@exemplo.com</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Telefone:</span>
-                    <span class="info-value" id="infoTelefone">-</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Membro desde:</span>
-                    <span class="info-value" id="infoCriadoEm">-</span>
-                </div>
-            </div>
-            
-            <ul class="menu-list">
-                <li>
-                    <button class="menu-item active" onclick="showSection('dados-pessoais')">
-                        <span>👤</span> Dados Pessoais
-                    </button>
-                </li>
-                <li>
-                    <button class="menu-item" onclick="showSection('alterar-senha')">
-                        <span>🔒</span> Alterar Senha
-                    </button>
-                </li>
-                <li>
-                    <button class="menu-item" onclick="showSection('banco-horas')">
-                        <span>⏱️</span> Banco de Horas
-                    </button>
-                </li>
-                <li>
-                    <button class="menu-item" onclick="showSection('folhas-ponto')">
-                        <span>📋</span> Folhas de Ponto
-                    </button>
-                </li>
-            </ul>
-        </div>
-        
-        <!-- Overlay para fechar menu no mobile -->
-        <div class="overlay" id="overlay"></div>
-        
-        <div class="main-content">
-            <!-- Seção: Dados Pessoais -->
-            <div id="dados-pessoais" class="section active">
-                <div class="floating-section">
-                    <h3>Informações do Perfil</h3>
-                    
-                    <div id="perfilWarning" class="warning-box" style="display: none;">
-                        ⚠️ Seu perfil já foi editado anteriormente. Para novas alterações, entre em contato com o administrador.
-                    </div>
-                    
-                    <div class="dados-pessoais-grid">
-                        <div class="info-card">
-                            <h4>Informações Básicas</h4>
-                            <p><strong>Nome:</strong> <span id="displayNome">-</span></p>
-                            <p><strong>E-mail:</strong> <span id="displayEmail">-</span></p>
-                            <p><strong>Cargo:</strong> <span id="displayCargo">-</span></p>
-                        </div>
-                        
-                        <div class="info-card">
-                            <h4>Contato</h4>
-                            <p><strong>Telefone:</strong> <span id="displayTelefone">-</span></p>
-                        </div>
-                        
-                        <div class="info-card">
-                            <h4>Informações da Conta</h4>
-                            <p><strong>ID do Usuário:</strong> <span id="displayUserId">-</span></p>
-                            <p><strong>Membro desde:</strong> <span id="displayMembroDesde">-</span></p>
-                            <p><strong>Status:</strong> <span id="displayStatusPerfil">-</span></p>
-                        </div>
-                    </div>
-                </div>
+    </nav>
 
-                <div class="floating-section">
-                    <h3>Editar Informações Pessoais</h3>
-                    
-                    <form id="perfilForm">
-                        <div class="form-group">
-                            <label for="editNome">Nome completo:</label>
-                            <input type="text" id="editNome" name="nome" required>
+    <!-- Alert Container -->
+    <div id="alert-container"></div>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            <i class="fas fa-user"></i>
                         </div>
-                        
-                        <div class="form-group">
-                            <label for="editTelefone">Telefone:</label>
-                            <input type="tel" id="editTelefone" name="telefone" placeholder="(11) 99999-9999">
-                        </div>
-                        
-                        <div class="loading" id="loadingPerfil">
-                            <div class="spinner"></div>
-                            <span>Salvando alterações...</span>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary" id="submitPerfilBtn">
-                            Salvar Alterações
-                        </button>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Seção: Alterar Senha -->
-            <div id="alterar-senha" class="section">
-                <div class="floating-section">
-                    <h3>Alterar Senha</h3>
-                    
-                    <form id="senhaForm">
-                        <div class="form-group">
-                            <label for="senhaAtual">Senha atual:</label>
-                            <input type="password" id="senhaAtual" name="senhaAtual" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="novaSenha">Nova senha:</label>
-                            <input type="password" id="novaSenha" name="novaSenha" required minlength="6">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="confirmarNovaSenha">Confirmar nova senha:</label>
-                            <input type="password" id="confirmarNovaSenha" name="confirmarNovaSenha" required>
-                        </div>
-                        
-                        <div class="loading" id="loadingSenha">
-                            <div class="spinner"></div>
-                            <span>Alterando senha...</span>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary" id="submitSenhaBtn">
-                            Alterar Senha
-                        </button>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Seção: Banco de Horas -->
-            <div id="banco-horas" class="section">
-                <div class="floating-section">
-                    <h3>Banco de Horas</h3>
-                    <p>Em desenvolvimento...</p>
-                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
-                        <p>Funcionalidade em desenvolvimento</p>
-                        <p>Em breve você poderá acompanhar seu banco de horas aqui.</p>
+                        <h3 id="profile-name">Carregando...</h3>
+                        <p id="profile-email" class="mb-0">carregando...</p>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Seção: Folhas de Ponto -->
-            <div id="folhas-ponto" class="section">
-                <div class="floating-section">
-                    <h3>Folhas de Ponto</h3>
-                    <p>Em desenvolvimento...</p>
-                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
-                        <p>Funcionalidade em desenvolvimento</p>
-                        <p>Em breve você poderá visualizar e baixar suas folhas de ponto aqui.</p>
+                    
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Menu Lateral -->
+                            <div class="col-md-3">
+                                <div class="nav flex-column nav-pills">
+                                    <a class="nav-link active" href="#" onclick="showTab('info')">
+                                        <i class="fas fa-user-circle"></i> Informações
+                                    </a>
+                                    <a class="nav-link" href="#" onclick="showTab('senha')">
+                                        <i class="fas fa-key"></i> Alterar Senha
+                                    </a>
+                                    <a class="nav-link" href="#" onclick="showTab('avatar')">
+                                        <i class="fas fa-camera"></i> Foto de Perfil
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <!-- Conteúdo -->
+                            <div class="col-md-9">
+                                <!-- Tab Informações -->
+                                <div id="info-tab">
+                                    <h4 class="mb-4">Informações Pessoais</h4>
+                                    <form id="form-perfil">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="edit-nome" class="form-label">Nome Completo *</label>
+                                                <input type="text" class="form-control" id="edit-nome" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="edit-email" class="form-label">E-mail *</label>
+                                                <input type="email" class="form-control" id="edit-email" readonly>
+                                                <small class="text-muted">O e-mail não pode ser alterado</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="edit-telefone" class="form-label">Telefone</label>
+                                                <input type="tel" class="form-control" id="edit-telefone" placeholder="(11) 99999-9999">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="edit-cargo" class="form-label">Cargo</label>
+                                                <input type="text" class="form-control" id="edit-cargo" readonly>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Status do Perfil</label>
+                                            <div>
+                                                <span id="perfil-status" class="badge bg-secondary">Carregando...</span>
+                                                <small class="text-muted d-block mt-1" id="perfil-msg">
+                                                    Carregando...
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save"></i> Salvar Alterações
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- Tab Senha -->
+                                <div id="senha-tab" style="display: none;">
+                                    <h4 class="mb-4">Alterar Senha</h4>
+                                    <form id="form-senha">
+                                        <div class="mb-3">
+                                            <label for="senha-atual" class="form-label">Senha Atual *</label>
+                                            <input type="password" class="form-control" id="senha-atual" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nova-senha" class="form-label">Nova Senha *</label>
+                                            <input type="password" class="form-control" id="nova-senha" required minlength="6">
+                                            <small class="text-muted">Mínimo 6 caracteres</small>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="confirmar-senha" class="form-label">Confirmar Nova Senha *</label>
+                                            <input type="password" class="form-control" id="confirmar-senha" required minlength="6">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-key"></i> Alterar Senha
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- Tab Avatar -->
+                                <div id="avatar-tab" style="display: none;">
+                                    <h4 class="mb-4">Foto de Perfil</h4>
+                                    <div class="text-center">
+                                        <div class="profile-avatar mb-3" style="width: 150px; height: 150px; font-size: 4rem;">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <p class="text-muted">
+                                            Funcionalidade em desenvolvimento.<br>
+                                            Em breve você poderá fazer upload da sua foto.
+                                        </p>
+                                        <button class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-camera"></i> Selecionar Foto
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Input file oculto para upload de avatar -->
-    <input type="file" id="avatarInput" class="file-input" accept="image/*">
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentUser = null;
-        
-        // Menu mobile
-        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-            const mobileNav = document.getElementById('mobileNav');
-            const userInfo = document.getElementById('desktopUserInfo');
-            
-            mobileNav.classList.toggle('active');
-            userInfo.classList.toggle('active');
-        });
-        
-        // Menu do perfil no mobile
-        document.getElementById('profileMenuBtn').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            const profileMenuBtn = document.getElementById('profileMenuBtn');
-            
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-            profileMenuBtn.classList.toggle('active');
-        });
-        
-        // Fechar menu ao clicar no overlay
-        document.getElementById('overlay').addEventListener('click', function() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            const profileMenuBtn = document.getElementById('profileMenuBtn');
-            
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-            profileMenuBtn.classList.remove('active');
-        });
-        
-        // Verificar autenticação
+        // Carregar dados do usuário
         document.addEventListener('DOMContentLoaded', function() {
-            const userData = localStorage.getItem('currentUser');
-            
-            if (!userData) {
-                window.location.href = '/login';
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            if (!usuario) {
+                window.location.href = 'login';
                 return;
             }
-            
-            currentUser = JSON.parse(userData);
-            carregarDadosPerfil();
-            atualizarAvatar();
-            
-            // Mostrar link de admin se for administrador
-            if (currentUser.isAdmin) {
-                document.getElementById('adminLink').style.display = 'block';
-                document.getElementById('mobileAdminLink').style.display = 'block';
-                document.getElementById('adminBadge').style.display = 'inline-block';
-                
-                // Admin não vê dashboard
-                document.getElementById('dashboardLink').style.display = 'none';
-                document.getElementById('mobileDashboardLink').style.display = 'none';
-            }
+
+            carregarDadosUsuario(usuario);
         });
-        
-        // Carregar dados do perfil
-        function carregarDadosPerfil() {
-            // Header
-            document.getElementById('userName').textContent = currentUser.nome;
-            document.getElementById('userCargo').textContent = currentUser.cargo || 'Funcionário';
+
+        // Carregar dados no formulário
+        function carregarDadosUsuario(usuario) {
+            document.getElementById('profile-name').textContent = usuario.nome;
+            document.getElementById('profile-email').textContent = usuario.email;
             
-            // Status no menu
-            const statusText = {
-                'ativo': '🟢 Ativo',
-                'inativo': '⚪ Inativo', 
-                'ferias': '🟡 De Férias',
-                'bloqueado': '🔴 Bloqueado'
-            };
-            document.getElementById('userStatus').textContent = statusText[currentUser.status] || '🟢 Ativo';
+            document.getElementById('edit-nome').value = usuario.nome;
+            document.getElementById('edit-email').value = usuario.email;
+            document.getElementById('edit-telefone').value = usuario.telefone || '';
+            document.getElementById('edit-cargo').value = usuario.cargo;
             
-            // Informações da sidebar
-            document.getElementById('infoEmail').textContent = currentUser.email;
-            document.getElementById('infoTelefone').textContent = currentUser.telefone || 'Não informado';
+            // Status do perfil
+            const statusElement = document.getElementById('perfil-status');
+            const msgElement = document.getElementById('perfil-msg');
             
-            // Formatar data
-            if (currentUser.dataContratacao) {
-                const data = new Date(currentUser.dataContratacao);
-                document.getElementById('infoCriadoEm').textContent = data.toLocaleDateString('pt-BR');
-            } else if (currentUser.criadoEm) {
-                const data = new Date(currentUser.criadoEm);
-                document.getElementById('infoCriadoEm').textContent = data.toLocaleDateString('pt-BR');
-            }
-            
-            // Dados pessoais - display
-            document.getElementById('displayNome').textContent = currentUser.nome;
-            document.getElementById('displayEmail').textContent = currentUser.email;
-            document.getElementById('displayCargo').textContent = currentUser.cargo || 'Funcionário';
-            document.getElementById('displayTelefone').textContent = currentUser.telefone || 'Não informado';
-            document.getElementById('displayUserId').textContent = currentUser.id;
-            
-            // Data de membro desde
-            if (currentUser.dataContratacao) {
-                const data = new Date(currentUser.dataContratacao);
-                document.getElementById('displayMembroDesde').textContent = data.toLocaleDateString('pt-BR');
-            } else if (currentUser.criadoEm) {
-                const data = new Date(currentUser.criadoEm);
-                document.getElementById('displayMembroDesde').textContent = data.toLocaleDateString('pt-BR');
+            if (usuario.perfilEditado) {
+                statusElement.className = 'badge bg-success';
+                statusElement.textContent = 'Editado';
+                msgElement.textContent = 'Seu perfil já foi editado. Para novas alterações, entre em contato com o administrador.';
             } else {
-                document.getElementById('displayMembroDesde').textContent = '-';
+                statusElement.className = 'badge bg-warning';
+                statusElement.textContent = 'Não editado';
+                msgElement.textContent = 'Você pode editar seu perfil uma vez. Escolha cuidadosamente as informações.';
             }
-            
-            // Status do usuário
-            const statusTextDisplay = {
-                'ativo': 'Ativo',
-                'inativo': 'Inativo', 
-                'ferias': 'De Férias',
-                'bloqueado': 'Bloqueado'
-            };
-            document.getElementById('displayStatusPerfil').textContent = statusTextDisplay[currentUser.status] || 'Ativo';
-            
-            // Formulário de edição
-            document.getElementById('editNome').value = currentUser.nome;
-            document.getElementById('editTelefone').value = currentUser.telefone || '';
-            
-            // Verificar se perfil já foi editado
-            if (currentUser.perfilEditado && !currentUser.isAdmin) {
-                document.getElementById('perfilWarning').style.display = 'block';
-                document.getElementById('editNome').readOnly = true;
-                document.getElementById('editTelefone').readOnly = true;
-                document.getElementById('submitPerfilBtn').disabled = true;
-            }
-            
-            // Atualizar avatar do perfil
-            atualizarProfileAvatar();
-        }
-        
-        // Atualizar avatar do perfil
-        function atualizarProfileAvatar() {
-            const profileAvatar = document.getElementById('profileAvatar');
-            if (currentUser.avatar) {
-                profileAvatar.innerHTML = `
-                    <img src="${currentUser.avatar}" alt="${currentUser.nome}">
-                    <div class="avatar-upload">Alterar Foto</div>
-                `;
-            } else {
-                const iniciais = currentUser.nome.split(' ').map(n => n[0]).join('').toUpperCase();
-                profileAvatar.innerHTML = `
-                    <span>${iniciais.substring(0, 2)}</span>
-                    <div class="avatar-upload">Alterar Foto</div>
-                `;
-            }
-            
-            // Adicionar evento de clique para upload
-            profileAvatar.onclick = function() {
-                if (currentUser.perfilEditado && !currentUser.isAdmin) {
-                    showAlert('Para alterar a foto, entre em contato com o administrador.', 'warning');
-                    return;
-                }
-                document.getElementById('avatarInput').click();
-            };
-        }
-        
-        // Atualizar avatar no header
-        function atualizarAvatar() {
-            const avatarElement = document.getElementById('userAvatar');
-            const mobileAvatarElement = document.getElementById('mobileUserAvatar');
-            
-            if (currentUser.avatar) {
-                avatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
-                mobileAvatarElement.innerHTML = `<img src="${currentUser.avatar}" alt="${currentUser.nome}">`;
-            } else {
-                const iniciais = currentUser.nome.split(' ').map(n => n[0]).join('').toUpperCase();
-                avatarElement.textContent = iniciais.substring(0, 2);
-                mobileAvatarElement.textContent = iniciais.substring(0, 2);
+
+            // Se for admin, pode editar livremente
+            if (usuario.isAdmin) {
+                statusElement.className = 'badge bg-info';
+                statusElement.textContent = 'Administrador';
+                msgElement.textContent = 'Como administrador, você pode editar seu perfil quantas vezes quiser.';
             }
         }
-        
-        // Upload de avatar
-        document.getElementById('avatarInput').addEventListener('change', function(e) {
-            if (e.target.files.length > 0) {
-                const file = e.target.files[0];
-                uploadAvatar(file);
-            }
-        });
-        
-        async function uploadAvatar(file) {
-            const formData = new FormData();
-            formData.append('avatar', file);
-            formData.append('usuario_id', currentUser.id);
+
+        // Trocar abas
+        function showTab(tabName) {
+            // Esconder todas as tabs
+            document.getElementById('info-tab').style.display = 'none';
+            document.getElementById('senha-tab').style.display = 'none';
+            document.getElementById('avatar-tab').style.display = 'none';
             
-            try {
-                const response = await fetch('/api/upload-avatar', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    currentUser.avatar = data.avatar;
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    atualizarProfileAvatar();
-                    atualizarAvatar();
-                    showAlert('Foto atualizada com sucesso!', 'success');
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro ao atualizar foto.', 'error');
-            }
-        }
-        
-        // Navegação entre seções
-        function showSection(sectionId) {
-            // Esconder todas as seções
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('active');
+            // Mostrar tab selecionada
+            document.getElementById(tabName + '-tab').style.display = 'block';
+            
+            // Atualizar menu
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
             });
-            
-            // Remover active de todos os itens do menu
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Mostrar seção selecionada
-            document.getElementById(sectionId).classList.add('active');
-            
-            // Ativar item do menu correspondente
-            event.target.closest('.menu-item').classList.add('active');
-            
-            // Fechar menu no mobile após selecionar uma opção
-            if (window.innerWidth <= 768) {
-                const sidebar = document.getElementById('sidebar');
-                const overlay = document.getElementById('overlay');
-                const profileMenuBtn = document.getElementById('profileMenuBtn');
-                
-                sidebar.classList.remove('active');
-                overlay.classList.remove('active');
-                profileMenuBtn.classList.remove('active');
-            }
+            event.target.classList.add('active');
         }
-        
-        // Formatação do telefone
-        document.getElementById('editTelefone').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 11) value = value.substring(0, 11);
-            
-            if (value.length > 10) {
-                value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            } else if (value.length > 6) {
-                value = value.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
-            } else if (value.length > 2) {
-                value = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
-            } else if (value.length > 0) {
-                value = value.replace(/^(\d*)/, '($1');
-            }
-            
-            e.target.value = value;
-        });
-        
-        // Atualizar perfil
-        document.getElementById('perfilForm').addEventListener('submit', async function(e) {
+
+        // Salvar perfil
+        document.getElementById('form-perfil').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            if (currentUser.perfilEditado && !currentUser.isAdmin) {
-                showAlert('Perfil já foi editado. Para novas alterações, entre em contato com o administrador.', 'warning');
-                return;
-            }
-            
-            const submitBtn = document.getElementById('submitPerfilBtn');
-            const loading = document.getElementById('loadingPerfil');
-            const alert = document.getElementById('alert');
-            
-            submitBtn.disabled = true;
-            loading.style.display = 'block';
-            alert.style.display = 'none';
-            
-            const formData = {
-                usuario_id: currentUser.id,
-                nome: document.getElementById('editNome').value,
-                telefone: document.getElementById('editTelefone').value
-            };
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const nome = document.getElementById('edit-nome').value;
+            const telefone = document.getElementById('edit-telefone').value;
             
             try {
                 const response = await fetch('/api/perfil', {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify({
+                        usuario_id: usuario.id,
+                        nome: nome,
+                        telefone: telefone
+                    })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    showAlert('Perfil atualizado com sucesso!', 'success');
+                    showAlert('✅ ' + data.message, 'success');
                     
                     // Atualizar dados locais
-                    currentUser = { ...currentUser, ...data.user };
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    carregarDadosPerfil();
-                    atualizarAvatar();
+                    localStorage.setItem('usuario', JSON.stringify(data.user));
+                    carregarDadosUsuario(data.user);
+                    
                 } else {
-                    showAlert(data.error, 'error');
+                    showAlert('❌ ' + data.error, 'danger');
                 }
+                
             } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                loading.style.display = 'none';
+                console.error('Erro ao atualizar perfil:', error);
+                showAlert('❌ Erro ao atualizar perfil', 'danger');
             }
         });
-        
+
         // Alterar senha
-        document.getElementById('senhaForm').addEventListener('submit', async function(e) {
+        document.getElementById('form-senha').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const submitBtn = document.getElementById('submitSenhaBtn');
-            const loading = document.getElementById('loadingSenha');
-            const alert = document.getElementById('alert');
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const senhaAtual = document.getElementById('senha-atual').value;
+            const novaSenha = document.getElementById('nova-senha').value;
+            const confirmarSenha = document.getElementById('confirmar-senha').value;
             
-            const senhaAtual = document.getElementById('senhaAtual').value;
-            const novaSenha = document.getElementById('novaSenha').value;
-            const confirmarNovaSenha = document.getElementById('confirmarNovaSenha').value;
-            
-            if (novaSenha !== confirmarNovaSenha) {
-                showAlert('As novas senhas não coincidem', 'error');
+            if (novaSenha !== confirmarSenha) {
+                showAlert('❌ As senhas não coincidem', 'warning');
                 return;
             }
             
             if (novaSenha.length < 6) {
-                showAlert('A nova senha deve ter pelo menos 6 caracteres', 'error');
+                showAlert('❌ A nova senha deve ter pelo menos 6 caracteres', 'warning');
                 return;
             }
-            
-            submitBtn.disabled = true;
-            loading.style.display = 'block';
-            alert.style.display = 'none';
             
             try {
                 const response = await fetch('/api/alterar-senha', {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        usuario_id: currentUser.id,
+                        usuario_id: usuario.id,
                         senhaAtual: senhaAtual,
                         novaSenha: novaSenha
                     })
@@ -1205,37 +324,37 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    showAlert('Senha alterada com sucesso!', 'success');
-                    document.getElementById('senhaForm').reset();
+                    showAlert('✅ ' + data.message, 'success');
+                    document.getElementById('form-senha').reset();
                 } else {
-                    showAlert(data.error, 'error');
+                    showAlert('❌ ' + data.error, 'danger');
                 }
+                
             } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                loading.style.display = 'none';
+                console.error('Erro ao alterar senha:', error);
+                showAlert('❌ Erro ao alterar senha', 'danger');
             }
         });
-        
-        // Mostrar alertas
+
         function showAlert(message, type) {
-            const alert = document.getElementById('alert');
-            alert.textContent = message;
-            alert.className = `alert alert-${type}`;
-            alert.style.display = 'block';
+            const alertContainer = document.getElementById('alert-container');
+            const alertId = 'alert-' + Date.now();
             
-            // Auto-esconder após 5 segundos
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertContainer.innerHTML += alertHTML;
+            
             setTimeout(() => {
-                alert.style.display = 'none';
+                const alertElement = document.getElementById(alertId);
+                if (alertElement) {
+                    alertElement.remove();
+                }
             }, 5000);
-        }
-        
-        // Logout
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/login';
         }
     </script>
 </body>

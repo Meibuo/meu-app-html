@@ -521,7 +521,7 @@ app.get('/api/ultimo-registro/:usuario_id', requireAuth, async (req, res) => {
 app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
-    const { limit = 50 } = req.query;
+    const { limit = 100 } = req.query;
     
     if (usuario_id !== req.user.id && !req.user.is_admin) {
       return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
@@ -586,6 +586,45 @@ app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA EXPORTAR REGISTROS
+app.get('/api/exportar-registros/:usuario_id', requireAuth, async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    const { data_inicio, data_fim } = req.query;
+    
+    if (usuario_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
+    }
+
+    let query = `
+      SELECT rp.*, u.nome as usuario_nome 
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE rp.usuario_id = $1 
+    `;
+    let params = [usuario_id];
+
+    if (data_inicio && data_fim) {
+      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
+      params.push(data_inicio, data_fim);
+    }
+
+    query += ` ORDER BY rp.criado_em DESC`;
+
+    const result = await pool.query(query, params);
+
+    res.json({
+      success: true,
+      registros: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('Erro ao exportar registros:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });

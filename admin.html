@@ -3,1071 +3,778 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administração - Sistema de Ponto</title>
+    <title>Admin - Sistema de Ponto</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
-            --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --error-color: #e74c3c;
-            --text-color: #2c3e50;
-            --bg-color: #f8f9fa;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            background: var(--bg-color); 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-        
-        .header {
-            background: white;
-            padding: 15px 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .logo { 
-            font-size: clamp(18px, 4vw, 24px); 
-            color: var(--text-color); 
-            font-weight: bold; 
-        }
-        
-        .user-info { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            flex-wrap: wrap;
-            justify-content: flex-end;
-        }
-        
-        .admin-badge {
-            background: var(--warning-color);
+        .sidebar {
+            background: #2c3e50;
             color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .nav-link {
-            color: var(--text-color);
-            text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            transition: background 0.3s;
-            font-size: 14px;
-            white-space: nowrap;
-        }
-        
-        .nav-link:hover {
-            background: #f8f9fa;
-        }
-        
-        .nav-link.active {
-            background: var(--primary-color);
-            color: white;
-        }
-        
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            padding: 20px;
-            width: 100%;
-        }
-        
-        .card {
-            background: white;
-            padding: clamp(20px, 4vw, 25px);
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            white-space: nowrap;
-        }
-        
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-primary:hover { background: var(--primary-dark); }
-        
-        .btn-success { background: var(--success-color); color: white; }
-        .btn-success:hover { background: #27ae60; }
-        
-        .btn-warning { background: var(--warning-color); color: white; }
-        .btn-warning:hover { background: #e67e22; }
-        
-        .btn-danger { background: var(--error-color); color: white; }
-        .btn-danger:hover { background: #c0392b; }
-        
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            min-width: 800px;
-        }
-        
-        .table th,
-        .table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: var(--text-color);
-            position: sticky;
-            top: 0;
-        }
-        
-        .table tr:hover {
-            background: #f8f9fa;
-        }
-        
-        .avatar-small {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
-        .avatar-placeholder {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        
-        .alert {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .alert-success { background: #e8f5e9; color: var(--success-color); border: 1px solid #c8e6c9; }
-        .alert-error { background: #ffeaea; color: var(--error-color); border: 1px solid #ffcdd2; }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-            display: none;
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .modal {
-            display: none;
+            height: 100vh;
             position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            padding: 20px;
-            overflow-y: auto;
+            width: 250px;
         }
-        
-        .modal-content {
-            background-color: white;
-            margin: 0 auto;
-            padding: clamp(20px, 4vw, 30px);
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .nav-link {
+            color: #bdc3c7;
+            padding: 15px 20px;
+            border-left: 4px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: #34495e;
+            border-left-color: #3498db;
+        }
+        .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+        }
+        .stats-card {
             border-radius: 10px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            position: relative;
-        }
-        
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .modal-title {
-            font-size: clamp(18px, 4vw, 20px);
-            font-weight: bold;
-            color: var(--text-color);
-        }
-        
-        .close {
-            color: #aaa;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            background: none;
             border: none;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: white;
         }
-        
-        .close:hover {
-            color: var(--error-color);
+        .card-hover:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
         }
-        
-        .form-group { margin-bottom: 20px; }
-        
-        label { 
-            display: block; 
-            margin-bottom: 5px; 
-            color: var(--text-color); 
-            font-weight: 500; 
-            font-size: 14px;
-        }
-        
-        input, select { 
-            width: 100%; 
-            padding: 10px; 
-            border: 2px solid #ddd; 
-            border-radius: 6px; 
-            font-size: 14px; 
-            transition: border-color 0.3s; 
-        }
-        
-        input:focus, select:focus { 
-            border-color: var(--primary-color); 
-            outline: none; 
-        }
-        
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .checkbox-group input {
-            width: auto;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .stat-number {
-            font-size: clamp(24px, 4vw, 32px);
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: #7f8c8d;
-            margin-top: 5px;
-        }
-        
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        .mobile-nav {
-            display: none;
-            background: white;
-            padding: 15px;
-            border-top: 1px solid #eee;
-        }
-        
-        .mobile-nav.active {
-            display: block;
-        }
-        
-        /* Adicionar estilo para o select de cargos */
-        select {
-            background: white;
-            cursor: pointer;
-        }
-        
-        select:disabled {
-            background: #f8f9fa;
-            cursor: not-allowed;
-        }
-        
-        /* Estilos para status dos usuários */
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-            display: inline-block;
-        }
-        
-        .status-ativo { background: #e8f5e9; color: #2ecc71; }
-        .status-inativo { background: #f5f5f5; color: #7f8c8d; }
-        .status-ferias { background: #fff3cd; color: #f39c12; }
-        .status-bloqueado { background: #ffeaea; color: #e74c3c; }
-        
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .header {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .mobile-menu-btn {
-                display: block;
-            }
-            
-            .user-info {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                margin-top: 10px;
-                display: none;
-            }
-            
-            .user-info.active {
-                display: flex;
-            }
-            
-            .container {
-                padding: 15px;
-            }
-            
-            .card {
-                padding: 15px;
-            }
-            
-            .table-container {
-                overflow-x: auto;
-                margin: 0 -15px;
-                padding: 0 15px;
-            }
-            
-            .modal-content {
-                margin: 20px auto;
-                width: calc(100% - 40px);
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .mobile-nav {
-                display: none !important;
-            }
-            
-            .nav-links {
-                display: flex !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .btn {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-            
-            .table th,
-            .table td {
-                padding: 8px;
-                font-size: 12px;
-            }
-        }
-        
-        @media (max-width: 1024px) and (min-width: 769px) {
-            .container {
-                padding: 20px;
-            }
-            
-            .card {
-                padding: 20px;
-            }
+        #alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">⏰ Sistema de Ponto - Administração</div>
-        
-        <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
-        
-        <div class="nav-links" id="desktopNav">
-            <a href="/dashboard" class="nav-link">Dashboard</a>
-            <a href="/perfil" class="nav-link">Meu Perfil</a>
-            <a href="/admin" class="nav-link active">👑 Administração</a>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="p-3">
+            <h4><i class="fas fa-crown"></i> Painel Admin</h4>
+            <hr>
         </div>
-        
-        <div class="user-info" id="desktopUserInfo">
-            <div class="admin-badge">ADMIN</div>
-            <span id="userName">Carregando...</span>
-            <button class="btn btn-danger" onclick="logout()">Sair</button>
-        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link active" href="#" onclick="showSection('dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('usuarios')">
+                <i class="fas fa-users"></i> Gerenciar Usuários
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('registros')">
+                <i class="fas fa-history"></i> Todos os Registros
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('relatorios')">
+                <i class="fas fa-chart-bar"></i> Relatórios
+            </a>
+            <hr>
+            <a class="nav-link" href="dashboard">
+                <i class="fas fa-user"></i> Área do Usuário
+            </a>
+            <a class="nav-link text-danger" href="#" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Sair
+            </a>
+        </nav>
     </div>
-    
-    <!-- Menu Mobile -->
-    <div class="mobile-nav" id="mobileNav">
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="/dashboard" class="nav-link">Dashboard</a>
-            <a href="/perfil" class="nav-link">Meu Perfil</a>
-            <a href="/admin" class="nav-link active">👑 Administração</a>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Alert Container -->
+        <div id="alert-container"></div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-tachometer-alt"></i> Dashboard Administrativo</h2>
+                <span id="admin-name" class="text-muted">Carregando...</span>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card stats-card bg-primary card-hover">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h3 id="total-users">0</h3>
+                                    <p class="mb-0">Total Usuários</p>
+                                </div>
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card bg-success card-hover">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h3 id="total-registros">0</h3>
+                                    <p class="mb-0">Total Registros</p>
+                                </div>
+                                <i class="fas fa-list fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card bg-warning card-hover">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h3 id="registros-hoje">0</h3>
+                                    <p class="mb-0">Registros Hoje</p>
+                                </div>
+                                <i class="fas fa-calendar-day fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card bg-info card-hover">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h3 id="admin-users">0</h3>
+                                    <p class="mb-0">Administradores</p>
+                                </div>
+                                <i class="fas fa-crown fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="fas fa-bolt"></i> Ações Rápidas</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-success me-2" onclick="showSection('usuarios'); document.getElementById('btn-novo-usuario').click();">
+                                <i class="fas fa-user-plus"></i> Novo Usuário
+                            </button>
+                            <button class="btn btn-primary me-2" onclick="showSection('registros')">
+                                <i class="fas fa-search"></i> Ver Registros
+                            </button>
+                            <button class="btn btn-info" onclick="exportarDados()">
+                                <i class="fas fa-download"></i> Exportar Dados
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="user-info" style="justify-content: center; margin-top: 15px;">
-            <div class="admin-badge">ADMIN</div>
-            <span id="userNameMobile">Carregando...</span>
-            <button class="btn btn-danger" onclick="logout()">Sair</button>
-        </div>
-    </div>
-    
-    <div class="container">
-        <div id="alert" class="alert"></div>
-        
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number" id="totalUsuarios">0</div>
-                <div class="stat-label">Total de Usuários</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="usuariosAtivos">0</div>
-                <div class="stat-label">Usuários Ativos</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="usuariosFerias">0</div>
-                <div class="stat-label">De Férias</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="totalRegistros">0</div>
-                <div class="stat-label">Registros de Ponto</div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                <h2 style="font-size: clamp(18px, 4vw, 24px);">Gerenciar Usuários</h2>
-                <button class="btn btn-primary" onclick="abrirModalNovoUsuario()">
-                    + Novo Usuário
+
+        <!-- Usuários Section -->
+        <div id="usuarios-section" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users"></i> Gerenciar Usuários</h2>
+                <button class="btn btn-success" id="btn-novo-usuario" data-bs-toggle="modal" data-bs-target="#modalUsuario">
+                    <i class="fas fa-user-plus"></i> Novo Usuário
                 </button>
             </div>
-            
-            <div class="loading" id="loadingUsuarios">
-                <div class="spinner"></div>
-                <span>Carregando usuários...</span>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>E-mail</th>
+                                    <th>Telefone</th>
+                                    <th>Cargo</th>
+                                    <th>Status</th>
+                                    <th>Cadastro</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuarios-body">
+                                <!-- Usuários serão carregados aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- Registros Section -->
+        <div id="registros-section" style="display: none;">
+            <h2 class="mb-4"><i class="fas fa-history"></i> Todos os Registros</h2>
             
-            <div class="table-container">
-                <table class="table" id="tabelaUsuarios">
-                    <thead>
-                        <tr>
-                            <th>Avatar</th>
-                            <th>Nome</th>
-                            <th>E-mail</th>
-                            <th>Cargo</th>
-                            <th>Telefone</th>
-                            <th>Status</th>
-                            <th>Contratado em</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Usuários serão carregados aqui -->
-                    </tbody>
-                </table>
+            <div class="card">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <select class="form-select" id="filter-user">
+                                <option value="">Todos os usuários</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="filter-start">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control" id="filter-end">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" onclick="carregarRegistrosAdmin()">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Data</th>
+                                    <th>Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Local</th>
+                                    <th>Observação</th>
+                                    <th>Horas Extras</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registros-admin-body">
+                                <!-- Registros serão carregados aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Relatórios Section -->
+        <div id="relatorios-section" style="display: none;">
+            <h2 class="mb-4"><i class="fas fa-chart-bar"></i> Relatórios</h2>
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted">Em desenvolvimento...</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal Novo Usuário -->
-    <div id="modalNovoUsuario" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Novo Usuário</h3>
-                <button class="close" onclick="fecharModalNovoUsuario()">&times;</button>
+    <!-- Modal Usuário -->
+    <div class="modal fade" id="modalUsuario" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalUsuarioTitle">Novo Usuário</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-usuario">
+                        <input type="hidden" id="usuario-id">
+                        <div class="mb-3">
+                            <label for="nome" class="form-label">Nome *</label>
+                            <input type="text" class="form-control" id="nome" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-mail *</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="telefone" class="form-label">Telefone</label>
+                            <input type="tel" class="form-control" id="telefone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="cargo" class="form-label">Cargo</label>
+                            <input type="text" class="form-control" id="cargo" value="Terceiro">
+                        </div>
+                        <div class="mb-3">
+                            <label for="senha" class="form-label">Senha *</label>
+                            <input type="password" class="form-control" id="senha" required minlength="6">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="is-admin">
+                            <label class="form-check-label" for="is-admin">
+                                É administrador
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarUsuario()">Salvar</button>
+                </div>
             </div>
-            
-            <form id="formNovoUsuario">
-                <div class="form-group">
-                    <label for="novoUserNome">Nome completo:</label>
-                    <input type="text" id="novoUserNome" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="novoUserEmail">E-mail:</label>
-                    <input type="email" id="novoUserEmail" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="novoUserSenha">Senha:</label>
-                    <input type="password" id="novoUserSenha" required minlength="6">
-                </div>
-                
-                <div class="form-group">
-                    <label for="novoUserCargo">Cargo:</label>
-                    <select id="novoUserCargo" required>
-                        <option value="">Selecione um cargo</option>
-                        <option value="CEO Administrativo">CEO Administrativo</option>
-                        <option value="CEO Operações">CEO Operações</option>
-                        <option value="Engenharia">Engenharia</option>
-                        <option value="Topógrafo">Topógrafo</option>
-                        <option value="Nivelador">Nivelador</option>
-                        <option value="Aux. Topografia">Aux. Topografia</option>
-                        <option value="Terceiro">Terceiro</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="novoUserTelefone">Telefone:</label>
-                    <input type="tel" id="novoUserTelefone" placeholder="(11) 99999-9999">
-                </div>
-                
-                <div class="loading" id="loadingNovoUsuario">
-                    <div class="spinner"></div>
-                    <span>Criando usuário...</span>
-                </div>
-                
-                <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-                    <button type="button" class="btn" onclick="fecharModalNovoUsuario()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Criar Usuário</button>
-                </div>
-            </form>
         </div>
     </div>
 
-    <!-- Modal Editar Usuário -->
-    <div id="modalEditar" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Editar Usuário</h3>
-                <button class="close" onclick="fecharModalEditar()">&times;</button>
-            </div>
-            
-            <form id="formEditarUsuario">
-                <input type="hidden" id="editUserId">
-                
-                <div class="form-group">
-                    <label for="editUserNome">Nome completo:</label>
-                    <input type="text" id="editUserNome" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editUserEmail">E-mail:</label>
-                    <input type="email" id="editUserEmail" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editUserCargo">Cargo:</label>
-                    <select id="editUserCargo" required>
-                        <option value="">Selecione um cargo</option>
-                        <option value="CEO Administrativo">CEO Administrativo</option>
-                        <option value="CEO Operações">CEO Operações</option>
-                        <option value="Engenharia">Engenharia</option>
-                        <option value="Topógrafo">Topógrafo</option>
-                        <option value="Nivelador">Nivelador</option>
-                        <option value="Aux. Topografia">Aux. Topografia</option>
-                        <option value="Terceiro">Terceiro</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="editUserTelefone">Telefone:</label>
-                    <input type="tel" id="editUserTelefone" placeholder="(11) 99999-9999">
-                </div>
-                
-                <div class="loading" id="loadingModal">
-                    <div class="spinner"></div>
-                    <span>Salvando...</span>
-                </div>
-                
-                <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-                    <button type="button" class="btn" onclick="fecharModalEditar()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentUser = null;
-        let usuarios = [];
-        
-        // Função para fazer requisições autenticadas
-        async function fetchWithAuth(url, options = {}) {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            
-            if (!currentUser || !currentUser.id) {
-                showAlert('Usuário não autenticado. Faça login novamente.', 'error');
-                logout();
-                return null;
-            }
-            
-            const defaultOptions = {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            };
-            
-            let mergedOptions = {
-                ...defaultOptions,
-                ...options,
-                headers: {
-                    ...defaultOptions.headers,
-                    ...options.headers
-                }
-            };
-            
-            try {
-                if (options.method === 'GET' || !options.method) {
-                    const separator = url.includes('?') ? '&' : '?';
-                    url = `${url}${separator}usuario_id=${currentUser.id}`;
-                } else if (options.body) {
-                    const bodyData = typeof options.body === 'string' ? JSON.parse(options.body) : options.body;
-                    bodyData.usuario_id = currentUser.id;
-                    mergedOptions.body = JSON.stringify(bodyData);
-                } else {
-                    mergedOptions.body = JSON.stringify({ usuario_id: currentUser.id });
-                }
-                
-                const response = await fetch(url, mergedOptions);
-                
-                if (response.status === 401) {
-                    showAlert('Sessão expirada. Faça login novamente.', 'error');
-                    logout();
-                    return null;
-                }
-                
-                if (response.status === 403) {
-                    showAlert('Acesso negado. Você não tem permissão para esta ação.', 'error');
-                    return null;
-                }
-                
-                return response;
-            } catch (error) {
-                console.error('Erro na requisição:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
-                return null;
-            }
-        }
-        
-        // Menu mobile
-        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-            const mobileNav = document.getElementById('mobileNav');
-            const userInfo = document.getElementById('desktopUserInfo');
-            
-            mobileNav.classList.toggle('active');
-            userInfo.classList.toggle('active');
-        });
-        
         // Verificar autenticação e admin
-        document.addEventListener('DOMContentLoaded', async function() {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            
-            if (!currentUser || !currentUser.id) {
-                window.location.href = '/login';
+        document.addEventListener('DOMContentLoaded', function() {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            if (!usuario || !usuario.isAdmin) {
+                window.location.href = 'login';
                 return;
             }
-            
-            if (!currentUser.isAdmin) {
-                showAlert('Acesso negado. Apenas administradores podem acessar esta página.', 'error');
-                setTimeout(() => {
-                    window.location.href = '/dashboard';
-                }, 2000);
-                return;
-            }
-            
-            document.getElementById('userName').textContent = currentUser.nome;
-            document.getElementById('userNameMobile').textContent = currentUser.nome;
-            
+
+            document.getElementById('admin-name').textContent = usuario.nome;
+            carregarEstatisticas();
             carregarUsuarios();
+            carregarRegistrosAdmin();
         });
-        
-        // Carregar lista de usuários
-        async function carregarUsuarios() {
-            const loading = document.getElementById('loadingUsuarios');
-            const tabela = document.getElementById('tabelaUsuarios').querySelector('tbody');
+
+        // Funções de navegação
+        function showSection(sectionName) {
+            // Esconder todas as sections
+            document.getElementById('dashboard-section').style.display = 'none';
+            document.getElementById('usuarios-section').style.display = 'none';
+            document.getElementById('registros-section').style.display = 'none';
+            document.getElementById('relatorios-section').style.display = 'none';
             
-            loading.style.display = 'block';
-            tabela.innerHTML = '';
+            // Mostrar section selecionada
+            document.getElementById(sectionName + '-section').style.display = 'block';
             
-            try {
-                const response = await fetchWithAuth('/api/admin/usuarios');
-                if (!response) return;
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    usuarios = data.usuarios;
-                    atualizarEstatisticas(usuarios);
-                    renderizarUsuarios(usuarios);
-                } else {
-                    showAlert(data.error || 'Erro ao carregar usuários', 'error');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro ao carregar usuários.', 'error');
-            } finally {
-                loading.style.display = 'none';
-            }
-        }
-        
-        // Renderizar usuários na tabela
-        function renderizarUsuarios(usuarios) {
-            const tabela = document.getElementById('tabelaUsuarios').querySelector('tbody');
-            tabela.innerHTML = '';
-            
-            usuarios.forEach(usuario => {
-                const tr = document.createElement('tr');
-                
-                let avatarHtml;
-                if (usuario.avatar) {
-                    avatarHtml = `<img src="${usuario.avatar}" class="avatar-small" alt="${usuario.nome}">`;
-                } else {
-                    const iniciais = usuario.nome.split(' ').map(n => n[0]).join('').toUpperCase();
-                    avatarHtml = `<div class="avatar-placeholder">${iniciais.substring(0, 2)}</div>`;
-                }
-                
-                const status = usuario.status || 'ativo';
-                const statusText = {
-                    'ativo': 'Ativo',
-                    'inativo': 'Inativo',
-                    'ferias': 'Férias',
-                    'bloqueado': 'Bloqueado'
-                };
-                
-                const statusClass = {
-                    'ativo': 'status-ativo',
-                    'inativo': 'status-inativo',
-                    'ferias': 'status-ferias',
-                    'bloqueado': 'status-bloqueado'
-                };
-                
-                const statusHtml = `<span class="status-badge ${statusClass[status]}">${statusText[status]}</span>`;
-                
-                let dataContratacao = '-';
-                if (usuario.criadoEm) {
-                    const data = new Date(usuario.criadoEm);
-                    dataContratacao = data.toLocaleDateString('pt-BR');
-                }
-                
-                tr.innerHTML = `
-                    <td>${avatarHtml}</td>
-                    <td>
-                        <strong>${usuario.nome}</strong>
-                        ${usuario.isAdmin ? '<div class="admin-badge" style="display: inline-block; margin-left: 5px; font-size: 10px; padding: 2px 6px;">ADMIN</div>' : ''}
-                    </td>
-                    <td>${usuario.email}</td>
-                    <td>${usuario.cargo || 'Terceiro'}</td>
-                    <td>${usuario.telefone || '-'}</td>
-                    <td>${statusHtml}</td>
-                    <td>${dataContratacao}</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="editarUsuario('${usuario.id}')">
-                            Editar
-                        </button>
-                        ${!usuario.isAdmin ? `
-                        <button class="btn btn-warning btn-sm" onclick="redefinirSenha('${usuario.id}', '${usuario.nome}')">
-                            Redefinir Senha
-                        </button>
-                        ` : ''}
-                    </td>
-                `;
-                
-                tabela.appendChild(tr);
+            // Atualizar menu
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
             });
+            event.target.classList.add('active');
         }
+
+        // Funções administrativas serão implementadas na próxima mensagem...
+    </script>
+<script>
+    // ========== FUNÇÕES DO PAINEL ADMIN ==========
+
+    // Verificar autenticação e admin
+    document.addEventListener('DOMContentLoaded', function() {
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+        if (!usuario || !usuario.isAdmin) {
+            window.location.href = 'login';
+            return;
+        }
+
+        document.getElementById('admin-name').textContent = usuario.nome;
+        carregarEstatisticas();
+        carregarUsuarios();
+        carregarRegistrosAdmin();
+    });
+
+    // Funções de navegação
+    function showSection(sectionName) {
+        // Esconder todas as sections
+        document.getElementById('dashboard-section').style.display = 'none';
+        document.getElementById('usuarios-section').style.display = 'none';
+        document.getElementById('registros-section').style.display = 'none';
+        document.getElementById('relatorios-section').style.display = 'none';
         
-        // Atualizar estatísticas
-        function atualizarEstatisticas(usuarios) {
-            const usuariosAtivos = usuarios.filter(u => u.status === 'ativo').length;
-            const usuariosAdmin = usuarios.filter(u => u.isAdmin).length;
-            const usuariosFerias = usuarios.filter(u => u.status === 'ferias').length;
-            const totalRegistros = 0;
+        // Mostrar section selecionada
+        document.getElementById(sectionName + '-section').style.display = 'block';
+        
+        // Atualizar menu
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    // Carregar estatísticas do sistema
+    async function carregarEstatisticas() {
+        try {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
             
-            document.getElementById('totalUsuarios').textContent = usuarios.length;
-            document.getElementById('usuariosAtivos').textContent = usuariosAtivos;
-            document.getElementById('usuariosFerias').textContent = usuariosFerias;
-            document.getElementById('totalRegistros').textContent = totalRegistros;
-        }
-        
-        // Abrir modal para novo usuário
-        function abrirModalNovoUsuario() {
-            const modal = document.getElementById('modalNovoUsuario');
-            document.getElementById('formNovoUsuario').reset();
-            modal.style.display = 'block';
-        }
-        
-        // Fechar modal novo usuário
-        function fecharModalNovoUsuario() {
-            document.getElementById('modalNovoUsuario').style.display = 'none';
-        }
-        
-        // Abrir modal para editar usuário
-        function abrirModalEditar(usuarioId = null) {
-            const modal = document.getElementById('modalEditar');
+            // Carregar usuários para estatísticas
+            const usersResponse = await fetch('/api/admin/usuarios', {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
             
-            if (usuarioId) {
-                const usuario = usuarios.find(u => u.id === usuarioId);
+            const usersData = await usersResponse.json();
+            
+            if (usersData.success) {
+                const usuarios = usersData.usuarios;
+                const totalUsers = usuarios.length;
+                const adminUsers = usuarios.filter(u => u.isAdmin).length;
+                
+                document.getElementById('total-users').textContent = totalUsers;
+                document.getElementById('admin-users').textContent = adminUsers;
+                
+                // Carregar estatísticas de registros
+                const statsResponse = await fetch('/api/status');
+                const statsData = await statsResponse.json();
+                
+                if (statsData.usersCount && statsData.registrosCount) {
+                    document.getElementById('total-registros').textContent = statsData.registrosCount;
+                    
+                    // Calcular registros hoje (simulação)
+                    const registrosHoje = Math.floor(statsData.registrosCount / 30); // Aproximação
+                    document.getElementById('registros-hoje').textContent = registrosHoje;
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao carregar estatísticas:', error);
+        }
+    }
+
+    // Carregar lista de usuários
+    async function carregarUsuarios() {
+        try {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const response = await fetch('/api/admin/usuarios', {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                exibirUsuarios(data.usuarios);
+                popularFiltroUsuarios(data.usuarios);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar usuários:', error);
+            showAlert('❌ Erro ao carregar usuários', 'danger');
+        }
+    }
+
+    // Exibir usuários na tabela
+    function exibirUsuarios(usuarios) {
+        const tbody = document.getElementById('usuarios-body');
+        
+        tbody.innerHTML = usuarios.map(usuario => `
+            <tr>
+                <td>
+                    <strong>${usuario.nome}</strong>
+                    ${usuario.isAdmin ? '<span class="badge bg-warning ms-1">Admin</span>' : ''}
+                </td>
+                <td>${usuario.email}</td>
+                <td>${usuario.telefone || '-'}</td>
+                <td>${usuario.cargo}</td>
+                <td>
+                    <span class="badge ${usuario.status === 'ativo' ? 'bg-success' : 'bg-secondary'}">
+                        ${usuario.status}
+                    </span>
+                </td>
+                <td>${new Date(usuario.criadoEm).toLocaleDateString('pt-BR')}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editarUsuario('${usuario.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="redefinirSenha('${usuario.id}')">
+                        <i class="fas fa-key"></i>
+                    </button>
+                    ${!usuario.isAdmin ? `
+                        <button class="btn btn-sm btn-outline-danger" onclick="desativarUsuario('${usuario.id}')">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    ` : ''}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Popular filtro de usuários
+    function popularFiltroUsuarios(usuarios) {
+        const select = document.getElementById('filter-user');
+        select.innerHTML = '<option value="">Todos os usuários</option>';
+        
+        usuarios.forEach(usuario => {
+            select.innerHTML += `<option value="${usuario.id}">${usuario.nome}</option>`;
+        });
+    }
+
+    // Abrir modal para novo usuário
+    function novoUsuario() {
+        document.getElementById('modalUsuarioTitle').textContent = 'Novo Usuário';
+        document.getElementById('form-usuario').reset();
+        document.getElementById('usuario-id').value = '';
+        document.getElementById('senha').required = true;
+    }
+
+    // Editar usuário
+    async function editarUsuario(usuarioId) {
+        try {
+            const usuariosResponse = await fetch('/api/admin/usuarios', {
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await usuariosResponse.json();
+            
+            if (data.success) {
+                const usuario = data.usuarios.find(u => u.id === usuarioId);
                 if (usuario) {
-                    document.getElementById('editUserId').value = usuario.id;
-                    document.getElementById('editUserNome').value = usuario.nome;
-                    document.getElementById('editUserEmail').value = usuario.email;
+                    document.getElementById('modalUsuarioTitle').textContent = 'Editar Usuário';
+                    document.getElementById('usuario-id').value = usuario.id;
+                    document.getElementById('nome').value = usuario.nome;
+                    document.getElementById('email').value = usuario.email;
+                    document.getElementById('telefone').value = usuario.telefone || '';
+                    document.getElementById('cargo').value = usuario.cargo;
+                    document.getElementById('is-admin').checked = usuario.isAdmin;
+                    document.getElementById('senha').required = false;
+                    document.getElementById('senha').placeholder = 'Deixe em branco para manter a senha atual';
                     
-                    const selectCargo = document.getElementById('editUserCargo');
-                    if (selectCargo && usuario.cargo) {
-                        selectCargo.value = usuario.cargo;
-                    }
-                    
-                    document.getElementById('editUserTelefone').value = usuario.telefone || '';
+                    const modal = new bootstrap.Modal(document.getElementById('modalUsuario'));
+                    modal.show();
                 }
             }
-            
-            modal.style.display = 'block';
+        } catch (error) {
+            console.error('Erro ao carregar usuário:', error);
+            showAlert('❌ Erro ao carregar usuário', 'danger');
         }
-        
-        // Fechar modal editar
-        function fecharModalEditar() {
-            document.getElementById('modalEditar').style.display = 'none';
-        }
-        
-        // Formatação do telefone nos modais
-        document.getElementById('novoUserTelefone').addEventListener('input', formatarTelefone);
-        document.getElementById('editUserTelefone').addEventListener('input', formatarTelefone);
-        
-        function formatarTelefone(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length > 11) value = value.substring(0, 11);
-            
-            if (value.length > 10) {
-                value = value.replace(/^(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            } else if (value.length > 6) {
-                value = value.replace(/^(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
-            } else if (value.length > 2) {
-                value = value.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
-            } else if (value.length > 0) {
-                value = value.replace(/^(\d*)/, '($1');
-            }
-            
-            e.target.value = value;
-        }
-        
-        // Criar novo usuário
-        document.getElementById('formNovoUsuario').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const loading = document.getElementById('loadingNovoUsuario');
-            const submitBtn = this.querySelector('button[type="submit"]');
-            
-            loading.style.display = 'block';
-            submitBtn.disabled = true;
-            
+    }
+
+    // Salvar usuário (criar ou editar)
+    async function salvarUsuario() {
+        try {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
             const formData = {
-                nome: document.getElementById('novoUserNome').value,
-                email: document.getElementById('novoUserEmail').value,
-                senha: document.getElementById('novoUserSenha').value,
-                cargo: document.getElementById('novoUserCargo').value,
-                telefone: document.getElementById('novoUserTelefone').value
+                nome: document.getElementById('nome').value,
+                email: document.getElementById('email').value,
+                telefone: document.getElementById('telefone').value,
+                cargo: document.getElementById('cargo').value,
+                isAdmin: document.getElementById('is-admin').checked
             };
+
+            // Adicionar senha apenas se for novo usuário ou se foi preenchida
+            const senha = document.getElementById('senha').value;
+            const usuarioId = document.getElementById('usuario-id').value;
             
-            try {
-                const response = await fetchWithAuth('/api/admin/cadastro', {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                });
-                
-                if (!response) return;
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert('Usuário criado com sucesso!', 'success');
-                    fecharModalNovoUsuario();
-                    carregarUsuarios();
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
-            } finally {
-                loading.style.display = 'none';
-                submitBtn.disabled = false;
-            }
-        });
-        
-        // Salvar edição de usuário
-        document.getElementById('formEditarUsuario').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const loading = document.getElementById('loadingModal');
-            const submitBtn = this.querySelector('button[type="submit"]');
-            
-            loading.style.display = 'block';
-            submitBtn.disabled = true;
-            
-            const usuarioId = document.getElementById('editUserId').value;
-            const formData = {
-                nome: document.getElementById('editUserNome').value,
-                email: document.getElementById('editUserEmail').value,
-                cargo: document.getElementById('editUserCargo').value,
-                telefone: document.getElementById('editUserTelefone').value
-            };
-            
-            try {
-                const response = await fetchWithAuth(`/api/admin/usuarios/${usuarioId}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(formData)
-                });
-                
-                if (!response) return;
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert('Usuário atualizado com sucesso!', 'success');
-                    fecharModalEditar();
-                    carregarUsuarios();
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro de conexão. Tente novamente.', 'error');
-            } finally {
-                loading.style.display = 'none';
-                submitBtn.disabled = false;
-            }
-        });
-        
-        // Editar usuário
-        function editarUsuario(usuarioId) {
-            abrirModalEditar(usuarioId);
-        }
-        
-        // Redefinir senha do usuário
-        async function redefinirSenha(usuarioId, usuarioNome) {
-            if (!confirm(`Deseja redefinir a senha do usuário "${usuarioNome}"? Uma nova senha será gerada automaticamente.`)) {
+            if (!usuarioId && !senha) {
+                showAlert('❌ Senha é obrigatória para novo usuário', 'warning');
                 return;
             }
-            
-            try {
-                const response = await fetchWithAuth('/api/admin/redefinir-senha', {
-                    method: 'POST',
-                    body: JSON.stringify({ usuario_id: usuarioId })
+
+            if (senha) {
+                formData.senha = senha;
+            }
+
+            let response;
+            if (usuarioId) {
+                // Editar usuário existente
+                response = await fetch(`/api/admin/usuarios/${usuarioId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
                 });
-                
-                if (!response) return;
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert(`Senha redefinida com sucesso! Nova senha: ${data.novaSenha}`, 'success');
-                    console.log(`Nova senha para ${usuarioNome}: ${data.novaSenha}`);
-                } else {
-                    showAlert(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Erro:', error);
-                showAlert('Erro ao redefinir senha.', 'error');
+            } else {
+                // Criar novo usuário
+                response = await fetch('/api/admin/cadastro', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...formData,
+                        usuario_id: usuario.id
+                    })
+                });
             }
-        }
-        
-        // Mostrar alertas
-        function showAlert(message, type) {
-            const alert = document.getElementById('alert');
-            alert.textContent = message;
-            alert.className = `alert alert-${type}`;
-            alert.style.display = 'block';
-            
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Logout
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/login';
-        }
-        
-        // Fechar modais ao clicar fora
-        window.addEventListener('click', function(e) {
-            const modalNovo = document.getElementById('modalNovoUsuario');
-            const modalEditar = document.getElementById('modalEditar');
-            
-            if (e.target === modalNovo) {
-                fecharModalNovoUsuario();
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert('✅ ' + data.message, 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalUsuario'));
+                modal.hide();
+                carregarUsuarios();
+                carregarEstatisticas();
+            } else {
+                showAlert('❌ ' + data.error, 'danger');
             }
-            if (e.target === modalEditar) {
-                fecharModalEditar();
+        } catch (error) {
+            console.error('Erro ao salvar usuário:', error);
+            showAlert('❌ Erro ao salvar usuário', 'danger');
+        }
+    }
+
+    // Redefinir senha do usuário
+    async function redefinirSenha(usuarioId) {
+        if (!confirm('Deseja redefinir a senha deste usuário? Uma nova senha será gerada automaticamente.')) {
+            return;
+        }
+
+        try {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const response = await fetch('/api/admin/redefinir-senha', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    usuario_id: usuarioId
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(`✅ ${data.message} Nova senha: <strong>${data.novaSenha}</strong>`, 'success');
+            } else {
+                showAlert('❌ ' + data.error, 'danger');
             }
-        });
-    </script>
+        } catch (error) {
+            console.error('Erro ao redefinir senha:', error);
+            showAlert('❌ Erro ao redefinir senha', 'danger');
+        }
+    }
+
+    // Desativar usuário
+    async function desativarUsuario(usuarioId) {
+        if (!confirm('Deseja desativar este usuário? Ele não poderá mais acessar o sistema.')) {
+            return;
+        }
+
+        try {
+            // Aqui você implementaria a lógica para desativar usuário
+            showAlert('⚠️ Funcionalidade em desenvolvimento', 'warning');
+        } catch (error) {
+            console.error('Erro ao desativar usuário:', error);
+            showAlert('❌ Erro ao desativar usuário', 'danger');
+        }
+    }
+
+    // Carregar registros administrativos
+    async function carregarRegistrosAdmin() {
+        try {
+            // Por enquanto, carrega todos os registros do usuário atual
+            // Em uma versão completa, carregaria todos os registros do sistema
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const userId = document.getElementById('filter-user').value || usuario.id;
+            const startDate = document.getElementById('filter-start').value;
+            const endDate = document.getElementById('filter-end').value;
+
+            let url = `/api/registros/${userId}?limit=200`;
+            if (startDate && endDate) {
+                url += `&data_inicio=${startDate}&data_fim=${endDate}`;
+            }
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.success) {
+                exibirRegistrosAdmin(data.registros);
+            }
+        } catch (error) {
+            console.error('Erro ao carregar registros:', error);
+            showAlert('❌ Erro ao carregar registros', 'danger');
+        }
+    }
+
+    // Exibir registros administrativos
+    function exibirRegistrosAdmin(registros) {
+        const tbody = document.getElementById('registros-admin-body');
+        
+        if (registros.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                        Nenhum registro encontrado
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = registros.map(registro => `
+            <tr>
+                <td>
+                    <small class="text-muted">ID: ${registro.id.split('-')[2]}</small>
+                </td>
+                <td>${registro.data}</td>
+                <td>${registro.hora}</td>
+                <td>
+                    <span class="badge ${getBadgeClass(registro.tipo)}">
+                        ${formatarTipo(registro.tipo)}
+                    </span>
+                </td>
+                <td>${registro.local || '-'}</td>
+                <td>${registro.observacao || '-'}</td>
+                <td>${registro.horas_extras ? '<span class="badge bg-warning">Sim</span>' : 'Não'}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Exportar dados
+    async function exportarDados() {
+        try {
+            const usuario = JSON.parse(localStorage.getItem('usuario'));
+            const response = await fetch(`/api/exportar-registros/${usuario.id}`);
+            const data = await response.json();
+
+            if (data.success) {
+                // Simular download (em produção, geraria CSV/Excel)
+                showAlert(`✅ Dados prontos para exportação. Total: ${data.total} registros`, 'success');
+                
+                // Aqui você implementaria o download real
+                console.log('Dados para exportação:', data.registros);
+            }
+        } catch (error) {
+            console.error('Erro ao exportar dados:', error);
+            showAlert('❌ Erro ao exportar dados', 'danger');
+        }
+    }
+
+    // Funções auxiliares
+    function formatarTipo(tipo) {
+        const tipos = {
+            'entrada': 'Entrada',
+            'saida': 'Saída',
+            'intervalo': 'Intervalo',
+            'retorno': 'Retorno'
+        };
+        return tipos[tipo] || tipo;
+    }
+
+    function getBadgeClass(tipo) {
+        const classes = {
+            'entrada': 'bg-success',
+            'saida': 'bg-danger',
+            'intervalo': 'bg-warning',
+            'retorno': 'bg-info'
+        };
+        return classes[tipo] || 'bg-secondary';
+    }
+
+    function showAlert(message, type) {
+        const alertContainer = document.getElementById('alert-container');
+        const alertId = 'alert-' + Date.now();
+        
+        const alertHTML = `
+            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        alertContainer.innerHTML += alertHTML;
+        
+        setTimeout(() => {
+            const alertElement = document.getElementById(alertId);
+            if (alertElement) {
+                alertElement.remove();
+            }
+        }, 5000);
+    }
+
+    // Logout
+    function logout() {
+        localStorage.removeItem('usuario');
+        localStorage.removeItem('usuario_id');
+        window.location.href = 'login';
+    }
+
+    // Inicializar modal de novo usuário
+    document.getElementById('btn-novo-usuario').addEventListener('click', novoUsuario);
+</script>
 </body>
 </html>
