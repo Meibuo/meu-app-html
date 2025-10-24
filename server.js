@@ -466,7 +466,7 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
   }
 });
 
-// Obter registros do usuário
+// Obter registros do usuário - CORRIGIDO
 app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
@@ -487,9 +487,9 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
       observacao: reg.observacao,
       horas_extras: reg.horas_extras,
       manual: reg.manual,
-      data: reg.data_custom || new Date(reg.criado_em).toLocaleDateString('pt-BR'),
-      hora: reg.hora_custom || new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      diaSemana: new Date(reg.criado_em).toLocaleDateString('pt-BR', { weekday: 'long' }),
+      data: reg.data_custom || (reg.criado_em ? new Date(reg.criado_em).toLocaleDateString('pt-BR') : ''),
+      hora: reg.hora_custom || (reg.criado_em ? new Date(reg.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''),
+      diaSemana: reg.criado_em ? new Date(reg.criado_em).toLocaleDateString('pt-BR', { weekday: 'long' }) : '',
       criadoEm: reg.criado_em
     }));
 
