@@ -188,6 +188,14 @@
             background: #ff6b6b;
             color: white;
         }
+        
+        .horarios-dia {
+            background: #e9ecef;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 <body>
@@ -326,11 +334,6 @@
 
                         <button class="btn btn-hora-extra" data-bs-toggle="modal" data-bs-target="#modalHoraExtra">
                             <i class="fas fa-clock"></i> REGISTRAR HORA EXTRA
-                        </button>
-
-                        <!-- Botão de teste temporário -->
-                        <button class="btn btn-warning mt-2" onclick="testarRegistros()">
-                            <i class="fas fa-bug"></i> TESTAR REGISTROS
                         </button>
 
                         <div class="mt-3 text-center">
@@ -648,7 +651,7 @@
             }
         }
 
-        // Função para carregar registros - VERSÃO CORRIGIDA
+        // Função para carregar registros
         async function carregarRegistros() {
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
@@ -658,7 +661,6 @@
                 const data = await response.json();
 
                 console.log('📊 Resposta completa da API:', data);
-                console.log('📋 Registros recebidos:', data.registros);
 
                 if (data.success) {
                     if (data.registros && data.registros.length > 0) {
@@ -678,7 +680,7 @@
             }
         }
 
-        // Função para exibir registros em lista - VERSÃO CORRIGIDA
+        // Função para exibir registros em lista - VERSÃO COM HORÁRIOS FIXOS
         function exibirRegistros(registros) {
             const lista = document.getElementById('lista-registros');
             const semRegistros = document.getElementById('sem-registros');
@@ -701,11 +703,14 @@
             registros.sort((a, b) => new Date(b.criadoEm) - new Date(a.criadoEm));
 
             lista.innerHTML = registros.map(registro => {
-                console.log('📝 Processando registro:', registro);
-                
                 const tipoFormatado = formatarTipo(registro.tipo);
                 const badgeClass = getBadgeClass(registro.tipo);
                 const isHoraExtra = registro.horas_extras;
+                
+                // Formatar horários do dia
+                const horariosFormatados = registro.horariosDia ? 
+                    `${registro.horariosDia.entrada} | ${registro.horariosDia.intervalo} | ${registro.horariosDia.retorno} | ${registro.horariosDia.saida}` : 
+                    '--:-- | --:-- | --:-- | --:--';
                 
                 return `
                     <div class="registro-item ${isHoraExtra ? 'hora-extra' : registro.tipo}">
@@ -723,7 +728,9 @@
                                     <i class="fas fa-clock ms-2 me-1"></i>${registro.hora}
                                     ${registro.local ? `<br><i class="fas fa-map-marker-alt me-1"></i>${registro.local}` : ''}
                                     ${registro.observacao ? `<br><i class="fas fa-sticky-note me-1"></i>${registro.observacao}` : ''}
-                                    <br><small class="text-muted">ID: ${registro.id.substring(0, 8)}...</small>
+                                </div>
+                                <div class="horarios-dia">
+                                    <small><strong>Horários do dia:</strong> ${horariosFormatados}</small>
                                 </div>
                             </div>
                         </div>
@@ -775,35 +782,6 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
-            }
-        }
-
-        // TESTE TEMPORÁRIO - Diagnóstico (COM AUTENTICAÇÃO)
-        async function testarRegistros() {
-            try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
-                console.log('🔍 TESTE: Usuário ID:', usuario.id);
-                
-                // Testar rota de debug
-                const response = await fetch(`/api/debug/registros/${usuario.id}`);
-                const data = await response.json();
-                
-                console.log('🔍 TESTE DIAGNÓSTICO:', data);
-                
-                if (data.success) {
-                    alert(`✅ Diagnóstico: ${data.total} registros encontrados no banco. Verifique o console.`);
-                    
-                    // Se há registros no banco mas não aparecem, force o carregamento
-                    if (data.total > 0) {
-                        console.log('🔄 Forçando recarregamento dos registros...');
-                        await carregarRegistros();
-                    }
-                } else {
-                    alert(`❌ Erro no teste: ${data.error}`);
-                }
-            } catch (error) {
-                console.error('❌ Erro no teste:', error);
-                alert('❌ Erro ao testar registros. Verifique o console.');
             }
         }
 

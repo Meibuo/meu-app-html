@@ -153,6 +153,34 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
+// Função para obter horários fixos baseado no dia da semana
+function getHorariosFixos(data) {
+  const diaSemana = new Date(data).getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
+  
+  if (diaSemana === 5) { // Sexta-feira
+    return {
+      entrada: '07:00',
+      intervalo: '12:00', 
+      retorno: '13:00',
+      saida: '16:00'
+    };
+  } else if (diaSemana >= 1 && diaSemana <= 4) { // Segunda a Quinta
+    return {
+      entrada: '07:00',
+      intervalo: '12:00',
+      retorno: '13:00', 
+      saida: '17:00'
+    };
+  } else { // Sábado, Domingo ou Feriado
+    return {
+      entrada: '--:--',
+      intervalo: '--:--',
+      retorno: '--:--',
+      saida: '--:--'
+    };
+  }
+}
+
 // ========== ROTAS DA API ==========
 
 // ROTA DE LOGIN
@@ -401,6 +429,7 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
     } else {
       // Ponto normal - detecção automática
       const agora = new Date();
+      const dataAtual = agora.toISOString().split('T')[0]; // YYYY-MM-DD
       const diaSemana = agora.getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
       const hora = agora.getHours();
 
@@ -432,8 +461,17 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
         ]
       );
 
-      registros = [{ id: registroId, tipo: tipo, hora: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }];
-      console.log('✅ Ponto registrado com sucesso - Tipo:', tipo);
+      // Obter horário fixo para exibição
+      const horariosFixos = getHorariosFixos(dataAtual);
+      const horaExibicao = horariosFixos[tipo] || '--:--';
+
+      registros = [{ 
+        id: registroId, 
+        tipo: tipo, 
+        hora: horaExibicao,
+        horariosDia: horariosFixos
+      }];
+      console.log('✅ Ponto registrado com sucesso - Tipo:', tipo, 'Horário fixo:', horaExibicao);
     }
 
     const message = horas_extras ? 'Hora extra registrada com sucesso!' : 'Ponto registrado com sucesso!';
@@ -490,7 +528,7 @@ app.get('/api/ultimo-registro/:usuario_id', requireAuth, async (req, res) => {
   }
 });
 
-// Obter registros do usuário - VERSÃO CORRIGIDA
+// Obter registros do usuário - VERSÃO COM HORÁRIOS FIXOS
 app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
@@ -513,20 +551,20 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
     console.log(`✅ Encontrados ${result.rows.length} registros para usuário ${usuario_id}`);
 
     const registros = result.rows.map(reg => {
-      // Usar data_custom/hora_custom se existir, senão usar criado_em
+      // Usar data_custom se existir, senão usar criado_em
       const data = reg.data_custom || new Date(reg.criado_em).toISOString().split('T')[0];
       const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
       
+      // Obter horários fixos para o dia
+      const horariosFixos = getHorariosFixos(data);
+      
       let horaFormatada;
-      if (reg.hora_custom) {
-        // Formatar hora custom (HH:MM:SS para HH:MM)
+      if (reg.horas_extras && reg.hora_custom) {
+        // Para horas extras, usar a hora customizada
         horaFormatada = reg.hora_custom.substring(0, 5);
       } else {
-        horaFormatada = new Date(reg.criado_em).toLocaleTimeString('pt-BR', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          timeZone: 'America/Sao_Paulo'
-        });
+        // Para pontos normais, usar horário fixo baseado no tipo
+        horaFormatada = horariosFixos[reg.tipo] || '--:--';
       }
 
       return {
@@ -537,6 +575,7 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
         horas_extras: reg.horas_extras,
         data: dataFormatada,
         hora: horaFormatada,
+        horariosDia: horariosFixos, // Incluir todos os horários do dia
         diaSemana: new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }),
         criadoEm: reg.criado_em
       };
