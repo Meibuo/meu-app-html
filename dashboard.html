@@ -185,6 +185,20 @@
             font-size: 0.85em;
             border-left: 3px solid #ff6b6b;
         }
+
+        .btn-export {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -306,6 +320,40 @@
                                 O sistema detecta automaticamente o tipo de registro baseado no horário atual
                             </small>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exportação e Gerenciamento -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card card-hover">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0"><i class="fas fa-download"></i> Exportar Relatórios</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-4 mb-2">
+                                <label for="data-inicio" class="form-label">Data Início (opcional)</label>
+                                <input type="date" class="form-control" id="data-inicio">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="data-fim" class="form-label">Data Fim (opcional)</label>
+                                <input type="date" class="form-control" id="data-fim">
+                            </div>
+                            <div class="col-md-4 mb-2 d-flex align-items-end">
+                                <button class="btn btn-success me-2" onclick="exportarExcel()" style="flex: 1;">
+                                    <i class="fas fa-file-excel"></i> Excel
+                                </button>
+                                <button class="btn btn-danger" onclick="exportarPDF()" style="flex: 1;">
+                                    <i class="fas fa-file-pdf"></i> PDF
+                                </button>
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            Deixe as datas em branco para exportar todos os registros
+                        </small>
                     </div>
                 </div>
             </div>
@@ -641,7 +689,7 @@
             }
         }
 
-        // Função para exibir registros em lista - VERSÃO SIMPLIFICADA
+        // Função para exibir registros em lista - VERSÃO ATUALIZADA COM EXCLUSÃO
         function exibirRegistros(registros) {
             const lista = document.getElementById('lista-registros');
             const semRegistros = document.getElementById('sem-registros');
@@ -667,13 +715,14 @@
                 const isHoraExtra = registro.horas_extras;
                 
                 if (isHoraExtra) {
-                    // Exibir HORA EXTRA
+                    // Exibir HORA EXTRA com botão de exclusão
                     return `
                         <div class="registro-item hora-extra">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center mb-2">
                                         <strong class="me-2">Ponto de Extra registrado</strong>
+                                        <span class="badge bg-danger">Hora Extra</span>
                                     </div>
                                     <div class="text-muted small">
                                         <i class="fas fa-calendar me-1"></i>${registro.data}
@@ -684,17 +733,23 @@
                                         <small><strong>Horário:</strong> ${registro.hora_entrada} às ${registro.hora_saida}</small>
                                     </div>
                                 </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="excluirRegistro('${registro.id}')" title="Excluir registro">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     `;
                 } else {
-                    // Exibir PONTO NORMAL
+                    // Exibir PONTO NORMAL com botão de exclusão
                     return `
                         <div class="registro-item">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center mb-2">
                                         <strong class="me-2">Ponto registrado</strong>
+                                        <span class="badge bg-success">${registro.tipo}</span>
                                     </div>
                                     <div class="text-muted small">
                                         <i class="fas fa-calendar me-1"></i>${registro.data}
@@ -704,6 +759,11 @@
                                     <div class="horarios-dia">
                                         <small><strong>Horários:</strong> ${registro.horariosDia.texto}</small>
                                     </div>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="excluirRegistro('${registro.id}')" title="Excluir registro">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -726,6 +786,89 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        // Função para excluir registro
+        async function excluirRegistro(registroId) {
+            if (!confirm('Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/registros/${registroId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✅ Registro excluído com sucesso!', 'success');
+                    await carregarRegistros();
+                    await atualizarEstatisticas(JSON.parse(localStorage.getItem('usuario')).id);
+                } else {
+                    showAlert('❌ ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir registro:', error);
+                showAlert('❌ Erro ao excluir registro', 'danger');
+            }
+        }
+
+        // Função para exportar para Excel
+        async function exportarExcel() {
+            try {
+                const usuario = JSON.parse(localStorage.getItem('usuario'));
+                const dataInicio = document.getElementById('data-inicio').value;
+                const dataFim = document.getElementById('data-fim').value;
+
+                let url = `/api/exportar/excel/${usuario.id}`;
+                const params = new URLSearchParams();
+                
+                if (dataInicio) params.append('data_inicio', dataInicio);
+                if (dataFim) params.append('data_fim', dataFim);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                // Abrir em nova aba para download
+                window.open(url, '_blank');
+                showAlert('📊 Exportação para Excel iniciada!', 'success');
+
+            } catch (error) {
+                console.error('Erro ao exportar Excel:', error);
+                showAlert('❌ Erro ao exportar para Excel', 'danger');
+            }
+        }
+
+        // Função para exportar para PDF
+        async function exportarPDF() {
+            try {
+                const usuario = JSON.parse(localStorage.getItem('usuario'));
+                const dataInicio = document.getElementById('data-inicio').value;
+                const dataFim = document.getElementById('data-fim').value;
+
+                let url = `/api/exportar/pdf/${usuario.id}`;
+                const params = new URLSearchParams();
+                
+                if (dataInicio) params.append('data_inicio', dataInicio);
+                if (dataFim) params.append('data_fim', dataFim);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                // Abrir em nova aba para download
+                window.open(url, '_blank');
+                showAlert('📄 Exportação para PDF iniciada!', 'success');
+
+            } catch (error) {
+                console.error('Erro ao exportar PDF:', error);
+                showAlert('❌ Erro ao exportar para PDF', 'danger');
             }
         }
 

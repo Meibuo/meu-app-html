@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
+const ExcelJS = require('exceljs');
+const PDFDocument = require('pdfkit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -641,6 +643,251 @@ app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ========== NOVAS ROTAS ADICIONADAS ==========
+
+// ROTA PARA EXCLUIR REGISTRO
+app.delete('/api/registros/:registro_id', requireAuth, async (req, res) => {
+  try {
+    const { registro_id } = req.params;
+    const usuario_id = req.user.id;
+
+    console.log('🗑️ Tentativa de excluir registro:', registro_id);
+
+    // Verificar se o registro pertence ao usuário (ou se é admin)
+    const registroResult = await pool.query(
+      'SELECT * FROM registros_ponto WHERE id = $1',
+      [registro_id]
+    );
+
+    if (registroResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Registro não encontrado' });
+    }
+
+    const registro = registroResult.rows[0];
+
+    // Se não for admin, verificar se o registro pertence ao usuário
+    if (!req.user.is_admin && registro.usuario_id !== usuario_id) {
+      return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
+    }
+
+    // Excluir o registro
+    await pool.query('DELETE FROM registros_ponto WHERE id = $1', [registro_id]);
+
+    console.log('✅ Registro excluído com sucesso:', registro_id);
+
+    res.json({
+      success: true,
+      message: 'Registro excluído com sucesso!'
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao excluir registro:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor: ' + error.message
+    });
+  }
+});
+
+// ROTA PARA EXPORTAR PARA EXCEL
+app.get('/api/exportar/excel/:usuario_id', requireAuth, async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    const { data_inicio, data_fim } = req.query;
+
+    if (usuario_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
+    }
+
+    // Construir query com filtro de datas se fornecido
+    let query = `
+      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE rp.usuario_id = $1
+    `;
+    let params = [usuario_id];
+
+    if (data_inicio && data_fim) {
+      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
+      params.push(data_inicio, data_fim);
+    }
+
+    query += ` ORDER BY rp.criado_em DESC`;
+
+    const result = await pool.query(query, params);
+    const registros = result.rows;
+
+    // Criar workbook do Excel
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Registros de Ponto');
+
+    // Definir cabeçalhos
+    worksheet.columns = [
+      { header: 'Data', key: 'data', width: 15 },
+      { header: 'Hora', key: 'hora', width: 10 },
+      { header: 'Tipo', key: 'tipo', width: 15 },
+      { header: 'Local', key: 'local', width: 20 },
+      { header: 'Horas Extras', key: 'horas_extras', width: 12 },
+      { header: 'Hora Entrada', key: 'hora_entrada', width: 12 },
+      { header: 'Hora Saída', key: 'hora_saida', width: 12 },
+      { header: 'Observação', key: 'observacao', width: 30 },
+      { header: 'Usuário', key: 'usuario_nome', width: 20 },
+      { header: 'E-mail', key: 'usuario_email', width: 25 }
+    ];
+
+    // Estilizar cabeçalhos
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4472C4' }
+    };
+
+    // Adicionar dados
+    registros.forEach(registro => {
+      const data = new Date(registro.criado_em);
+      const dataFormatada = data.toLocaleDateString('pt-BR');
+      const horaFormatada = data.toLocaleTimeString('pt-BR');
+
+      worksheet.addRow({
+        data: dataFormatada,
+        hora: horaFormatada,
+        tipo: registro.tipo,
+        local: registro.local || '',
+        horas_extras: registro.horas_extras ? 'Sim' : 'Não',
+        hora_entrada: registro.hora_entrada || '',
+        hora_saida: registro.hora_saida || '',
+        observacao: registro.observacao || '',
+        usuario_nome: registro.usuario_nome,
+        usuario_email: registro.usuario_email
+      });
+    });
+
+    // Configurar resposta
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.xlsx`);
+
+    // Enviar arquivo
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error('❌ Erro ao exportar Excel:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor: ' + error.message
+    });
+  }
+});
+
+// ROTA PARA EXPORTAR PARA PDF
+app.get('/api/exportar/pdf/:usuario_id', requireAuth, async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    const { data_inicio, data_fim } = req.query;
+
+    if (usuario_id !== req.user.id && !req.user.is_admin) {
+      return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
+    }
+
+    // Buscar registros
+    let query = `
+      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE rp.usuario_id = $1
+    `;
+    let params = [usuario_id];
+
+    if (data_inicio && data_fim) {
+      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
+      params.push(data_inicio, data_fim);
+    }
+
+    query += ` ORDER BY rp.criado_em DESC LIMIT 100`;
+
+    const result = await pool.query(query, params);
+    const registros = result.rows;
+
+    // Criar PDF
+    const doc = new PDFDocument({ margin: 50 });
+    
+    // Configurar cabeçalho do response
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.pdf`);
+
+    doc.pipe(res);
+
+    // Cabeçalho do PDF
+    doc.fontSize(20).font('Helvetica-Bold').text('RELATÓRIO DE PONTOS', 50, 50);
+    doc.fontSize(12).font('Helvetica').text(`Usuário: ${registros[0]?.usuario_nome || 'N/A'}`, 50, 80);
+    doc.text(`E-mail: ${registros[0]?.usuario_email || 'N/A'}`, 50, 95);
+    doc.text(`Data de emissão: ${new Date().toLocaleDateString('pt-BR')}`, 50, 110);
+    doc.text(`Total de registros: ${registros.length}`, 50, 125);
+
+    // Linha divisória
+    doc.moveTo(50, 140).lineTo(550, 140).stroke();
+
+    let yPosition = 160;
+
+    // Adicionar registros
+    registros.forEach((registro, index) => {
+      if (yPosition > 700) { // Nova página se necessário
+        doc.addPage();
+        yPosition = 50;
+      }
+
+      const data = new Date(registro.criado_em);
+      
+      doc.fontSize(10).font('Helvetica-Bold')
+         .text(`Registro ${index + 1}`, 50, yPosition);
+      
+      yPosition += 15;
+      
+      doc.font('Helvetica')
+         .text(`Data: ${data.toLocaleDateString('pt-BR')}`, 50, yPosition);
+      
+      yPosition += 12;
+      
+      doc.text(`Hora: ${data.toLocaleTimeString('pt-BR')}`, 50, yPosition);
+      
+      yPosition += 12;
+      
+      doc.text(`Tipo: ${registro.tipo}`, 50, yPosition);
+      
+      yPosition += 12;
+      
+      doc.text(`Local: ${registro.local || 'N/A'}`, 50, yPosition);
+      
+      yPosition += 12;
+      
+      doc.text(`Horas Extras: ${registro.horas_extras ? 'Sim' : 'Não'}`, 50, yPosition);
+      
+      if (registro.hora_entrada && registro.hora_saida) {
+        yPosition += 12;
+        doc.text(`Horário: ${registro.hora_entrada} - ${registro.hora_saida}`, 50, yPosition);
+      }
+      
+      if (registro.observacao) {
+        yPosition += 12;
+        doc.text(`Observação: ${registro.observacao}`, 50, yPosition);
+      }
+
+      yPosition += 20; // Espaço entre registros
+    });
+
+    doc.end();
+
+  } catch (error) {
+    console.error('❌ Erro ao exportar PDF:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor: ' + error.message
+    });
   }
 });
 
