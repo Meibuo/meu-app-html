@@ -85,6 +85,10 @@
         .relatorio-item:last-child {
             border-bottom: none;
         }
+        .horas-extras-card {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -103,6 +107,9 @@
             </a>
             <a class="nav-link" href="#" onclick="showSection('registros')">
                 <i class="fas fa-history"></i> Todos os Registros
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('horas-extras')">
+                <i class="fas fa-user-clock"></i> Horas Extras
             </a>
             <a class="nav-link" href="#" onclick="showSection('relatorios')">
                 <i class="fas fa-chart-bar"></i> Relatórios
@@ -195,6 +202,9 @@
                             </button>
                             <button class="btn btn-primary me-2" onclick="showSection('registros')">
                                 <i class="fas fa-search"></i> Ver Registros
+                            </button>
+                            <button class="btn btn-warning me-2" onclick="showSection('horas-extras')">
+                                <i class="fas fa-user-clock"></i> Horas Extras
                             </button>
                             <div class="export-buttons mt-2">
                                 <button class="btn btn-info" onclick="exportarDadosExcel()">
@@ -305,6 +315,131 @@
                                             <i class="fas fa-inbox fa-2x mb-2"></i><br>
                                             Nenhum registro encontrado
                                         </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Horas Extras Section -->
+        <div id="horas-extras-section" style="display: none;">
+            <h2 class="mb-4"><i class="fas fa-user-clock"></i> Controle de Horas Extras</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Filtros</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <label for="horas-extras-mes" class="form-label">Mês</label>
+                            <select class="form-select" id="horas-extras-mes">
+                                <option value="1">Janeiro</option>
+                                <option value="2">Fevereiro</option>
+                                <option value="3">Março</option>
+                                <option value="4">Abril</option>
+                                <option value="5">Maio</option>
+                                <option value="6">Junho</option>
+                                <option value="7">Julho</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Setembro</option>
+                                <option value="10">Outubro</option>
+                                <option value="11">Novembro</option>
+                                <option value="12">Dezembro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label for="horas-extras-ano" class="form-label">Ano</label>
+                            <select class="form-select" id="horas-extras-ano">
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-2 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" onclick="carregarHorasExtrasAdmin()">
+                                <i class="fas fa-filter"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards de Horas Extras -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card horas-extras-card card-hover">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 id="total-horas-extras">0h</h4>
+                                    <p class="mb-0">Total Horas Extras</p>
+                                    <small class="opacity-75" id="periodo-horas-extras-admin"></small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-clock fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card bg-info text-white card-hover">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 id="total-usuarios-he">0</h4>
+                                    <p class="mb-0">Usuários com H.E.</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-users fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card bg-success text-white card-hover">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 id="media-horas-extras">0h</h4>
+                                    <p class="mb-0">Média por Usuário</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela de Horas Extras -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Detalhamento por Usuário</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Usuário</th>
+                                    <th>Cargo</th>
+                                    <th>Total Horas</th>
+                                    <th>Dias com H.E.</th>
+                                    <th>Média por Dia</th>
+                                    <th>Detalhes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="horas-extras-body">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        Selecione o mês e ano para visualizar as horas extras
                                     </td>
                                 </tr>
                             </tbody>
@@ -519,12 +654,51 @@
         </div>
     </div>
 
+    <!-- Modal Detalhes Horas Extras -->
+    <div class="modal fade" id="modalDetalhesHorasExtras" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detalhes das Horas Extras</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 id="detalhes-usuario-nome"></h6>
+                    <p class="text-muted" id="detalhes-periodo"></p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Hora Entrada</th>
+                                    <th>Hora Saída</th>
+                                    <th>Horas do Dia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalhes-horas-extras-body">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <strong>Total: <span id="detalhes-total-horas">0</span> horas</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // ========== FUNÇÕES DO PAINEL ADMIN ==========
 
         let usuariosList = [];
         let registrosList = [];
+        let horasExtrasData = [];
 
         // Função para mostrar alertas
         function showAlert(message, type) {
@@ -561,172 +735,110 @@
             }
         }
 
-        // Função para gerar relatório - CORRIGIDA
-        async function gerarRelatorio() {
+        // Função para carregar horas extras (admin)
+        async function carregarHorasExtrasAdmin() {
             try {
-                const usuarioId = document.getElementById('relatorio-usuario').value;
-                const dataInicio = document.getElementById('relatorio-data-inicio').value;
-                const dataFim = document.getElementById('relatorio-data-fim').value;
+                const mes = document.getElementById('horas-extras-mes').value;
+                const ano = document.getElementById('horas-extras-ano').value;
 
-                if (!dataInicio || !dataFim) {
-                    showAlert('❌ Selecione o período do relatório', 'warning');
-                    return;
+                showAlert('⏰ Carregando horas extras...', 'info');
+
+                const response = await fetch(`/api/admin/horas-extras?mes=${mes}&ano=${ano}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    horasExtrasData = data.usuarios;
+                    exibirHorasExtrasAdmin(data.usuarios);
+                    
+                    // Atualizar cards de resumo
+                    const totalHoras = data.usuarios.reduce((sum, usuario) => sum + usuario.totalHorasExtras, 0);
+                    const totalUsuarios = data.usuarios.length;
+                    const mediaHoras = totalUsuarios > 0 ? totalHoras / totalUsuarios : 0;
+                    
+                    document.getElementById('total-horas-extras').textContent = totalHoras.toFixed(1) + 'h';
+                    document.getElementById('total-usuarios-he').textContent = totalUsuarios;
+                    document.getElementById('media-horas-extras').textContent = mediaHoras.toFixed(1) + 'h';
+                    document.getElementById('periodo-horas-extras-admin').textContent = `Mês ${mes}/${ano}`;
+                    
+                    showAlert('✅ Horas extras carregadas com sucesso!', 'success');
+                } else {
+                    showAlert('❌ Erro ao carregar horas extras: ' + data.error, 'danger');
                 }
-
-                showAlert('📊 Gerando relatórios...', 'info');
-
-                // Mostrar loading nos containers
-                document.getElementById('relatorio-frequencia').innerHTML = '<p class="text-center text-muted">Carregando...</p>';
-                document.getElementById('relatorio-horas-extras').innerHTML = '<p class="text-center text-muted">Carregando...</p>';
-                document.getElementById('relatorio-completo-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Carregando...</td></tr>';
-
-                // Gerar relatórios SEQUENCIALMENTE para evitar conflitos
-                let frequenciaData, horasExtrasData, completoData;
-                
-                try {
-                    // 1. Relatório de Frequência
-                    const frequenciaResponse = await fetch(`/api/admin/relatorios/frequencia?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
-                    frequenciaData = await frequenciaResponse.json();
-                    
-                    if (!frequenciaData.success) {
-                        throw new Error(frequenciaData.error || 'Erro no relatório de frequência');
-                    }
-                    
-                    // 2. Relatório de Horas Extras
-                    const horasExtrasResponse = await fetch(`/api/admin/relatorios/horas-extras?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
-                    horasExtrasData = await horasExtrasResponse.json();
-                    
-                    if (!horasExtrasData.success) {
-                        throw new Error(horasExtrasData.error || 'Erro no relatório de horas extras');
-                    }
-                    
-                    // 3. Relatório Completo
-                    const completoResponse = await fetch(`/api/admin/relatorios/completo?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
-                    completoData = await completoResponse.json();
-                    
-                    if (!completoData.success) {
-                        throw new Error(completoData.error || 'Erro no relatório completo');
-                    }
-
-                    // Exibir todos os relatórios
-                    exibirRelatorioFrequencia(frequenciaData.relatorio);
-                    exibirRelatorioHorasExtras(horasExtrasData.relatorio);
-                    exibirRelatorioCompleto(completoData.relatorio);
-                    
-                    showAlert('✅ Relatórios gerados com sucesso!', 'success');
-
-                } catch (apiError) {
-                    console.error('❌ Erro na API de relatórios:', apiError);
-                    showAlert('❌ Erro ao gerar relatórios: ' + apiError.message, 'danger');
-                    
-                    // Limpar áreas em caso de erro
-                    document.getElementById('relatorio-frequencia').innerHTML = '<p class="text-center text-muted">Erro ao carregar dados</p>';
-                    document.getElementById('relatorio-horas-extras').innerHTML = '<p class="text-center text-muted">Erro ao carregar dados</p>';
-                    document.getElementById('relatorio-completo-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Erro ao carregar dados</td></tr>';
-                }
-
             } catch (error) {
-                console.error('❌ Erro ao gerar relatório:', error);
-                showAlert('❌ Erro ao gerar relatórios: ' + error.message, 'danger');
+                console.error('❌ Erro ao carregar horas extras:', error);
+                showAlert('❌ Erro ao carregar horas extras', 'danger');
             }
         }
 
-        // Exibir relatório de frequência
-        function exibirRelatorioFrequencia(dados) {
-            const container = document.getElementById('relatorio-frequencia');
+        // Função para exibir horas extras na tabela
+        function exibirHorasExtrasAdmin(usuarios) {
+            const tbody = document.getElementById('horas-extras-body');
             
-            if (!dados || dados.length === 0) {
-                container.innerHTML = '<p class="text-center text-muted">Nenhum dado encontrado para o período selecionado</p>';
-                return;
-            }
-
-            let html = '';
-            dados.forEach(item => {
-                html += `
-                    <div class="relatorio-item">
-                        <div class="d-flex justify-content-between">
-                            <strong>${item.usuario_nome}</strong>
-                            <span class="badge bg-primary">${item.data}</span>
-                        </div>
-                        <div class="small text-muted">
-                            Cargo: ${item.usuario_cargo} | 
-                            Entradas: ${item.entradas} | 
-                            Saídas: ${item.saidas} | 
-                            Total: ${item.total_registros} registros
-                            ${item.horas_extras > 0 ? `| Horas Extras: ${item.horas_extras}` : ''}
-                        </div>
-                    </div>
+            if (!usuarios || usuarios.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            Nenhuma hora extra encontrada para o período selecionado
+                        </td>
+                    </tr>
                 `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // Exibir relatório de horas extras
-        function exibirRelatorioHorasExtras(dados) {
-            const container = document.getElementById('relatorio-horas-extras');
-            
-            if (!dados || dados.length === 0) {
-                container.innerHTML = '<p class="text-center text-muted">Nenhuma hora extra encontrada para o período selecionado</p>';
                 return;
             }
 
-            let html = '';
-            dados.forEach(item => {
-                html += `
-                    <div class="relatorio-item">
-                        <div class="d-flex justify-content-between">
-                            <strong>${item.usuario_nome}</strong>
-                            <span class="badge bg-warning">${item.data}</span>
-                        </div>
-                        <div class="small text-muted">
-                            ${item.hora_entrada} às ${item.hora_saida}
-                            ${item.observacao ? `| ${item.observacao}` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // Exibir relatório completo
-        function exibirRelatorioCompleto(dados) {
-            const tbody = document.getElementById('relatorio-completo-body');
-            
-            if (!dados || dados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Nenhum registro encontrado para o período selecionado</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = dados.map(item => `
+            tbody.innerHTML = usuarios.map(usuario => `
                 <tr>
-                    <td>${item.usuario_nome}</td>
-                    <td>${item.data}</td>
-                    <td><span class="badge ${item.tipo === 'entrada' ? 'bg-success' : item.tipo === 'saida' ? 'bg-danger' : 'bg-info'}">${item.tipo}</span></td>
-                    <td>${item.hora_entrada || '-'}</td>
-                    <td>${item.hora_saida || '-'}</td>
-                    <td>${item.horas_trabalhadas || '-'}</td>
-                    <td>${item.horas_extras ? '<span class="badge bg-warning">Sim</span>' : 'Não'}</td>
-                    <td>${item.local || '-'}</td>
+                    <td>
+                        <strong>${usuario.usuario_nome}</strong>
+                    </td>
+                    <td>${usuario.usuario_cargo}</td>
+                    <td>
+                        <span class="badge bg-warning">${usuario.totalHorasExtras.toFixed(1)}h</span>
+                    </td>
+                    <td>${usuario.detalhes.length} dias</td>
+                    <td>${(usuario.totalHorasExtras / usuario.detalhes.length).toFixed(1)}h</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="verDetalhesHorasExtras('${usuario.usuario_id}', '${usuario.usuario_nome}')">
+                            <i class="fas fa-eye"></i> Ver Detalhes
+                        </button>
+                    </td>
                 </tr>
             `).join('');
         }
 
-        // Verificar autenticação e admin
-        document.addEventListener('DOMContentLoaded', function() {
-            // Configurar o modal de novo usuário
-            const btnNovoUsuario = document.getElementById('btn-novo-usuario');
-            if (btnNovoUsuario) {
-                btnNovoUsuario.addEventListener('click', function() {
-                    document.getElementById('modalUsuarioTitle').textContent = 'Novo Usuário';
-                    document.getElementById('form-usuario').reset();
-                    document.getElementById('usuario-id').value = '';
-                    document.getElementById('senha').required = true;
-                    document.getElementById('senha').placeholder = '';
-                });
-            }
+        // Função para ver detalhes das horas extras
+        function verDetalhesHorasExtras(usuarioId, usuarioNome) {
+            const usuario = horasExtrasData.find(u => u.usuario_id === usuarioId);
             
+            if (!usuario) return;
+
+            document.getElementById('detalhes-usuario-nome').textContent = usuarioNome;
+            document.getElementById('detalhes-periodo').textContent = `Período: Mês ${document.getElementById('horas-extras-mes').value}/${document.getElementById('horas-extras-ano').value}`;
+            document.getElementById('detalhes-total-horas').textContent = usuario.totalHorasExtras.toFixed(1);
+
+            const tbody = document.getElementById('detalhes-horas-extras-body');
+            tbody.innerHTML = usuario.detalhes.map(detalhe => `
+                <tr>
+                    <td>${detalhe.data}</td>
+                    <td>${detalhe.hora_entrada}</td>
+                    <td>${detalhe.hora_saida}</td>
+                    <td>${detalhe.horas_dia}h</td>
+                </tr>
+            `).join('');
+
+            const modal = new bootstrap.Modal(document.getElementById('modalDetalhesHorasExtras'));
+            modal.show();
+        }
+
+        // Configurar data atual nos filtros
+        document.addEventListener('DOMContentLoaded', function() {
+            const dataAtual = new Date();
+            const mesAtual = dataAtual.getMonth() + 1;
+            const anoAtual = dataAtual.getFullYear();
+
+            // Configurar filtros de horas extras
+            document.getElementById('horas-extras-mes').value = mesAtual;
+            document.getElementById('horas-extras-ano').value = anoAtual;
+
             console.log('🔄 Inicializando painel admin...');
             carregarEstatisticas();
             carregarUsuarios();
@@ -739,6 +851,7 @@
             document.getElementById('dashboard-section').style.display = 'none';
             document.getElementById('usuarios-section').style.display = 'none';
             document.getElementById('registros-section').style.display = 'none';
+            document.getElementById('horas-extras-section').style.display = 'none';
             document.getElementById('relatorios-section').style.display = 'none';
             
             // Mostrar section selecionada
@@ -755,11 +868,19 @@
                 carregarUsuarios();
             } else if (sectionName === 'registros') {
                 carregarRegistrosAdmin();
+            } else if (sectionName === 'horas-extras') {
+                carregarHorasExtrasAdmin();
             } else if (sectionName === 'relatorios') {
                 carregarUsuarios(); // Para popular o filtro de usuários
             }
         }
 
+        // ... (restante das funções JavaScript do admin mantidas iguais)
+        // As funções carregarEstatisticas, carregarUsuarios, carregarRegistrosAdmin, etc.
+        // permanecem exatamente como estavam no código anterior
+
+        // ========== FUNÇÕES MANTIDAS DO CÓDIGO ANTERIOR ==========
+        
         // Carregar estatísticas do sistema
         async function carregarEstatisticas() {
             try {
@@ -1283,6 +1404,158 @@
                 console.error('❌ Erro ao excluir registro:', error);
                 showAlert('❌ Erro ao excluir registro', 'danger');
             }
+        }
+
+        // Função para gerar relatório - CORRIGIDA
+        async function gerarRelatorio() {
+            try {
+                const usuarioId = document.getElementById('relatorio-usuario').value;
+                const dataInicio = document.getElementById('relatorio-data-inicio').value;
+                const dataFim = document.getElementById('relatorio-data-fim').value;
+
+                if (!dataInicio || !dataFim) {
+                    showAlert('❌ Selecione o período do relatório', 'warning');
+                    return;
+                }
+
+                showAlert('📊 Gerando relatórios...', 'info');
+
+                // Mostrar loading nos containers
+                document.getElementById('relatorio-frequencia').innerHTML = '<p class="text-center text-muted">Carregando...</p>';
+                document.getElementById('relatorio-horas-extras').innerHTML = '<p class="text-center text-muted">Carregando...</p>';
+                document.getElementById('relatorio-completo-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Carregando...</td></tr>';
+
+                // Gerar relatórios SEQUENCIALMENTE para evitar conflitos
+                let frequenciaData, horasExtrasData, completoData;
+                
+                try {
+                    // 1. Relatório de Frequência
+                    const frequenciaResponse = await fetch(`/api/admin/relatorios/frequencia?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                    frequenciaData = await frequenciaResponse.json();
+                    
+                    if (!frequenciaData.success) {
+                        throw new Error(frequenciaData.error || 'Erro no relatório de frequência');
+                    }
+                    
+                    // 2. Relatório de Horas Extras
+                    const horasExtrasResponse = await fetch(`/api/admin/relatorios/horas-extras?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                    horasExtrasData = await horasExtrasResponse.json();
+                    
+                    if (!horasExtrasData.success) {
+                        throw new Error(horasExtrasData.error || 'Erro no relatório de horas extras');
+                    }
+                    
+                    // 3. Relatório Completo
+                    const completoResponse = await fetch(`/api/admin/relatorios/completo?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                    completoData = await completoResponse.json();
+                    
+                    if (!completoData.success) {
+                        throw new Error(completoData.error || 'Erro no relatório completo');
+                    }
+
+                    // Exibir todos os relatórios
+                    exibirRelatorioFrequencia(frequenciaData.relatorio);
+                    exibirRelatorioHorasExtras(horasExtrasData.relatorio);
+                    exibirRelatorioCompleto(completoData.relatorio);
+                    
+                    showAlert('✅ Relatórios gerados com sucesso!', 'success');
+
+                } catch (apiError) {
+                    console.error('❌ Erro na API de relatórios:', apiError);
+                    showAlert('❌ Erro ao gerar relatórios: ' + apiError.message, 'danger');
+                    
+                    // Limpar áreas em caso de erro
+                    document.getElementById('relatorio-frequencia').innerHTML = '<p class="text-center text-muted">Erro ao carregar dados</p>';
+                    document.getElementById('relatorio-horas-extras').innerHTML = '<p class="text-center text-muted">Erro ao carregar dados</p>';
+                    document.getElementById('relatorio-completo-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Erro ao carregar dados</td></tr>';
+                }
+
+            } catch (error) {
+                console.error('❌ Erro ao gerar relatório:', error);
+                showAlert('❌ Erro ao gerar relatórios: ' + error.message, 'danger');
+            }
+        }
+
+        // Exibir relatório de frequência
+        function exibirRelatorioFrequencia(dados) {
+            const container = document.getElementById('relatorio-frequencia');
+            
+            if (!dados || dados.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">Nenhum dado encontrado para o período selecionado</p>';
+                return;
+            }
+
+            let html = '';
+            dados.forEach(item => {
+                html += `
+                    <div class="relatorio-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>${item.usuario_nome}</strong>
+                            <span class="badge bg-primary">${item.data}</span>
+                        </div>
+                        <div class="small text-muted">
+                            Cargo: ${item.usuario_cargo} | 
+                            Entradas: ${item.entradas} | 
+                            Saídas: ${item.saidas} | 
+                            Total: ${item.total_registros} registros
+                            ${item.horas_extras > 0 ? `| Horas Extras: ${item.horas_extras}` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Exibir relatório de horas extras
+        function exibirRelatorioHorasExtras(dados) {
+            const container = document.getElementById('relatorio-horas-extras');
+            
+            if (!dados || dados.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">Nenhuma hora extra encontrada para o período selecionado</p>';
+                return;
+            }
+
+            let html = '';
+            dados.forEach(item => {
+                html += `
+                    <div class="relatorio-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>${item.usuario_nome}</strong>
+                            <span class="badge bg-warning">${item.data}</span>
+                        </div>
+                        <div class="small text-muted">
+                            ${item.hora_entrada} às ${item.hora_saida}
+                            ${item.observacao ? `| ${item.observacao}` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Exibir relatório completo
+        function exibirRelatorioCompleto(dados) {
+            const tbody = document.getElementById('relatorio-completo-body');
+            
+            if (!dados || dados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Nenhum registro encontrado para o período selecionado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = dados.map(item => `
+                <tr>
+                    <td>${item.usuario_nome}</td>
+                    <td>${item.data}</td>
+                    <td><span class="badge ${item.tipo === 'entrada' ? 'bg-success' : item.tipo === 'saida' ? 'bg-danger' : 'bg-info'}">${item.tipo}</span></td>
+                    <td>${item.hora_entrada || '-'}</td>
+                    <td>${item.hora_saida || '-'}</td>
+                    <td>${item.horas_trabalhadas || '-'}</td>
+                    <td>${item.horas_extras ? '<span class="badge bg-warning">Sim</span>' : 'Não'}</td>
+                    <td>${item.local || '-'}</td>
+                </tr>
+            `).join('');
         }
 
         // Exportar dados para Excel

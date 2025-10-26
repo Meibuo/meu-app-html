@@ -199,6 +199,16 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
         }
+
+        .horas-extras-card {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-left: 4px solid #17a2b8;
+        }
     </style>
 </head>
 <body>
@@ -238,7 +248,39 @@
     <div id="alert-container"></div>
 
     <div class="container mt-4">
-        <!-- Cards de Estatísticas - APENAS HORAS EXTRAS -->
+        <!-- Cards de Horas Extras Detalhadas -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card horas-extras-card card-hover">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 id="horas-extras-reais">0h</h4>
+                                <p class="mb-0">Horas Extras (Mês Atual)</p>
+                                <small class="opacity-75" id="periodo-horas-extras"></small>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-user-clock fa-2x opacity-75"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card info-card card-hover">
+                    <div class="card-body">
+                        <h6><i class="fas fa-info-circle"></i> Como é calculado?</h6>
+                        <small class="text-muted">
+                            • 1 hora de almoço é descontada automaticamente<br>
+                            • Cálculo resetado a cada mês<br>
+                            • Somente horas extras registradas
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card de Horas Extras Simples (mantido para compatibilidade) -->
         <div class="row mb-4">
             <div class="col-md-4 mb-3">
                 <div class="card stats-card card-hover">
@@ -246,7 +288,7 @@
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h4 id="horas-extras">0</h4>
-                                <p class="mb-0">Horas Extras</p>
+                                <p class="mb-0">Total Horas Extras</p>
                             </div>
                             <div class="align-self-center">
                                 <i class="fas fa-clock fa-2x opacity-75"></i>
@@ -496,14 +538,36 @@
             document.getElementById('hora-saida').value = horaSaida;
             
             carregarRegistros();
-            atualizarEstatisticas(usuario.id);
+            carregarHorasExtrasReais();
             
             // Atualizar a cada 30 segundos
             setInterval(() => {
                 carregarRegistros();
-                atualizarEstatisticas(usuario.id);
+                carregarHorasExtrasReais();
             }, 30000);
         });
+
+        // Função para carregar horas extras reais
+        async function carregarHorasExtrasReais() {
+            try {
+                const usuario = JSON.parse(localStorage.getItem('usuario'));
+                const response = await fetch(`/api/horas-extras/${usuario.id}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const horasElement = document.getElementById('horas-extras-reais');
+                    const periodoElement = document.getElementById('periodo-horas-extras');
+                    
+                    horasElement.textContent = `${data.totalHorasExtras}h`;
+                    periodoElement.textContent = `Mês ${data.mes}/${data.ano}`;
+                    
+                    // Atualizar também o card antigo (para compatibilidade)
+                    document.getElementById('horas-extras').textContent = data.totalHorasExtras;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar horas extras:', error);
+            }
+        }
 
         // Função para mostrar alertas
         function showAlert(message, type = 'info') {
@@ -570,7 +634,7 @@
                     
                     // Atualizar dados
                     await carregarRegistros();
-                    await atualizarEstatisticas(usuario.id);
+                    await carregarHorasExtrasReais();
                     
                 } else {
                     showAlert('❌ ' + data.error, 'danger');
@@ -648,7 +712,7 @@
                     
                     // Atualizar dados
                     await carregarRegistros();
-                    await atualizarEstatisticas(usuario.id);
+                    await carregarHorasExtrasReais();
                     
                 } else {
                     showAlert('❌ ' + data.error, 'danger');
@@ -772,23 +836,6 @@
             }).join('');
         }
 
-        // Função para atualizar estatísticas - APENAS HORAS EXTRAS
-        async function atualizarEstatisticas(usuario_id) {
-            try {
-                const response = await fetch(`/api/estatisticas/${usuario_id}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    const stats = data.estatisticas;
-                    const horasExtrasElement = document.getElementById('horas-extras');
-                    
-                    if (horasExtrasElement) horasExtrasElement.textContent = stats.horasExtras;
-                }
-            } catch (error) {
-                console.error('Erro ao carregar estatísticas:', error);
-            }
-        }
-
         // Função para excluir registro
         async function excluirRegistro(registroId) {
             if (!confirm('Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.')) {
@@ -808,7 +855,7 @@
                 if (data.success) {
                     showAlert('✅ Registro excluído com sucesso!', 'success');
                     await carregarRegistros();
-                    await atualizarEstatisticas(JSON.parse(localStorage.getItem('usuario')).id);
+                    await carregarHorasExtrasReais();
                 } else {
                     showAlert('❌ ' + data.error, 'danger');
                 }

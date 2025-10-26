@@ -175,6 +175,40 @@ const initializeDatabase = async () => {
   }
 };
 
+// ========== FUNÇÃO PARA CALCULAR HORAS EXTRAS ==========
+
+// Função para calcular horas extras reais (descontando 1 hora de almoço)
+function calcularHorasExtrasReais(horaEntrada, horaSaida) {
+  try {
+    if (!horaEntrada || !horaSaida) return 0;
+    
+    // Converter horas para minutos totais
+    const [entradaH, entradaM] = horaEntrada.split(':').map(Number);
+    const [saidaH, saidaM] = horaSaida.split(':').map(Number);
+    
+    const entradaMinutos = entradaH * 60 + entradaM;
+    const saidaMinutos = saidaH * 60 + saidaM;
+    
+    // Calcular diferença em minutos
+    let diferencaMinutos = saidaMinutos - entradaMinutos;
+    
+    // Descontar 1 hora de almoço (60 minutos) se a jornada for maior que 6 horas
+    if (diferencaMinutos > 360) { // 6 horas = 360 minutos
+      diferencaMinutos -= 60;
+    }
+    
+    // Converter para horas decimais (ex: 4.5 horas)
+    const horasExtras = diferencaMinutos / 60;
+    
+    // Retornar apenas horas positivas
+    return Math.max(0, horasExtras);
+    
+  } catch (error) {
+    console.error('Erro ao calcular horas extras:', error);
+    return 0;
+  }
+}
+
 // Função para criar notificação
 const criarNotificacao = async (usuario_id, titulo, mensagem) => {
   try {
@@ -309,6 +343,161 @@ app.post('/api/logout', (req, res) => {
     success: true, 
     message: 'Logout realizado com sucesso!' 
   });
+});
+
+// ========== ROTAS DE HORAS EXTRAS ==========
+
+// ROTA PARA OBTER HORAS EXTRAS DO USUÁRIO (POR MÊS)
+app.get('/api/horas-extras/:usuario_id', async (req, res) => {
+  try {
+    const { usuario_id } = req.params;
+    const { mes, ano } = req.query;
+
+    console.log('⏰ Buscando horas extras para usuário:', usuario_id, mes, ano);
+
+    let query = `
+      SELECT 
+        hora_entrada,
+        hora_saida,
+        data_custom,
+        criado_em
+      FROM registros_ponto 
+      WHERE usuario_id = $1 
+        AND horas_extras = true
+    `;
+
+    const params = [usuario_id];
+    let paramCount = 2;
+
+    // Filtrar por mês/ano específico ou usar mês atual
+    const dataAtual = new Date();
+    const mesFiltro = mes || (dataAtual.getMonth() + 1);
+    const anoFiltro = ano || dataAtual.getFullYear();
+
+    query += ` AND EXTRACT(MONTH FROM COALESCE(data_custom, criado_em)) = $${paramCount}`;
+    params.push(mesFiltro);
+    paramCount++;
+
+    query += ` AND EXTRACT(YEAR FROM COALESCE(data_custom, criado_em)) = $${paramCount}`;
+    params.push(anoFiltro);
+    paramCount++;
+
+    query += ` ORDER BY COALESCE(data_custom, criado_em)`;
+
+    const result = await pool.query(query, params);
+
+    let totalHorasExtras = 0;
+    const detalhesHoras = [];
+
+    result.rows.forEach(registro => {
+      const horasDia = calcularHorasExtrasReais(registro.hora_entrada, registro.hora_saida);
+      totalHorasExtras += horasDia;
+      
+      detalhesHoras.push({
+        data: registro.data_custom || new Date(registro.criado_em).toISOString().split('T')[0],
+        hora_entrada: registro.hora_entrada,
+        hora_saida: registro.hora_saida,
+        horas_dia: parseFloat(horasDia.toFixed(2))
+      });
+    });
+
+    console.log(`✅ Horas extras calculadas: ${totalHorasExtras.toFixed(2)} horas`);
+
+    res.json({
+      success: true,
+      totalHorasExtras: parseFloat(totalHorasExtras.toFixed(2)),
+      mes: parseInt(mesFiltro),
+      ano: parseInt(anoFiltro),
+      detalhes: detalhesHoras
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao buscar horas extras:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro interno do servidor: ' + error.message 
+    });
+  }
+});
+
+// ROTA PARA HORAS EXTRAS DE TODOS OS USUÁRIOS (ADMIN)
+app.get('/api/admin/horas-extras', async (req, res) => {
+  try {
+    const { mes, ano } = req.query;
+
+    console.log('👑 Buscando horas extras de todos os usuários');
+
+    const dataAtual = new Date();
+    const mesFiltro = mes || (dataAtual.getMonth() + 1);
+    const anoFiltro = ano || dataAtual.getFullYear();
+
+    const query = `
+      SELECT 
+        u.id as usuario_id,
+        u.nome as usuario_nome,
+        u.cargo as usuario_cargo,
+        rp.hora_entrada,
+        rp.hora_saida,
+        rp.data_custom,
+        rp.criado_em
+      FROM registros_ponto rp
+      JOIN users u ON rp.usuario_id = u.id
+      WHERE rp.horas_extras = true
+        AND EXTRACT(MONTH FROM COALESCE(rp.data_custom, rp.criado_em)) = $1
+        AND EXTRACT(YEAR FROM COALESCE(rp.data_custom, rp.criado_em)) = $2
+      ORDER BY u.nome, COALESCE(rp.data_custom, rp.criado_em)
+    `;
+
+    const result = await pool.query(query, [mesFiltro, anoFiltro]);
+
+    const horasPorUsuario = {};
+    
+    result.rows.forEach(registro => {
+      const usuarioId = registro.usuario_id;
+      
+      if (!horasPorUsuario[usuarioId]) {
+        horasPorUsuario[usuarioId] = {
+          usuario_id: usuarioId,
+          usuario_nome: registro.usuario_nome,
+          usuario_cargo: registro.usuario_cargo,
+          totalHorasExtras: 0,
+          detalhes: []
+        };
+      }
+      
+      const horasDia = calcularHorasExtrasReais(registro.hora_entrada, registro.hora_saida);
+      horasPorUsuario[usuarioId].totalHorasExtras += horasDia;
+      
+      horasPorUsuario[usuarioId].detalhes.push({
+        data: registro.data_custom || new Date(registro.criado_em).toISOString().split('T')[0],
+        hora_entrada: registro.hora_entrada,
+        hora_saida: registro.hora_saida,
+        horas_dia: parseFloat(horasDia.toFixed(2))
+      });
+    });
+
+    // Converter objeto para array e arredondar totais
+    const resultado = Object.values(horasPorUsuario).map(usuario => ({
+      ...usuario,
+      totalHorasExtras: parseFloat(usuario.totalHorasExtras.toFixed(2))
+    }));
+
+    console.log(`✅ Horas extras admin calculadas: ${resultado.length} usuários`);
+
+    res.json({
+      success: true,
+      mes: parseInt(mesFiltro),
+      ano: parseInt(anoFiltro),
+      usuarios: resultado
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao buscar horas extras admin:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro interno do servidor: ' + error.message 
+    });
+  }
 });
 
 // ========== ROTAS ADMINISTRATIVAS ==========
@@ -672,8 +861,8 @@ app.get('/api/admin/registros', async (req, res) => {
         observacao: reg.observacao,
         horas_extras: reg.horas_extras,
         data: dataFormatada,
-        hora_entrada: reg.hora_entrada ? reg.hora_entrada.substring(0, 5) : '',
-        hora_saida: reg.hora_saida ? reg.hora_saida.substring(0, 5) : '',
+        hora_entrada: reg.hora_entrada || '',
+        hora_saida: reg.hora_saida || '',
         criadoEm: reg.criado_em
       };
     });
@@ -1626,23 +1815,33 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
   }
 });
 
-// ESTATÍSTICAS SIMPLES DO USUÁRIO
+// ATUALIZAR ROTA DE ESTATÍSTICAS DO USUÁRIO PARA INCLUIR HORAS EXTRAS REAIS
 app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
 
-    const horasExtrasResult = await pool.query(
+    // Buscar horas extras do mês atual
+    const horasExtrasResponse = await fetch(`http://localhost:${PORT}/api/horas-extras/${usuario_id}`);
+    let horasExtrasData = { totalHorasExtras: 0 };
+    
+    if (horasExtrasResponse.ok) {
+      horasExtrasData = await horasExtrasResponse.json();
+    }
+
+    // Contagem simples de registros de horas extras (mantida para compatibilidade)
+    const horasExtrasCountResult = await pool.query(
       `SELECT COUNT(*) FROM registros_ponto 
        WHERE usuario_id = $1 AND horas_extras = true`,
       [usuario_id]
     );
 
-    const totalHorasExtras = parseInt(horasExtrasResult.rows[0].count);
+    const totalRegistrosHorasExtras = parseInt(horasExtrasCountResult.rows[0].count);
 
     res.json({
       success: true,
       estatisticas: {
-        horasExtras: totalHorasExtras
+        horasExtras: horasExtrasData.success ? horasExtrasData.totalHorasExtras : 0,
+        totalRegistrosHorasExtras: totalRegistrosHorasExtras
       }
     });
 
