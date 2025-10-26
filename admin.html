@@ -355,6 +355,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary" onclick="salvarEdicaoRegistro()">Salvar Alterações</button>
+                    <button type="button" class="btn btn-danger" onclick="excluirRegistroAdmin()">Excluir Registro</button>
                 </div>
             </div>
         </div>
@@ -713,8 +714,15 @@
                         const dataFormatada = `${dataParts[2]}-${dataParts[1]}-${dataParts[0]}`;
                         
                         document.getElementById('edit-data').value = dataFormatada;
-                        document.getElementById('edit-hora-entrada').value = registro.hora_entrada || '';
-                        document.getElementById('edit-hora-saida').value = registro.hora_saida || '';
+                        
+                        // Preencher horários de entrada e saída para registros normais também
+                        if (registro.hora_entrada && registro.hora_entrada !== '-') {
+                            document.getElementById('edit-hora-entrada').value = registro.hora_entrada;
+                        }
+                        if (registro.hora_saida && registro.hora_saida !== '-') {
+                            document.getElementById('edit-hora-saida').value = registro.hora_saida;
+                        }
+                        
                         document.getElementById('edit-local').value = registro.local || '';
                         document.getElementById('edit-observacao').value = registro.observacao || '';
                         document.getElementById('edit-horas-extras').checked = registro.horas_extras;
@@ -764,6 +772,35 @@
             } catch (error) {
                 console.error('Erro ao salvar registro:', error);
                 showAlert('❌ Erro ao salvar registro', 'danger');
+            }
+        }
+
+        // Excluir registro (admin)
+        async function excluirRegistroAdmin() {
+            const registroId = document.getElementById('registro-id').value;
+            
+            if (!confirm('Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/registros/${registroId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✅ ' + data.message, 'success');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarRegistro'));
+                    modal.hide();
+                    carregarRegistrosAdmin();
+                } else {
+                    showAlert('❌ ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir registro:', error);
+                showAlert('❌ Erro ao excluir registro', 'danger');
             }
         }
 

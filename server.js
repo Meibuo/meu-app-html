@@ -657,6 +657,47 @@ app.put('/api/admin/registros/:registro_id', async (req, res) => {
   }
 });
 
+// ROTA PARA EXCLUIR REGISTRO (ADMIN)
+app.delete('/api/admin/registros/:registro_id', async (req, res) => {
+  try {
+    const { registro_id } = req.params;
+
+    // Verificar se o registro existe
+    const registroResult = await pool.query(
+      'SELECT * FROM registros_ponto WHERE id = $1',
+      [registro_id]
+    );
+
+    if (registroResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Registro não encontrado' });
+    }
+
+    const registro = registroResult.rows[0];
+
+    // Excluir o registro
+    await pool.query('DELETE FROM registros_ponto WHERE id = $1', [registro_id]);
+
+    // Criar notificação para o usuário
+    await criarNotificacao(
+      registro.usuario_id,
+      'Registro de Ponto Excluído',
+      `Um registro de ponto do dia ${new Date(registro.criado_em).toLocaleDateString('pt-BR')} foi excluído pelo administrador.`
+    );
+
+    res.json({
+      success: true,
+      message: 'Registro excluído com sucesso!'
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao excluir registro:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor: ' + error.message
+    });
+  }
+});
+
 // ROTA PARA ESTATÍSTICAS DO SISTEMA
 app.get('/api/admin/estatisticas', async (req, res) => {
   try {
