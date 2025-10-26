@@ -286,7 +286,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ========== ROTAS ADMINISTRATIVAS ==========
+// ========== ROTAS ADMINISTRATIVAS CORRIGIDAS ==========
 
 // ROTA PARA LISTAR TODOS OS USUÁRIOS (APENAS ADMIN)
 app.get('/api/admin/usuarios', requireAdmin, async (req, res) => {
@@ -453,14 +453,14 @@ app.put('/api/admin/usuarios/:usuario_id', requireAdmin, async (req, res) => {
 // ROTA PARA REDEFINIR SENHA (APENAS ADMIN) - SENHA PADRÃO 123456
 app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
   try {
-    const { usuario_id } = req.body;
+    const { usuario_id_reset } = req.body;
 
-    if (!usuario_id) {
+    if (!usuario_id_reset) {
       return res.status(400).json({ success: false, error: 'ID do usuário é obrigatório' });
     }
 
     // Verificar se usuário existe
-    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id_reset]);
     if (userExists.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
     }
@@ -471,7 +471,7 @@ app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
 
     await pool.query(
       'UPDATE users SET senha = $1 WHERE id = $2',
-      [hashedPassword, usuario_id]
+      [hashedPassword, usuario_id_reset]
     );
 
     res.json({
@@ -486,10 +486,10 @@ app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
   }
 });
 
-// ROTA PARA BUSCAR TODOS OS REGISTROS (APENAS ADMIN)
+// ROTA PARA BUSCAR TODOS OS REGISTROS (APENAS ADMIN) - CORRIGIDA
 app.get('/api/admin/registros', requireAdmin, async (req, res) => {
   try {
-    const { usuario_id, data_inicio, data_fim, limit = 200 } = req.query;
+    const { usuario_id_filter, data_inicio, data_fim, limit = 200 } = req.query;
 
     let query = `
       SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
@@ -500,9 +500,9 @@ app.get('/api/admin/registros', requireAdmin, async (req, res) => {
     const params = [];
     let paramCount = 1;
 
-    if (usuario_id) {
+    if (usuario_id_filter) {
       query += ` AND rp.usuario_id = $${paramCount}`;
-      params.push(usuario_id);
+      params.push(usuario_id_filter);
       paramCount++;
     }
 
