@@ -162,21 +162,24 @@ function getHorariosFixos(data) {
       entrada: '07:00',
       intervalo: '12:00', 
       retorno: '13:00',
-      saida: '16:00'
+      saida: '16:00',
+      texto: '07:00 | 12:00 | 13:00 | 16:00'
     };
   } else if (diaSemana >= 1 && diaSemana <= 4) { // Segunda a Quinta
     return {
       entrada: '07:00',
       intervalo: '12:00',
       retorno: '13:00', 
-      saida: '17:00'
+      saida: '17:00',
+      texto: '07:00 | 12:00 | 13:00 | 17:00'
     };
   } else { // Sábado, Domingo ou Feriado
     return {
       entrada: '--:--',
       intervalo: '--:--',
       retorno: '--:--',
-      saida: '--:--'
+      saida: '--:--',
+      texto: 'Folga'
     };
   }
 }
@@ -463,15 +466,14 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
 
       // Obter horário fixo para exibição
       const horariosFixos = getHorariosFixos(dataAtual);
-      const horaExibicao = horariosFixos[tipo] || '--:--';
 
       registros = [{ 
         id: registroId, 
         tipo: tipo, 
-        hora: horaExibicao,
+        hora: '', // Não mostrar hora específica
         horariosDia: horariosFixos
       }];
-      console.log('✅ Ponto registrado com sucesso - Tipo:', tipo, 'Horário fixo:', horaExibicao);
+      console.log('✅ Ponto registrado com sucesso - Tipo:', tipo);
     }
 
     const message = horas_extras ? 'Hora extra registrada com sucesso!' : 'Ponto registrado com sucesso!';
@@ -488,43 +490,6 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
       success: false, 
       error: 'Erro interno do servidor: ' + error.message 
     });
-  }
-});
-
-// OBTER ÚLTIMO REGISTRO DO USUÁRIO
-app.get('/api/ultimo-registro/:usuario_id', requireAuth, async (req, res) => {
-  try {
-    const usuario_id = req.params.usuario_id;
-    
-    if (usuario_id !== req.user.id && !req.user.is_admin) {
-      return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
-    }
-
-    const result = await pool.query(
-      'SELECT * FROM registros_ponto WHERE usuario_id = $1 ORDER BY criado_em DESC LIMIT 1',
-      [usuario_id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.json({ success: true, ultimoRegistro: null });
-    }
-
-    const ultimoRegistro = result.rows[0];
-    
-    res.json({
-      success: true,
-      ultimoRegistro: {
-        tipo: ultimoRegistro.tipo,
-        local: ultimoRegistro.local,
-        data: ultimoRegistro.data_custom || new Date(ultimoRegistro.criado_em).toLocaleDateString('pt-BR'),
-        hora: ultimoRegistro.hora_custom || new Date(ultimoRegistro.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        horas_extras: ultimoRegistro.horas_extras
-      }
-    });
-
-  } catch (error) {
-    console.error('Erro ao buscar último registro:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
 
@@ -558,13 +523,11 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
       // Obter horários fixos para o dia
       const horariosFixos = getHorariosFixos(data);
       
-      let horaFormatada;
+      // Para pontos normais, não mostrar hora específica
+      let horaFormatada = '';
       if (reg.horas_extras && reg.hora_custom) {
         // Para horas extras, usar a hora customizada
         horaFormatada = reg.hora_custom.substring(0, 5);
-      } else {
-        // Para pontos normais, usar horário fixo baseado no tipo
-        horaFormatada = horariosFixos[reg.tipo] || '--:--';
       }
 
       return {
@@ -575,7 +538,7 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
         horas_extras: reg.horas_extras,
         data: dataFormatada,
         hora: horaFormatada,
-        horariosDia: horariosFixos, // Incluir todos os horários do dia
+        horariosDia: horariosFixos,
         diaSemana: new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }),
         criadoEm: reg.criado_em
       };
@@ -598,7 +561,7 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
   }
 });
 
-// ESTATÍSTICAS SIMPLES DO USUÁRIO
+// ESTATÍSTICAS SIMPLES DO USUÁRIO - AGORA COM HORAS EXTRAS
 app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
@@ -607,29 +570,19 @@ app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, error: 'Acesso não autorizado' });
     }
 
-    const totalResult = await pool.query(
-      'SELECT COUNT(*) FROM registros_ponto WHERE usuario_id = $1',
-      [usuario_id]
-    );
-
-    const hojeResult = await pool.query(
-      `SELECT COUNT(*) FROM registros_ponto 
-       WHERE usuario_id = $1 AND DATE(criado_em) = CURRENT_DATE`,
-      [usuario_id]
-    );
-
     const horasExtrasResult = await pool.query(
       `SELECT COUNT(*) FROM registros_ponto 
        WHERE usuario_id = $1 AND horas_extras = true`,
       [usuario_id]
     );
 
+    // Calcular horas extras totais (cada hora extra tem 2 registros: entrada e saída)
+    const totalHorasExtras = Math.floor(parseInt(horasExtrasResult.rows[0].count) / 2);
+
     res.json({
       success: true,
       estatisticas: {
-        totalRegistros: parseInt(totalResult.rows[0].count),
-        registrosHoje: parseInt(hojeResult.rows[0].count),
-        horasExtras: parseInt(horasExtrasResult.rows[0].count)
+        horasExtras: totalHorasExtras
       }
     });
 

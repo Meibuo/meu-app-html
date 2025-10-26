@@ -235,43 +235,19 @@
     <div id="alert-container"></div>
 
     <div class="container mt-4">
-        <!-- Cards de Estatísticas -->
+        <!-- Cards de Estatísticas - APENAS HORAS EXTRAS -->
         <div class="row mb-4">
             <div class="col-md-4 mb-3">
                 <div class="card stats-card card-hover">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h4 id="total-registros">0</h4>
-                                <p class="mb-0">Total de Registros</p>
+                                <h4 id="horas-extras">0</h4>
+                                <p class="mb-0">Horas Extras</p>
                             </div>
                             <div class="align-self-center">
-                                <i class="fas fa-list fa-2x opacity-75"></i>
+                                <i class="fas fa-clock fa-2x opacity-75"></i>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-3">
-                <div class="card bg-success text-white card-hover">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4 id="registros-hoje">0</h4>
-                                <p class="mb-0">Registros Hoje</p>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-calendar-day fa-2x opacity-75"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-3">
-                <div class="card bg-info text-white card-hover">
-                    <div class="card-body">
-                        <div id="ultimo-registro">
-                            <small><strong>Último registro:</strong><br>Nenhum registro</small>
                         </div>
                     </div>
                 </div>
@@ -483,13 +459,11 @@
             document.getElementById('hora-saida').value = horaSaida;
             
             carregarRegistros();
-            carregarUltimoRegistro();
             atualizarEstatisticas(usuario.id);
             
             // Atualizar a cada 30 segundos
             setInterval(() => {
                 carregarRegistros();
-                carregarUltimoRegistro();
                 atualizarEstatisticas(usuario.id);
             }, 30000);
         });
@@ -559,7 +533,6 @@
                     
                     // Atualizar dados
                     await carregarRegistros();
-                    await carregarUltimoRegistro();
                     await atualizarEstatisticas(usuario.id);
                     
                 } else {
@@ -638,7 +611,6 @@
                     
                     // Atualizar dados
                     await carregarRegistros();
-                    await carregarUltimoRegistro();
                     await atualizarEstatisticas(usuario.id);
                     
                 } else {
@@ -680,7 +652,7 @@
             }
         }
 
-        // Função para exibir registros em lista - VERSÃO COM HORÁRIOS FIXOS
+        // Função para exibir registros em lista - VERSÃO SIMPLIFICADA
         function exibirRegistros(registros) {
             const lista = document.getElementById('lista-registros');
             const semRegistros = document.getElementById('sem-registros');
@@ -703,34 +675,23 @@
             registros.sort((a, b) => new Date(b.criadoEm) - new Date(a.criadoEm));
 
             lista.innerHTML = registros.map(registro => {
-                const tipoFormatado = formatarTipo(registro.tipo);
-                const badgeClass = getBadgeClass(registro.tipo);
                 const isHoraExtra = registro.horas_extras;
-                
-                // Formatar horários do dia
-                const horariosFormatados = registro.horariosDia ? 
-                    `${registro.horariosDia.entrada} | ${registro.horariosDia.intervalo} | ${registro.horariosDia.retorno} | ${registro.horariosDia.saida}` : 
-                    '--:-- | --:-- | --:-- | --:--';
                 
                 return `
                     <div class="registro-item ${isHoraExtra ? 'hora-extra' : registro.tipo}">
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <div class="d-flex align-items-center mb-2">
-                                    <strong class="me-2">${tipoFormatado}</strong>
+                                    <strong class="me-2">Ponto registrado</strong>
                                     ${isHoraExtra ? '<span class="badge hora-extra-badge me-2">HORA EXTRA</span>' : ''}
-                                    <span class="badge ${badgeClass}">
-                                        ${registro.tipo.toUpperCase()}
-                                    </span>
                                 </div>
                                 <div class="text-muted small">
                                     <i class="fas fa-calendar me-1"></i>${registro.data}
-                                    <i class="fas fa-clock ms-2 me-1"></i>${registro.hora}
                                     ${registro.local ? `<br><i class="fas fa-map-marker-alt me-1"></i>${registro.local}` : ''}
                                     ${registro.observacao ? `<br><i class="fas fa-sticky-note me-1"></i>${registro.observacao}` : ''}
                                 </div>
                                 <div class="horarios-dia">
-                                    <small><strong>Horários do dia:</strong> ${horariosFormatados}</small>
+                                    <small><strong>Horários:</strong> ${registro.horariosDia.texto}</small>
                                 </div>
                             </div>
                         </div>
@@ -739,34 +700,7 @@
             }).join('');
         }
 
-        // Função para carregar último registro
-        async function carregarUltimoRegistro() {
-            try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
-                const response = await fetch(`/api/ultimo-registro/${usuario.id}`);
-                const data = await response.json();
-
-                if (data.success && data.ultimoRegistro) {
-                    const ultimo = data.ultimoRegistro;
-                    const elemento = document.getElementById('ultimo-registro');
-                    if (elemento) {
-                        const tipoFormatado = formatarTipo(ultimo.tipo);
-                        const statusHoraExtra = ultimo.horas_extras ? ' (Hora Extra)' : '';
-                        elemento.innerHTML = `
-                            <small>
-                                <strong>Último registro:</strong><br>
-                                ${tipoFormatado} às ${ultimo.hora}<br>
-                                <em>${ultimo.local}${statusHoraExtra}</em>
-                            </small>
-                        `;
-                    }
-                }
-            } catch (error) {
-                console.error('Erro ao carregar último registro:', error);
-            }
-        }
-
-        // Função para atualizar estatísticas
+        // Função para atualizar estatísticas - APENAS HORAS EXTRAS
         async function atualizarEstatisticas(usuario_id) {
             try {
                 const response = await fetch(`/api/estatisticas/${usuario_id}`);
@@ -774,36 +708,13 @@
 
                 if (data.success) {
                     const stats = data.estatisticas;
-                    const totalElement = document.getElementById('total-registros');
-                    const hojeElement = document.getElementById('registros-hoje');
+                    const horasExtrasElement = document.getElementById('horas-extras');
                     
-                    if (totalElement) totalElement.textContent = stats.totalRegistros;
-                    if (hojeElement) hojeElement.textContent = stats.registrosHoje;
+                    if (horasExtrasElement) horasExtrasElement.textContent = stats.horasExtras;
                 }
             } catch (error) {
                 console.error('Erro ao carregar estatísticas:', error);
             }
-        }
-
-        // Funções auxiliares
-        function formatarTipo(tipo) {
-            const tipos = {
-                'entrada': 'Entrada',
-                'saida': 'Saída',
-                'intervalo': 'Intervalo',
-                'retorno': 'Retorno'
-            };
-            return tipos[tipo] || tipo;
-        }
-
-        function getBadgeClass(tipo) {
-            const classes = {
-                'entrada': 'bg-success',
-                'saida': 'bg-danger',
-                'intervalo': 'bg-warning',
-                'retorno': 'bg-info'
-            };
-            return classes[tipo] || 'bg-secondary';
         }
 
         // Função para alterar senha
