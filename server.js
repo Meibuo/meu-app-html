@@ -243,16 +243,20 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ========== ROTAS ADMINISTRATIVAS SEM AUTENTICAÇÃO ==========
+// ========== ROTAS ADMINISTRATIVAS ==========
 
 // ROTA PARA LISTAR TODOS OS USUÁRIOS
 app.get('/api/admin/usuarios', async (req, res) => {
   try {
+    console.log('📋 Buscando lista de usuários...');
+    
     const result = await pool.query(`
       SELECT id, nome, email, telefone, cargo, is_admin, status, criado_em 
       FROM users 
       ORDER BY nome
     `);
+
+    console.log(`✅ ${result.rows.length} usuários encontrados`);
 
     const usuarios = result.rows.map(user => ({
       id: user.id,
@@ -271,7 +275,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao listar usuários:', error);
+    console.error('❌ Erro ao listar usuários:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
@@ -280,6 +284,8 @@ app.get('/api/admin/usuarios', async (req, res) => {
 app.post('/api/admin/cadastro', async (req, res) => {
   try {
     const { nome, email, telefone, senha, cargo, isAdmin } = req.body;
+    
+    console.log('👤 Tentativa de cadastro:', email);
     
     if (!nome || !email || !senha) {
       return res.status(400).json({ success: false, error: 'Nome, e-mail e senha são obrigatórios' });
@@ -301,6 +307,8 @@ app.post('/api/admin/cadastro', async (req, res) => {
       [userId, nome, emailLimpo, telefone || null, hashedPassword, cargo || 'Terceiro', isAdmin || false, 'ativo']
     );
 
+    console.log('✅ Usuário cadastrado com sucesso:', emailLimpo);
+
     res.json({ 
       success: true, 
       message: 'Usuário cadastrado com sucesso!',
@@ -316,7 +324,7 @@ app.post('/api/admin/cadastro', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro no cadastro:', error);
+    console.error('❌ Erro no cadastro:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
@@ -326,6 +334,8 @@ app.put('/api/admin/usuarios/:usuario_id', async (req, res) => {
   try {
     const { usuario_id } = req.params;
     const { nome, email, telefone, cargo, isAdmin, senha } = req.body;
+
+    console.log('✏️ Editando usuário:', usuario_id);
 
     // Verificar se usuário existe
     const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
@@ -403,13 +413,15 @@ app.put('/api/admin/usuarios/:usuario_id', async (req, res) => {
       'Seus dados foram atualizados pelo administrador. Verifique suas informações.'
     );
 
+    console.log('✅ Usuário atualizado com sucesso:', usuario_id);
+
     res.json({
       success: true,
       message: 'Usuário atualizado com sucesso!'
     });
 
   } catch (error) {
-    console.error('Erro ao editar usuário:', error);
+    console.error('❌ Erro ao editar usuário:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
@@ -418,6 +430,8 @@ app.put('/api/admin/usuarios/:usuario_id', async (req, res) => {
 app.delete('/api/admin/usuarios/:usuario_id', async (req, res) => {
   try {
     const { usuario_id } = req.params;
+
+    console.log('🗑️ Excluindo usuário:', usuario_id);
 
     // Verificar se usuário existe
     const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
@@ -439,13 +453,15 @@ app.delete('/api/admin/usuarios/:usuario_id', async (req, res) => {
     // Depois excluir o usuário
     await pool.query('DELETE FROM users WHERE id = $1', [usuario_id]);
 
+    console.log('✅ Usuário excluído com sucesso:', usuario_id);
+
     res.json({
       success: true,
       message: 'Usuário excluído com sucesso!'
     });
 
   } catch (error) {
-    console.error('Erro ao excluir usuário:', error);
+    console.error('❌ Erro ao excluir usuário:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
@@ -454,6 +470,8 @@ app.delete('/api/admin/usuarios/:usuario_id', async (req, res) => {
 app.post('/api/admin/redefinir-senha', async (req, res) => {
   try {
     const { usuario_id_reset } = req.body;
+
+    console.log('🔑 Redefinindo senha para usuário:', usuario_id_reset);
 
     if (!usuario_id_reset) {
       return res.status(400).json({ success: false, error: 'ID do usuário é obrigatório' });
@@ -481,6 +499,8 @@ app.post('/api/admin/redefinir-senha', async (req, res) => {
       'Sua senha foi redefinida pelo administrador. A nova senha é: 123456 - Recomendamos que altere sua senha após o primeiro login.'
     );
 
+    console.log('✅ Senha redefinida com sucesso para:', usuario_id_reset);
+
     res.json({
       success: true,
       message: 'Senha redefinida com sucesso! A nova senha é: 123456',
@@ -488,15 +508,17 @@ app.post('/api/admin/redefinir-senha', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao redefinir senha:', error);
+    console.error('❌ Erro ao redefinir senha:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
 
-// ROTA PARA BUSCAR TODOS OS REGISTROS - CORRIGIDA
+// ROTA PARA BUSCAR TODOS OS REGISTROS
 app.get('/api/admin/registros', async (req, res) => {
   try {
     const { usuario_id_filter, data_inicio, data_fim, limit = 200 } = req.query;
+
+    console.log('📊 Buscando registros admin - Filtros:', { usuario_id_filter, data_inicio, data_fim });
 
     let query = `
       SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email, u.cargo as usuario_cargo
@@ -523,6 +545,8 @@ app.get('/api/admin/registros', async (req, res) => {
     params.push(parseInt(limit));
 
     const result = await pool.query(query, params);
+
+    console.log(`✅ ${result.rows.length} registros encontrados`);
 
     const registros = result.rows.map(reg => {
       let dataFormatada;
@@ -563,7 +587,7 @@ app.get('/api/admin/registros', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao buscar registros admin:', error);
+    console.error('❌ Erro ao buscar registros admin:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
@@ -573,6 +597,8 @@ app.put('/api/admin/registros/:registro_id', async (req, res) => {
   try {
     const { registro_id } = req.params;
     const { data_custom, hora_entrada, hora_saida, local, observacao, horas_extras } = req.body;
+
+    console.log('✏️ Editando registro:', registro_id);
 
     // Verificar se registro existe
     const registroExists = await pool.query(`
@@ -646,13 +672,15 @@ app.put('/api/admin/registros/:registro_id', async (req, res) => {
       `Seu registro de ponto do dia ${new Date(registro.criado_em).toLocaleDateString('pt-BR')} foi modificado pelo administrador. Verifique as alterações realizadas.`
     );
 
+    console.log('✅ Registro atualizado com sucesso:', registro_id);
+
     res.json({
       success: true,
       message: 'Registro atualizado com sucesso!'
     });
 
   } catch (error) {
-    console.error('Erro ao editar registro:', error);
+    console.error('❌ Erro ao editar registro:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
@@ -661,6 +689,8 @@ app.put('/api/admin/registros/:registro_id', async (req, res) => {
 app.delete('/api/admin/registros/:registro_id', async (req, res) => {
   try {
     const { registro_id } = req.params;
+
+    console.log('🗑️ Excluindo registro:', registro_id);
 
     // Verificar se o registro existe
     const registroResult = await pool.query(
@@ -684,6 +714,8 @@ app.delete('/api/admin/registros/:registro_id', async (req, res) => {
       `Um registro de ponto do dia ${new Date(registro.criado_em).toLocaleDateString('pt-BR')} foi excluído pelo administrador.`
     );
 
+    console.log('✅ Registro excluído com sucesso:', registro_id);
+
     res.json({
       success: true,
       message: 'Registro excluído com sucesso!'
@@ -701,6 +733,8 @@ app.delete('/api/admin/registros/:registro_id', async (req, res) => {
 // ROTA PARA ESTATÍSTICAS DO SISTEMA
 app.get('/api/admin/estatisticas', async (req, res) => {
   try {
+    console.log('📈 Buscando estatísticas do sistema...');
+
     // Total de usuários
     const usersResult = await pool.query('SELECT COUNT(*) FROM users');
     const totalUsers = parseInt(usersResult.rows[0].count);
@@ -720,6 +754,8 @@ app.get('/api/admin/estatisticas', async (req, res) => {
     `);
     const registrosHoje = parseInt(hojeResult.rows[0].count);
 
+    console.log('✅ Estatísticas carregadas:', { totalUsers, totalAdmins, totalRegistros, registrosHoje });
+
     res.json({
       success: true,
       estatisticas: {
@@ -731,10 +767,446 @@ app.get('/api/admin/estatisticas', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao buscar estatísticas:', error);
+    console.error('❌ Erro ao buscar estatísticas:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
+
+// ========== ROTAS DE EXPORTAÇÃO ==========
+
+// ROTA PARA EXPORTAR EXCEL (ADMIN)
+app.get('/api/exportar/excel/admin', async (req, res) => {
+  try {
+    const { usuario_id_filter, data_inicio, data_fim } = req.query;
+
+    console.log('📊 Exportando Excel admin - Filtros:', { usuario_id_filter, data_inicio, data_fim });
+
+    let query = `
+      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email, u.cargo as usuario_cargo
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramCount = 1;
+
+    if (usuario_id_filter) {
+      query += ` AND rp.usuario_id = $${paramCount}`;
+      params.push(usuario_id_filter);
+      paramCount++;
+    }
+
+    if (data_inicio && data_fim) {
+      query += ` AND DATE(rp.criado_em) BETWEEN $${paramCount} AND $${paramCount + 1}`;
+      params.push(data_inicio, data_fim);
+      paramCount += 2;
+    }
+
+    query += ` ORDER BY rp.criado_em DESC`;
+
+    const result = await pool.query(query, params);
+    const registros = result.rows;
+
+    console.log(`📊 Exportando ${registros.length} registros para Excel`);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Relatório Admin');
+
+    worksheet.columns = [
+      { header: 'Usuário', key: 'usuario_nome', width: 20 },
+      { header: 'Cargo', key: 'usuario_cargo', width: 15 },
+      { header: 'Data', key: 'data', width: 12 },
+      { header: 'Hora Entrada', key: 'hora_entrada', width: 12 },
+      { header: 'Hora Saída', key: 'hora_saida', width: 12 },
+      { header: 'Local', key: 'local', width: 15 },
+      { header: 'Observação', key: 'observacao', width: 25 },
+      { header: 'Horas Extras', key: 'horas_extras', width: 12 },
+      { header: 'Tipo', key: 'tipo', width: 15 }
+    ];
+
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4472C4' }
+    };
+
+    registros.forEach(registro => {
+      let dataFormatada;
+      
+      if (registro.data_custom && typeof registro.data_custom === 'string') {
+        try {
+          const [year, month, day] = registro.data_custom.split('-');
+          dataFormatada = `${day}/${month}/${year}`;
+        } catch (error) {
+          const data = new Date(registro.criado_em);
+          dataFormatada = data.toLocaleDateString('pt-BR');
+        }
+      } else {
+        const data = new Date(registro.criado_em);
+        dataFormatada = data.toLocaleDateString('pt-BR');
+      }
+
+      worksheet.addRow({
+        usuario_nome: registro.usuario_nome,
+        usuario_cargo: registro.usuario_cargo,
+        data: dataFormatada,
+        hora_entrada: registro.hora_entrada || '',
+        hora_saida: registro.hora_saida || '',
+        local: registro.local || '',
+        observacao: registro.observacao || '',
+        horas_extras: registro.horas_extras ? 'Sim' : 'Não',
+        tipo: registro.tipo
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=relatorio-admin-${Date.now()}.xlsx`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+    console.log('✅ Excel exportado com sucesso');
+
+  } catch (error) {
+    console.error('❌ Erro ao exportar Excel admin:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA EXPORTAR PDF (ADMIN)
+app.get('/api/exportar/pdf/admin', async (req, res) => {
+  try {
+    const { usuario_id_filter, data_inicio, data_fim } = req.query;
+
+    console.log('📄 Exportando PDF admin - Filtros:', { usuario_id_filter, data_inicio, data_fim });
+
+    let query = `
+      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email, u.cargo as usuario_cargo
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramCount = 1;
+
+    if (usuario_id_filter) {
+      query += ` AND rp.usuario_id = $${paramCount}`;
+      params.push(usuario_id_filter);
+      paramCount++;
+    }
+
+    if (data_inicio && data_fim) {
+      query += ` AND DATE(rp.criado_em) BETWEEN $${paramCount} AND $${paramCount + 1}`;
+      params.push(data_inicio, data_fim);
+      paramCount += 2;
+    }
+
+    query += ` ORDER BY rp.criado_em DESC`;
+
+    const result = await pool.query(query, params);
+    const registros = result.rows;
+
+    console.log(`📄 Exportando ${registros.length} registros para PDF`);
+
+    // Criar PDF
+    const doc = new PDFDocument();
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=relatorio-admin-${Date.now()}.pdf`);
+    
+    doc.pipe(res);
+
+    // Cabeçalho
+    doc.fontSize(20).text('Relatório Administrativo', 50, 50);
+    doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 50, 80);
+    
+    // Informações do filtro
+    let yPosition = 110;
+    if (usuario_id_filter || data_inicio || data_fim) {
+      doc.fontSize(10).text('Filtros aplicados:', 50, yPosition);
+      yPosition += 20;
+      
+      if (usuario_id_filter) {
+        const usuario = registros.length > 0 ? registros[0].usuario_nome : 'Usuário específico';
+        doc.text(`Usuário: ${usuario}`, 50, yPosition);
+        yPosition += 15;
+      }
+      
+      if (data_inicio && data_fim) {
+        doc.text(`Período: ${data_inicio} à ${data_fim}`, 50, yPosition);
+        yPosition += 15;
+      }
+      
+      yPosition += 10;
+    }
+
+    // Tabela
+    const tableTop = yPosition + 20;
+    let currentY = tableTop;
+
+    // Cabeçalho da tabela
+    doc.fontSize(8).text('Usuário', 50, currentY);
+    doc.text('Data', 150, currentY);
+    doc.text('Entrada', 200, currentY);
+    doc.text('Saída', 250, currentY);
+    doc.text('Local', 300, currentY);
+    doc.text('H.Extras', 380, currentY);
+
+    currentY += 20;
+
+    // Linhas da tabela
+    registros.forEach((registro, index) => {
+      if (currentY > 700) { // Nova página se necessário
+        doc.addPage();
+        currentY = 50;
+      }
+
+      let dataFormatada;
+      
+      if (registro.data_custom && typeof registro.data_custom === 'string') {
+        try {
+          const [year, month, day] = registro.data_custom.split('-');
+          dataFormatada = `${day}/${month}/${year}`;
+        } catch (error) {
+          const data = new Date(registro.criado_em);
+          dataFormatada = data.toLocaleDateString('pt-BR');
+        }
+      } else {
+        const data = new Date(registro.criado_em);
+        dataFormatada = data.toLocaleDateString('pt-BR');
+      }
+
+      doc.text(registro.usuario_nome.substring(0, 15), 50, currentY);
+      doc.text(dataFormatada, 150, currentY);
+      doc.text(registro.hora_entrada || '-', 200, currentY);
+      doc.text(registro.hora_saida || '-', 250, currentY);
+      doc.text((registro.local || '-').substring(0, 10), 300, currentY);
+      doc.text(registro.horas_extras ? 'Sim' : 'Não', 380, currentY);
+
+      currentY += 15;
+    });
+
+    // Rodapé
+    doc.fontSize(10).text(`Total de registros: ${registros.length}`, 50, currentY + 20);
+
+    doc.end();
+
+    console.log('✅ PDF exportado com sucesso');
+
+  } catch (error) {
+    console.error('❌ Erro ao exportar PDF admin:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA EXPORTAR PARA EXCEL (USUÁRIO)
+app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    const { data_inicio, data_fim } = req.query;
+
+    console.log('📊 Exportando Excel para usuário:', usuario_id);
+
+    let query = `
+      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE rp.usuario_id = $1
+    `;
+    let params = [usuario_id];
+
+    if (data_inicio && data_fim) {
+      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
+      params.push(data_inicio, data_fim);
+    }
+
+    query += ` ORDER BY rp.criado_em DESC`;
+
+    const result = await pool.query(query, params);
+    const registros = result.rows;
+
+    console.log(`📊 Exportando ${registros.length} registros para Excel`);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Registros de Ponto');
+
+    worksheet.columns = [
+      { header: 'Data', key: 'data', width: 15 },
+      { header: 'Hora', key: 'hora', width: 10 },
+      { header: 'Tipo', key: 'tipo', width: 15 },
+      { header: 'Local', key: 'local', width: 20 },
+      { header: 'Horas Extras', key: 'horas_extras', width: 12 },
+      { header: 'Hora Entrada', key: 'hora_entrada', width: 12 },
+      { header: 'Hora Saída', key: 'hora_saida', width: 12 },
+      { header: 'Observação', key: 'observacao', width: 30 },
+      { header: 'Usuário', key: 'usuario_nome', width: 20 },
+      { header: 'E-mail', key: 'usuario_email', width: 25 }
+    ];
+
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4472C4' }
+    };
+
+    registros.forEach(registro => {
+      const data = new Date(registro.criado_em);
+      const dataFormatada = data.toLocaleDateString('pt-BR');
+      const horaFormatada = data.toLocaleTimeString('pt-BR');
+
+      let dataCustomFormatada = dataFormatada;
+      if (registro.data_custom && typeof registro.data_custom === 'string') {
+        try {
+          const [year, month, day] = registro.data_custom.split('-');
+          dataCustomFormatada = `${day}/${month}/${year}`;
+        } catch (error) {
+          // Usa a data padrão se houver erro
+        }
+      }
+
+      worksheet.addRow({
+        data: dataCustomFormatada,
+        hora: horaFormatada,
+        tipo: registro.tipo,
+        local: registro.local || '',
+        horas_extras: registro.horas_extras ? 'Sim' : 'Não',
+        hora_entrada: registro.hora_entrada || '',
+        hora_saida: registro.hora_saida || '',
+        observacao: registro.observacao || '',
+        usuario_nome: registro.usuario_nome,
+        usuario_email: registro.usuario_email
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.xlsx`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+
+    console.log('✅ Excel exportado com sucesso');
+
+  } catch (error) {
+    console.error('❌ Erro ao exportar Excel:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor: ' + error.message
+    });
+  }
+});
+
+// ROTA PARA EXPORTAR PARA PDF (USUÁRIO)
+app.get('/api/exportar/pdf/:usuario_id', async (req, res) => {
+  try {
+    const usuario_id = req.params.usuario_id;
+    const { data_inicio, data_fim } = req.query;
+
+    console.log('📄 Exportando PDF para usuário:', usuario_id);
+
+    let query = `
+      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE rp.usuario_id = $1
+    `;
+    let params = [usuario_id];
+
+    if (data_inicio && data_fim) {
+      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
+      params.push(data_inicio, data_fim);
+    }
+
+    query += ` ORDER BY rp.criado_em DESC`;
+
+    const result = await pool.query(query, params);
+    const registros = result.rows;
+
+    console.log(`📄 Exportando ${registros.length} registros para PDF`);
+
+    // Criar PDF
+    const doc = new PDFDocument();
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.pdf`);
+    
+    doc.pipe(res);
+
+    // Cabeçalho
+    doc.fontSize(20).text('Relatório de Ponto', 50, 50);
+    doc.fontSize(12).text(`Usuário: ${registros.length > 0 ? registros[0].usuario_nome : 'N/A'}`, 50, 80);
+    doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 50, 100);
+    
+    // Informações do filtro
+    let yPosition = 130;
+    if (data_inicio && data_fim) {
+      doc.fontSize(10).text(`Período: ${data_inicio} à ${data_fim}`, 50, yPosition);
+      yPosition += 20;
+    }
+
+    // Tabela
+    const tableTop = yPosition + 20;
+    let currentY = tableTop;
+
+    // Cabeçalho da tabela
+    doc.fontSize(8).text('Data', 50, currentY);
+    doc.text('Hora', 100, currentY);
+    doc.text('Tipo', 150, currentY);
+    doc.text('Local', 200, currentY);
+    doc.text('H.Extras', 280, currentY);
+    doc.text('Observação', 330, currentY);
+
+    currentY += 20;
+
+    // Linhas da tabela
+    registros.forEach((registro, index) => {
+      if (currentY > 700) { // Nova página se necessário
+        doc.addPage();
+        currentY = 50;
+      }
+
+      const data = new Date(registro.criado_em);
+      const dataFormatada = data.toLocaleDateString('pt-BR');
+      const horaFormatada = data.toLocaleTimeString('pt-BR');
+
+      let dataCustomFormatada = dataFormatada;
+      if (registro.data_custom && typeof registro.data_custom === 'string') {
+        try {
+          const [year, month, day] = registro.data_custom.split('-');
+          dataCustomFormatada = `${day}/${month}/${year}`;
+        } catch (error) {
+          // Usa a data padrão se houver erro
+        }
+      }
+
+      doc.text(dataCustomFormatada, 50, currentY);
+      doc.text(horaFormatada, 100, currentY);
+      doc.text(registro.tipo, 150, currentY);
+      doc.text((registro.local || '-').substring(0, 15), 200, currentY);
+      doc.text(registro.horas_extras ? 'Sim' : 'Não', 280, currentY);
+      doc.text((registro.observacao || '-').substring(0, 20), 330, currentY);
+
+      currentY += 15;
+    });
+
+    // Rodapé
+    doc.fontSize(10).text(`Total de registros: ${registros.length}`, 50, currentY + 20);
+
+    doc.end();
+
+    console.log('✅ PDF exportado com sucesso');
+
+  } catch (error) {
+    console.error('❌ Erro ao exportar PDF:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erro interno do servidor: ' + error.message
+    });
+  }
+});
+
+// ========== ROTAS DO USUÁRIO COMUM ==========
 
 // ROTA PARA OBTER NOTIFICAÇÕES
 app.get('/api/notificacoes/:usuario_id', async (req, res) => {
@@ -787,8 +1259,6 @@ app.put('/api/notificacoes/:notificacao_id/lida', async (req, res) => {
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
-
-// ========== ROTAS DO USUÁRIO COMUM ==========
 
 // ROTA DE ATUALIZAÇÃO DE PERFIL
 app.put('/api/perfil', async (req, res) => {
@@ -997,6 +1467,8 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
     const usuario_id = req.params.usuario_id;
     const { limit = 50 } = req.query;
 
+    console.log('📋 Buscando registros para usuário:', usuario_id);
+
     const result = await pool.query(
       `SELECT * FROM registros_ponto 
        WHERE usuario_id = $1 
@@ -1004,6 +1476,8 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
        LIMIT $2`,
       [usuario_id, parseInt(limit)]
     );
+
+    console.log(`✅ ${result.rows.length} registros encontrados`);
 
     const registros = result.rows.map(reg => {
       let dataFormatada;
@@ -1092,6 +1566,8 @@ app.delete('/api/registros/:registro_id', async (req, res) => {
   try {
     const { registro_id } = req.params;
 
+    console.log('🗑️ Excluindo registro:', registro_id);
+
     // Verificar se o registro existe
     const registroResult = await pool.query(
       'SELECT * FROM registros_ponto WHERE id = $1',
@@ -1105,6 +1581,8 @@ app.delete('/api/registros/:registro_id', async (req, res) => {
     // Excluir o registro
     await pool.query('DELETE FROM registros_ponto WHERE id = $1', [registro_id]);
 
+    console.log('✅ Registro excluído com sucesso:', registro_id);
+
     res.json({
       success: true,
       message: 'Registro excluído com sucesso!'
@@ -1112,87 +1590,6 @@ app.delete('/api/registros/:registro_id', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao excluir registro:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erro interno do servidor: ' + error.message
-    });
-  }
-});
-
-// ROTA PARA EXPORTAR PARA EXCEL
-app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
-  try {
-    const usuario_id = req.params.usuario_id;
-    const { data_inicio, data_fim } = req.query;
-
-    let query = `
-      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
-      FROM registros_ponto rp 
-      JOIN users u ON rp.usuario_id = u.id 
-      WHERE rp.usuario_id = $1
-    `;
-    let params = [usuario_id];
-
-    if (data_inicio && data_fim) {
-      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
-      params.push(data_inicio, data_fim);
-    }
-
-    query += ` ORDER BY rp.criado_em DESC`;
-
-    const result = await pool.query(query, params);
-    const registros = result.rows;
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Registros de Ponto');
-
-    worksheet.columns = [
-      { header: 'Data', key: 'data', width: 15 },
-      { header: 'Hora', key: 'hora', width: 10 },
-      { header: 'Tipo', key: 'tipo', width: 15 },
-      { header: 'Local', key: 'local', width: 20 },
-      { header: 'Horas Extras', key: 'horas_extras', width: 12 },
-      { header: 'Hora Entrada', key: 'hora_entrada', width: 12 },
-      { header: 'Hora Saída', key: 'hora_saida', width: 12 },
-      { header: 'Observação', key: 'observacao', width: 30 },
-      { header: 'Usuário', key: 'usuario_nome', width: 20 },
-      { header: 'E-mail', key: 'usuario_email', width: 25 }
-    ];
-
-    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: '4472C4' }
-    };
-
-    registros.forEach(registro => {
-      const data = new Date(registro.criado_em);
-      const dataFormatada = data.toLocaleDateString('pt-BR');
-      const horaFormatada = data.toLocaleTimeString('pt-BR');
-
-      worksheet.addRow({
-        data: dataFormatada,
-        hora: horaFormatada,
-        tipo: registro.tipo,
-        local: registro.local || '',
-        horas_extras: registro.horas_extras ? 'Sim' : 'Não',
-        hora_entrada: registro.hora_entrada || '',
-        hora_saida: registro.hora_saida || '',
-        observacao: registro.observacao || '',
-        usuario_nome: registro.usuario_nome,
-        usuario_email: registro.usuario_email
-      });
-    });
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.xlsx`);
-
-    await workbook.xlsx.write(res);
-    res.end();
-
-  } catch (error) {
-    console.error('❌ Erro ao exportar Excel:', error);
     res.status(500).json({
       success: false,
       error: 'Erro interno do servidor: ' + error.message

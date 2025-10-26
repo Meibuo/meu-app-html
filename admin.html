@@ -56,6 +56,20 @@
             gap: 10px;
             flex-wrap: wrap;
         }
+        .relatorio-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+        .relatorio-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .table-responsive {
+            max-height: 600px;
+        }
+        .loading-spinner {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -206,7 +220,18 @@
                                 </tr>
                             </thead>
                             <tbody id="usuarios-body">
-                                <!-- Usuários serão carregados aqui -->
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <div class="loading-spinner" id="loading-usuarios">
+                                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                            <p class="mt-2">Carregando usuários...</p>
+                                        </div>
+                                        <div id="no-users" style="display: none;">
+                                            <i class="fas fa-users fa-2x mb-2"></i><br>
+                                            Nenhum usuário encontrado
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -255,7 +280,18 @@
                                 </tr>
                             </thead>
                             <tbody id="registros-admin-body">
-                                <!-- Registros serão carregados aqui -->
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <div class="loading-spinner" id="loading-registros">
+                                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                            <p class="mt-2">Carregando registros...</p>
+                                        </div>
+                                        <div id="no-registros" style="display: none;">
+                                            <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                                            Nenhum registro encontrado
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -269,63 +305,99 @@
             
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Relatórios Avançados</h5>
+                    <h5 class="card-title mb-0">Filtros do Relatório</h5>
                 </div>
                 <div class="card-body">
                     <div class="row mb-4">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h5><i class="fas fa-chart-line text-primary"></i> Relatório de Frequência</h5>
-                                    <p class="text-muted">Relatório detalhado de frequência por período</p>
-                                    <button class="btn btn-primary" onclick="gerarRelatorioFrequencia()">
-                                        <i class="fas fa-download"></i> Gerar Relatório
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="col-md-4">
+                            <label for="relatorio-usuario" class="form-label">Usuário</label>
+                            <select class="form-select" id="relatorio-usuario">
+                                <option value="">Todos os usuários</option>
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h5><i class="fas fa-clock text-warning"></i> Relatório de Horas Extras</h5>
-                                    <p class="text-muted">Relatório consolidado de horas extras</p>
-                                    <button class="btn btn-warning" onclick="gerarRelatorioHorasExtras()">
-                                        <i class="fas fa-download"></i> Gerar Relatório
-                                    </button>
-                                </div>
+                        <div class="col-md-3">
+                            <label for="relatorio-data-inicio" class="form-label">Data Início</label>
+                            <input type="date" class="form-control" id="relatorio-data-inicio">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="relatorio-data-fim" class="form-label">Data Fim</label>
+                            <input type="date" class="form-control" id="relatorio-data-fim">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-success w-100" onclick="gerarRelatorio()">
+                                <i class="fas fa-play"></i> Gerar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards de Relatórios -->
+            <div class="row mt-4">
+                <div class="col-md-6 mb-4">
+                    <div class="card relatorio-card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-line"></i> Relatório de Frequência
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Relatório detalhado de frequência por período</p>
+                            <div id="relatorio-frequencia">
+                                <p class="text-center text-muted">Selecione os filtros e clique em Gerar</p>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6>Filtros do Relatório</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <label for="relatorio-usuario" class="form-label">Usuário</label>
-                                            <select class="form-select" id="relatorio-usuario">
-                                                <option value="">Todos os usuários</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="relatorio-data-inicio" class="form-label">Data Início</label>
-                                            <input type="date" class="form-control" id="relatorio-data-inicio">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="relatorio-data-fim" class="form-label">Data Fim</label>
-                                            <input type="date" class="form-control" id="relatorio-data-fim">
-                                        </div>
-                                        <div class="col-md-2 d-flex align-items-end">
-                                            <button class="btn btn-success w-100" onclick="gerarRelatorioCompleto()">
-                                                <i class="fas fa-file-alt"></i> Gerar
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="card relatorio-card">
+                        <div class="card-header bg-warning text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-clock"></i> Relatório de Horas Extras
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Relatório consolidado de horas extras</p>
+                            <div id="relatorio-horas-extras">
+                                <p class="text-center text-muted">Selecione os filtros e clique em Gerar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relatório Completo -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card relatorio-card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-file-alt"></i> Relatório Completo
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Usuário</th>
+                                            <th>Data</th>
+                                            <th>Entrada</th>
+                                            <th>Saída</th>
+                                            <th>Horas Trabalhadas</th>
+                                            <th>Horas Extras</th>
+                                            <th>Local</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="relatorio-completo-body">
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                Selecione os filtros e clique em Gerar
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -435,6 +507,9 @@
     <script>
         // ========== FUNÇÕES DO PAINEL ADMIN ==========
 
+        let usuariosList = [];
+        let registrosList = [];
+
         // Verificar autenticação e admin
         document.addEventListener('DOMContentLoaded', function() {
             const usuario = JSON.parse(localStorage.getItem('usuario'));
@@ -465,6 +540,13 @@
                 link.classList.remove('active');
             });
             event.target.classList.add('active');
+
+            // Recarregar dados se necessário
+            if (sectionName === 'usuarios') {
+                carregarUsuarios();
+            } else if (sectionName === 'registros') {
+                carregarRegistrosAdmin();
+            }
         }
 
         // Carregar estatísticas do sistema
@@ -485,31 +567,40 @@
             }
         }
 
-        // Carregar lista de usuários
+        // Carregar lista de usuários - CORRIGIDA
         async function carregarUsuarios() {
             try {
+                // Mostrar loading
+                document.getElementById('loading-usuarios').style.display = 'block';
+                document.getElementById('no-users').style.display = 'none';
+
                 const response = await fetch('/api/admin/usuarios');
                 const data = await response.json();
                 
                 if (data.success) {
+                    usuariosList = data.usuarios;
                     exibirUsuarios(data.usuarios);
                     popularFiltroUsuarios(data.usuarios);
                     popularFiltroRelatorioUsuarios(data.usuarios);
                 } else {
                     console.error('Erro na resposta da API:', data);
                     showAlert('❌ Erro ao carregar usuários: ' + (data.error || 'Erro desconhecido'), 'danger');
+                    document.getElementById('no-users').style.display = 'block';
                 }
             } catch (error) {
                 console.error('Erro ao carregar usuários:', error);
                 showAlert('❌ Erro ao carregar usuários: ' + error.message, 'danger');
+                document.getElementById('no-users').style.display = 'block';
+            } finally {
+                document.getElementById('loading-usuarios').style.display = 'none';
             }
         }
 
-        // Exibir usuários na tabela
+        // Exibir usuários na tabela - CORRIGIDA
         function exibirUsuarios(usuarios) {
             const tbody = document.getElementById('usuarios-body');
             
-            if (usuarios.length === 0) {
+            if (!usuarios || usuarios.length === 0) {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="7" class="text-center text-muted py-4">
@@ -585,25 +676,20 @@
         // Editar usuário
         async function editarUsuario(usuarioId) {
             try {
-                const response = await fetch('/api/admin/usuarios');
-                const data = await response.json();
-                
-                if (data.success) {
-                    const usuarioEditar = data.usuarios.find(u => u.id === usuarioId);
-                    if (usuarioEditar) {
-                        document.getElementById('modalUsuarioTitle').textContent = 'Editar Usuário';
-                        document.getElementById('usuario-id').value = usuarioEditar.id;
-                        document.getElementById('nome').value = usuarioEditar.nome;
-                        document.getElementById('email').value = usuarioEditar.email;
-                        document.getElementById('telefone').value = usuarioEditar.telefone || '';
-                        document.getElementById('cargo').value = usuarioEditar.cargo;
-                        document.getElementById('is-admin').checked = usuarioEditar.isAdmin;
-                        document.getElementById('senha').required = false;
-                        document.getElementById('senha').placeholder = 'Deixe em branco para manter a senha atual';
-                        
-                        const modal = new bootstrap.Modal(document.getElementById('modalUsuario'));
-                        modal.show();
-                    }
+                const usuario = usuariosList.find(u => u.id === usuarioId);
+                if (usuario) {
+                    document.getElementById('modalUsuarioTitle').textContent = 'Editar Usuário';
+                    document.getElementById('usuario-id').value = usuario.id;
+                    document.getElementById('nome').value = usuario.nome;
+                    document.getElementById('email').value = usuario.email;
+                    document.getElementById('telefone').value = usuario.telefone || '';
+                    document.getElementById('cargo').value = usuario.cargo;
+                    document.getElementById('is-admin').checked = usuario.isAdmin;
+                    document.getElementById('senha').required = false;
+                    document.getElementById('senha').placeholder = 'Deixe em branco para manter a senha atual';
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('modalUsuario'));
+                    modal.show();
                 }
             } catch (error) {
                 console.error('Erro ao carregar usuário:', error);
@@ -699,7 +785,7 @@
             }
         }
 
-        // Redefinir senha do usuário - AGORA COM SENHA PADRÃO 123456
+        // Redefinir senha do usuário
         async function redefinirSenha(usuarioId) {
             if (!confirm('Deseja redefinir a senha deste usuário? A nova senha será: 123456')) {
                 return;
@@ -732,6 +818,9 @@
         // Carregar registros administrativos
         async function carregarRegistrosAdmin() {
             try {
+                document.getElementById('loading-registros').style.display = 'block';
+                document.getElementById('no-registros').style.display = 'none';
+
                 const userId = document.getElementById('filter-user').value;
                 const startDate = document.getElementById('filter-start').value;
                 const endDate = document.getElementById('filter-end').value;
@@ -748,14 +837,19 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    registrosList = data.registros;
                     exibirRegistrosAdmin(data.registros);
                 } else {
                     console.error('Erro na resposta da API:', data);
                     showAlert('❌ Erro ao carregar registros: ' + (data.error || 'Erro desconhecido'), 'danger');
+                    document.getElementById('no-registros').style.display = 'block';
                 }
             } catch (error) {
                 console.error('Erro ao carregar registros:', error);
                 showAlert('❌ Erro ao carregar registros: ' + error.message, 'danger');
+                document.getElementById('no-registros').style.display = 'block';
+            } finally {
+                document.getElementById('loading-registros').style.display = 'none';
             }
         }
 
@@ -799,36 +893,30 @@
         // Editar registro
         async function editarRegistro(registroId) {
             try {
-                // Buscar dados do registro
-                const response = await fetch(`/api/admin/registros`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    const registro = data.registros.find(r => r.id === registroId);
-                    if (registro) {
-                        document.getElementById('registro-id').value = registro.id;
-                        
-                        // Converter data para formato YYYY-MM-DD
-                        const dataParts = registro.data.split('/');
-                        const dataFormatada = `${dataParts[2]}-${dataParts[1]}-${dataParts[0]}`;
-                        
-                        document.getElementById('edit-data').value = dataFormatada;
-                        
-                        // Preencher horários de entrada e saída para registros normais também
-                        if (registro.hora_entrada && registro.hora_entrada !== '-') {
-                            document.getElementById('edit-hora-entrada').value = registro.hora_entrada;
-                        }
-                        if (registro.hora_saida && registro.hora_saida !== '-') {
-                            document.getElementById('edit-hora-saida').value = registro.hora_saida;
-                        }
-                        
-                        document.getElementById('edit-local').value = registro.local || '';
-                        document.getElementById('edit-observacao').value = registro.observacao || '';
-                        document.getElementById('edit-horas-extras').checked = registro.horas_extras;
-                        
-                        const modal = new bootstrap.Modal(document.getElementById('modalEditarRegistro'));
-                        modal.show();
+                const registro = registrosList.find(r => r.id === registroId);
+                if (registro) {
+                    document.getElementById('registro-id').value = registro.id;
+                    
+                    // Converter data para formato YYYY-MM-DD
+                    const dataParts = registro.data.split('/');
+                    const dataFormatada = `${dataParts[2]}-${dataParts[1].padStart(2, '0')}-${dataParts[0].padStart(2, '0')}`;
+                    
+                    document.getElementById('edit-data').value = dataFormatada;
+                    
+                    // Preencher horários
+                    if (registro.hora_entrada && registro.hora_entrada !== '-') {
+                        document.getElementById('edit-hora-entrada').value = registro.hora_entrada;
                     }
+                    if (registro.hora_saida && registro.hora_saida !== '-') {
+                        document.getElementById('edit-hora-saida').value = registro.hora_saida;
+                    }
+                    
+                    document.getElementById('edit-local').value = registro.local || '';
+                    document.getElementById('edit-observacao').value = registro.observacao || '';
+                    document.getElementById('edit-horas-extras').checked = registro.horas_extras;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('modalEditarRegistro'));
+                    modal.show();
                 }
             } catch (error) {
                 console.error('Erro ao carregar registro:', error);
@@ -910,7 +998,7 @@
                 const startDate = document.getElementById('filter-start').value;
                 const endDate = document.getElementById('filter-end').value;
 
-                let url = `/api/admin/exportar-excel`;
+                let url = `/api/exportar/excel/admin`;
                 const params = new URLSearchParams();
                 
                 if (userId) params.append('usuario_id_filter', userId);
@@ -929,14 +1017,14 @@
             }
         }
 
-        // Exportar dados para PDF - NOVA FUNÇÃO
+        // Exportar dados para PDF
         async function exportarDadosPDF() {
             try {
                 const userId = document.getElementById('filter-user').value;
                 const startDate = document.getElementById('filter-start').value;
                 const endDate = document.getElementById('filter-end').value;
 
-                let url = `/api/admin/exportar-pdf`;
+                let url = `/api/exportar/pdf/admin`;
                 const params = new URLSearchParams();
                 
                 if (userId) params.append('usuario_id_filter', userId);
@@ -955,87 +1043,135 @@
             }
         }
 
-        // Funções de relatórios
-        async function gerarRelatorioFrequencia() {
+        // Gerar relatórios na página
+        async function gerarRelatorio() {
             try {
                 const usuarioId = document.getElementById('relatorio-usuario').value;
                 const dataInicio = document.getElementById('relatorio-data-inicio').value;
                 const dataFim = document.getElementById('relatorio-data-fim').value;
 
-                let url = `/api/admin/relatorio-frequencia`;
-                const params = new URLSearchParams();
-                
-                if (usuarioId) params.append('usuario_id', usuarioId);
-                if (dataInicio) params.append('data_inicio', dataInicio);
-                if (dataFim) params.append('data_fim', dataFim);
-                
-                if (params.toString()) {
-                    url += '?' + params.toString();
-                }
+                // Buscar registros com filtros
+                let url = `/api/admin/registros?limit=1000`;
+                if (usuarioId) url += `&usuario_id_filter=${usuarioId}`;
+                if (dataInicio && dataFim) url += `&data_inicio=${dataInicio}&data_fim=${dataFim}`;
 
-                window.open(url, '_blank');
-                showAlert('📈 Relatório de frequência gerado', 'info');
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    const registros = data.registros;
+                    gerarRelatorioFrequencia(registros);
+                    gerarRelatorioHorasExtras(registros);
+                    gerarRelatorioCompleto(registros);
+                } else {
+                    showAlert('❌ Erro ao carregar dados para relatório', 'danger');
+                }
             } catch (error) {
                 console.error('Erro ao gerar relatório:', error);
                 showAlert('❌ Erro ao gerar relatório', 'danger');
             }
         }
 
-        async function gerarRelatorioHorasExtras() {
-            try {
-                const usuarioId = document.getElementById('relatorio-usuario').value;
-                const dataInicio = document.getElementById('relatorio-data-inicio').value;
-                const dataFim = document.getElementById('relatorio-data-fim').value;
-
-                let url = `/api/admin/relatorio-horas-extras`;
-                const params = new URLSearchParams();
-                
-                if (usuarioId) params.append('usuario_id', usuarioId);
-                if (dataInicio) params.append('data_inicio', dataInicio);
-                if (dataFim) params.append('data_fim', dataFim);
-                
-                if (params.toString()) {
-                    url += '?' + params.toString();
+        // Gerar relatório de frequência
+        function gerarRelatorioFrequencia(registros) {
+            const container = document.getElementById('relatorio-frequencia');
+            
+            // Agrupar por usuário
+            const usuarios = {};
+            registros.forEach(registro => {
+                if (!usuarios[registro.usuario_nome]) {
+                    usuarios[registro.usuario_nome] = {
+                        totalRegistros: 0,
+                        horasExtras: 0,
+                        diasTrabalhados: new Set()
+                    };
                 }
+                
+                usuarios[registro.usuario_nome].totalRegistros++;
+                if (registro.horas_extras) {
+                    usuarios[registro.usuario_nome].horasExtras++;
+                }
+                usuarios[registro.usuario_nome].diasTrabalhados.add(registro.data);
+            });
 
-                window.open(url, '_blank');
-                showAlert('⏰ Relatório de horas extras gerado', 'info');
-            } catch (error) {
-                console.error('Erro ao gerar relatório:', error);
-                showAlert('❌ Erro ao gerar relatório', 'danger');
-            }
+            let html = '<div class="table-responsive"><table class="table table-sm">';
+            html += '<thead><tr><th>Usuário</th><th>Dias Trabalhados</th><th>Total Registros</th><th>Horas Extras</th></tr></thead><tbody>';
+            
+            Object.keys(usuarios).forEach(usuario => {
+                const dados = usuarios[usuario];
+                html += `<tr>
+                    <td><strong>${usuario}</strong></td>
+                    <td>${dados.diasTrabalhados.size}</td>
+                    <td>${dados.totalRegistros}</td>
+                    <td>${dados.horasExtras}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
         }
 
-        async function gerarRelatorioCompleto() {
-            try {
-                const usuarioId = document.getElementById('relatorio-usuario').value;
-                const dataInicio = document.getElementById('relatorio-data-inicio').value;
-                const dataFim = document.getElementById('relatorio-data-fim').value;
-
-                let url = `/api/admin/relatorio-completo`;
-                const params = new URLSearchParams();
-                
-                if (usuarioId) params.append('usuario_id', usuarioId);
-                if (dataInicio) params.append('data_inicio', dataInicio);
-                if (dataFim) params.append('data_fim', dataFim);
-                
-                if (params.toString()) {
-                    url += '?' + params.toString();
-                }
-
-                window.open(url, '_blank');
-                showAlert('📋 Relatório completo gerado', 'info');
-            } catch (error) {
-                console.error('Erro ao gerar relatório:', error);
-                showAlert('❌ Erro ao gerar relatório', 'danger');
+        // Gerar relatório de horas extras
+        function gerarRelatorioHorasExtras(registros) {
+            const container = document.getElementById('relatorio-horas-extras');
+            
+            const horasExtras = registros.filter(r => r.horas_extras);
+            
+            if (horasExtras.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">Nenhuma hora extra encontrada no período</p>';
+                return;
             }
+
+            let html = '<div class="table-responsive"><table class="table table-sm">';
+            html += '<thead><tr><th>Usuário</th><th>Data</th><th>Horário</th><th>Local</th></tr></thead><tbody>';
+            
+            horasExtras.forEach(registro => {
+                html += `<tr>
+                    <td><strong>${registro.usuario_nome}</strong></td>
+                    <td>${registro.data}</td>
+                    <td>${registro.hora_entrada} - ${registro.hora_saida}</td>
+                    <td>${registro.local || '-'}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
         }
 
-        // Logout
-        function logout() {
-            localStorage.removeItem('usuario');
-            localStorage.removeItem('token');
-            window.location.href = 'login';
+        // Gerar relatório completo
+        function gerarRelatorioCompleto(registros) {
+            const tbody = document.getElementById('relatorio-completo-body');
+            
+            if (registros.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhum registro encontrado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = registros.map(registro => {
+                // Calcular horas trabalhadas (simplificado)
+                let horasTrabalhadas = '-';
+                let horasExtras = '-';
+                
+                if (registro.hora_entrada && registro.hora_saida) {
+                    const entrada = new Date(`2000-01-01T${registro.hora_entrada}`);
+                    const saida = new Date(`2000-01-01T${registro.hora_saida}`);
+                    const diffMs = saida - entrada;
+                    const diffHrs = diffMs / (1000 * 60 * 60);
+                    
+                    horasTrabalhadas = diffHrs.toFixed(1) + 'h';
+                    horasExtras = registro.horas_extras ? horasTrabalhadas : '0h';
+                }
+
+                return `<tr>
+                    <td><strong>${registro.usuario_nome}</strong></td>
+                    <td>${registro.data}</td>
+                    <td>${registro.hora_entrada || '-'}</td>
+                    <td>${registro.hora_saida || '-'}</td>
+                    <td>${horasTrabalhadas}</td>
+                    <td>${horasExtras}</td>
+                    <td>${registro.local || '-'}</td>
+                </tr>`;
+            }).join('');
         }
 
         // Função para mostrar alertas
@@ -1061,11 +1197,26 @@
             }, 5000);
         }
 
+        // Logout
+        function logout() {
+            localStorage.removeItem('usuario');
+            window.location.href = 'login';
+        }
+
         // Event listeners para modais
         document.getElementById('modalUsuario').addEventListener('show.bs.modal', function () {
             if (!document.getElementById('usuario-id').value) {
                 novoUsuario();
             }
+        });
+
+        // Configurar data atual nos filtros
+        document.addEventListener('DOMContentLoaded', function() {
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('filter-start').value = hoje;
+            document.getElementById('filter-end').value = hoje;
+            document.getElementById('relatorio-data-inicio').value = hoje;
+            document.getElementById('relatorio-data-fim').value = hoje;
         });
     </script>
 </body>
