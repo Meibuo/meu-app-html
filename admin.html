@@ -51,6 +51,11 @@
         .badge-admin {
             background: linear-gradient(45deg, #FFD700, #FFA500);
         }
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
     </style>
 </head>
 <body>
@@ -162,9 +167,14 @@
                             <button class="btn btn-primary me-2" onclick="showSection('registros')">
                                 <i class="fas fa-search"></i> Ver Registros
                             </button>
-                            <button class="btn btn-info" onclick="exportarDados()">
-                                <i class="fas fa-download"></i> Exportar Dados
-                            </button>
+                            <div class="export-buttons mt-2">
+                                <button class="btn btn-info" onclick="exportarDadosExcel()">
+                                    <i class="fas fa-file-excel"></i> Exportar Excel
+                                </button>
+                                <button class="btn btn-danger" onclick="exportarDadosPDF()">
+                                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -256,9 +266,69 @@
         <!-- Relatórios Section -->
         <div id="relatorios-section" style="display: none;">
             <h2 class="mb-4"><i class="fas fa-chart-bar"></i> Relatórios</h2>
+            
             <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Relatórios Avançados</h5>
+                </div>
                 <div class="card-body">
-                    <p class="text-muted">Em desenvolvimento...</p>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5><i class="fas fa-chart-line text-primary"></i> Relatório de Frequência</h5>
+                                    <p class="text-muted">Relatório detalhado de frequência por período</p>
+                                    <button class="btn btn-primary" onclick="gerarRelatorioFrequencia()">
+                                        <i class="fas fa-download"></i> Gerar Relatório
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5><i class="fas fa-clock text-warning"></i> Relatório de Horas Extras</h5>
+                                    <p class="text-muted">Relatório consolidado de horas extras</p>
+                                    <button class="btn btn-warning" onclick="gerarRelatorioHorasExtras()">
+                                        <i class="fas fa-download"></i> Gerar Relatório
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6>Filtros do Relatório</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label for="relatorio-usuario" class="form-label">Usuário</label>
+                                            <select class="form-select" id="relatorio-usuario">
+                                                <option value="">Todos os usuários</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="relatorio-data-inicio" class="form-label">Data Início</label>
+                                            <input type="date" class="form-control" id="relatorio-data-inicio">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="relatorio-data-fim" class="form-label">Data Fim</label>
+                                            <input type="date" class="form-control" id="relatorio-data-fim">
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            <button class="btn btn-success w-100" onclick="gerarRelatorioCompleto()">
+                                                <i class="fas fa-file-alt"></i> Gerar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -424,10 +494,14 @@
                 if (data.success) {
                     exibirUsuarios(data.usuarios);
                     popularFiltroUsuarios(data.usuarios);
+                    popularFiltroRelatorioUsuarios(data.usuarios);
+                } else {
+                    console.error('Erro na resposta da API:', data);
+                    showAlert('❌ Erro ao carregar usuários: ' + (data.error || 'Erro desconhecido'), 'danger');
                 }
             } catch (error) {
                 console.error('Erro ao carregar usuários:', error);
-                showAlert('❌ Erro ao carregar usuários', 'danger');
+                showAlert('❌ Erro ao carregar usuários: ' + error.message, 'danger');
             }
         }
 
@@ -435,11 +509,23 @@
         function exibirUsuarios(usuarios) {
             const tbody = document.getElementById('usuarios-body');
             
+            if (usuarios.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-users fa-2x mb-2"></i><br>
+                            Nenhum usuário encontrado
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
             tbody.innerHTML = usuarios.map(usuario => `
                 <tr>
                     <td>
                         <strong>${usuario.nome}</strong>
-                        ${usuario.isAdmin ? '<span class="badge badge-admin ms-1">Admin</span>' : ''}
+                        ${usuario.isAdmin ? '<span class="badge bg-warning ms-1">Admin</span>' : ''}
                     </td>
                     <td>${usuario.email}</td>
                     <td>${usuario.telefone || '-'}</td>
@@ -470,6 +556,16 @@
         // Popular filtro de usuários
         function popularFiltroUsuarios(usuarios) {
             const select = document.getElementById('filter-user');
+            select.innerHTML = '<option value="">Todos os usuários</option>';
+            
+            usuarios.forEach(usuario => {
+                select.innerHTML += `<option value="${usuario.id}">${usuario.nome}</option>`;
+            });
+        }
+
+        // Popular filtro de relatórios
+        function popularFiltroRelatorioUsuarios(usuarios) {
+            const select = document.getElementById('relatorio-usuario');
             select.innerHTML = '<option value="">Todos os usuários</option>';
             
             usuarios.forEach(usuario => {
@@ -653,10 +749,13 @@
 
                 if (data.success) {
                     exibirRegistrosAdmin(data.registros);
+                } else {
+                    console.error('Erro na resposta da API:', data);
+                    showAlert('❌ Erro ao carregar registros: ' + (data.error || 'Erro desconhecido'), 'danger');
                 }
             } catch (error) {
                 console.error('Erro ao carregar registros:', error);
-                showAlert('❌ Erro ao carregar registros', 'danger');
+                showAlert('❌ Erro ao carregar registros: ' + error.message, 'danger');
             }
         }
 
@@ -804,18 +903,142 @@
             }
         }
 
-        // Exportar dados
-        async function exportarDados() {
+        // Exportar dados para Excel
+        async function exportarDadosExcel() {
             try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
-                window.open(`/api/exportar/excel/${usuario.id}`, '_blank');
+                const userId = document.getElementById('filter-user').value;
+                const startDate = document.getElementById('filter-start').value;
+                const endDate = document.getElementById('filter-end').value;
+
+                let url = `/api/admin/exportar-excel`;
+                const params = new URLSearchParams();
+                
+                if (userId) params.append('usuario_id_filter', userId);
+                if (startDate) params.append('data_inicio', startDate);
+                if (endDate) params.append('data_fim', endDate);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                window.open(url, '_blank');
+                showAlert('📊 Exportação para Excel iniciada', 'info');
             } catch (error) {
-                console.error('Erro ao exportar dados:', error);
-                showAlert('❌ Erro ao exportar dados', 'danger');
+                console.error('Erro ao exportar Excel:', error);
+                showAlert('❌ Erro ao exportar Excel', 'danger');
             }
         }
 
-        // Funções auxiliares
+        // Exportar dados para PDF - NOVA FUNÇÃO
+        async function exportarDadosPDF() {
+            try {
+                const userId = document.getElementById('filter-user').value;
+                const startDate = document.getElementById('filter-start').value;
+                const endDate = document.getElementById('filter-end').value;
+
+                let url = `/api/admin/exportar-pdf`;
+                const params = new URLSearchParams();
+                
+                if (userId) params.append('usuario_id_filter', userId);
+                if (startDate) params.append('data_inicio', startDate);
+                if (endDate) params.append('data_fim', endDate);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                window.open(url, '_blank');
+                showAlert('📄 Exportação para PDF iniciada', 'info');
+            } catch (error) {
+                console.error('Erro ao exportar PDF:', error);
+                showAlert('❌ Erro ao exportar PDF', 'danger');
+            }
+        }
+
+        // Funções de relatórios
+        async function gerarRelatorioFrequencia() {
+            try {
+                const usuarioId = document.getElementById('relatorio-usuario').value;
+                const dataInicio = document.getElementById('relatorio-data-inicio').value;
+                const dataFim = document.getElementById('relatorio-data-fim').value;
+
+                let url = `/api/admin/relatorio-frequencia`;
+                const params = new URLSearchParams();
+                
+                if (usuarioId) params.append('usuario_id', usuarioId);
+                if (dataInicio) params.append('data_inicio', dataInicio);
+                if (dataFim) params.append('data_fim', dataFim);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                window.open(url, '_blank');
+                showAlert('📈 Relatório de frequência gerado', 'info');
+            } catch (error) {
+                console.error('Erro ao gerar relatório:', error);
+                showAlert('❌ Erro ao gerar relatório', 'danger');
+            }
+        }
+
+        async function gerarRelatorioHorasExtras() {
+            try {
+                const usuarioId = document.getElementById('relatorio-usuario').value;
+                const dataInicio = document.getElementById('relatorio-data-inicio').value;
+                const dataFim = document.getElementById('relatorio-data-fim').value;
+
+                let url = `/api/admin/relatorio-horas-extras`;
+                const params = new URLSearchParams();
+                
+                if (usuarioId) params.append('usuario_id', usuarioId);
+                if (dataInicio) params.append('data_inicio', dataInicio);
+                if (dataFim) params.append('data_fim', dataFim);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                window.open(url, '_blank');
+                showAlert('⏰ Relatório de horas extras gerado', 'info');
+            } catch (error) {
+                console.error('Erro ao gerar relatório:', error);
+                showAlert('❌ Erro ao gerar relatório', 'danger');
+            }
+        }
+
+        async function gerarRelatorioCompleto() {
+            try {
+                const usuarioId = document.getElementById('relatorio-usuario').value;
+                const dataInicio = document.getElementById('relatorio-data-inicio').value;
+                const dataFim = document.getElementById('relatorio-data-fim').value;
+
+                let url = `/api/admin/relatorio-completo`;
+                const params = new URLSearchParams();
+                
+                if (usuarioId) params.append('usuario_id', usuarioId);
+                if (dataInicio) params.append('data_inicio', dataInicio);
+                if (dataFim) params.append('data_fim', dataFim);
+                
+                if (params.toString()) {
+                    url += '?' + params.toString();
+                }
+
+                window.open(url, '_blank');
+                showAlert('📋 Relatório completo gerado', 'info');
+            } catch (error) {
+                console.error('Erro ao gerar relatório:', error);
+                showAlert('❌ Erro ao gerar relatório', 'danger');
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('usuario');
+            localStorage.removeItem('token');
+            window.location.href = 'login';
+        }
+
+        // Função para mostrar alertas
         function showAlert(message, type) {
             const alertContainer = document.getElementById('alert-container');
             const alertId = 'alert-' + Date.now();
@@ -829,6 +1052,7 @@
             
             alertContainer.innerHTML += alertHTML;
             
+            // Auto-remover após 5 segundos
             setTimeout(() => {
                 const alertElement = document.getElementById(alertId);
                 if (alertElement) {
@@ -837,15 +1061,12 @@
             }, 5000);
         }
 
-        // Logout
-        function logout() {
-            localStorage.removeItem('usuario');
-            localStorage.removeItem('usuario_id');
-            window.location.href = 'login';
-        }
-
-        // Inicializar modal de novo usuário
-        document.getElementById('btn-novo-usuario').addEventListener('click', novoUsuario);
+        // Event listeners para modais
+        document.getElementById('modalUsuario').addEventListener('show.bs.modal', function () {
+            if (!document.getElementById('usuario-id').value) {
+                novoUsuario();
+            }
+        });
     </script>
 </body>
 </html>
