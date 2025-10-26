@@ -195,18 +195,6 @@ function getHorariosFixos(data) {
       dataObj = new Date(data);
     }
     
-    // Verificar se a data é válida
-    if (isNaN(dataObj.getTime())) {
-      console.error('Data inválida:', data);
-      return {
-        entrada: '--:--',
-        intervalo: '--:--',
-        retorno: '--:--',
-        saida: '--:--',
-        texto: 'Horário não definido'
-      };
-    }
-    
     const diaSemana = dataObj.getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
     
     if (diaSemana === 5) { // Sexta-feira
@@ -562,60 +550,43 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
     console.log(`✅ Encontrados ${result.rows.length} registros para usuário ${usuario_id}`);
 
     const registros = result.rows.map(reg => {
-      try {
-        let dataFormatada;
-        
-        // Usar data_custom se existir, senão usar criado_em
-        if (reg.data_custom) {
-          // data_custom já vem no formato YYYY-MM-DD
-          const [year, month, day] = reg.data_custom.split('-');
-          dataFormatada = `${day}/${month}/${year}`;
-        } else {
-          // Formatar criado_em
-          const data = new Date(reg.criado_em);
-          dataFormatada = data.toLocaleDateString('pt-BR');
-        }
-        
-        // Obter horários fixos para o dia
-        let dataParaHorarios;
-        if (reg.data_custom) {
-          dataParaHorarios = reg.data_custom;
-        } else {
-          const data = new Date(reg.criado_em);
-          dataParaHorarios = data.toISOString().split('T')[0];
-        }
-        
-        const horariosFixos = getHorariosFixos(dataParaHorarios);
-
-        return {
-          id: reg.id,
-          tipo: reg.tipo,
-          local: reg.local,
-          observacao: reg.observacao,
-          horas_extras: reg.horas_extras,
-          data: dataFormatada,
-          hora_entrada: reg.hora_entrada ? reg.hora_entrada.substring(0, 5) : '',
-          hora_saida: reg.hora_saida ? reg.hora_saida.substring(0, 5) : '',
-          horariosDia: horariosFixos,
-          diaSemana: new Date(dataParaHorarios + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }),
-          criadoEm: reg.criado_em
-        };
-      } catch (error) {
-        console.error('Erro ao formatar registro:', error, reg);
-        return {
-          id: reg.id,
-          tipo: reg.tipo,
-          local: reg.local,
-          observacao: reg.observacao,
-          horas_extras: reg.horas_extras,
-          data: 'Data inválida',
-          hora_entrada: reg.hora_entrada ? reg.hora_entrada.substring(0, 5) : '',
-          hora_saida: reg.hora_saida ? reg.hora_saida.substring(0, 5) : '',
-          horariosDia: { texto: 'Horário não definido' },
-          diaSemana: 'Dia inválido',
-          criadoEm: reg.criado_em
-        };
+      let dataFormatada;
+      
+      // Usar data_custom se existir, senão usar criado_em
+      if (reg.data_custom) {
+        // data_custom já vem no formato YYYY-MM-DD
+        const [year, month, day] = reg.data_custom.split('-');
+        dataFormatada = `${day}/${month}/${year}`;
+      } else {
+        // Formatar criado_em
+        const data = new Date(reg.criado_em);
+        dataFormatada = data.toLocaleDateString('pt-BR');
       }
+      
+      // Obter horários fixos para o dia
+      let dataParaHorarios;
+      if (reg.data_custom) {
+        dataParaHorarios = reg.data_custom;
+      } else {
+        const data = new Date(reg.criado_em);
+        dataParaHorarios = data.toISOString().split('T')[0];
+      }
+      
+      const horariosFixos = getHorariosFixos(dataParaHorarios);
+
+      return {
+        id: reg.id,
+        tipo: reg.tipo,
+        local: reg.local,
+        observacao: reg.observacao,
+        horas_extras: reg.horas_extras,
+        data: dataFormatada,
+        hora_entrada: reg.hora_entrada ? reg.hora_entrada.substring(0, 5) : '',
+        hora_saida: reg.hora_saida ? reg.hora_saida.substring(0, 5) : '',
+        horariosDia: horariosFixos,
+        diaSemana: new Date(dataParaHorarios + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }),
+        criadoEm: reg.criado_em
+      };
     });
 
     console.log('📋 Primeiros registros formatados:', registros.slice(0, 3));
