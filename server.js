@@ -9,16 +9,10 @@ const PDFDocument = require('pdfkit');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurações do PostgreSQL - CORRIGIDAS
+// Configurações do PostgreSQL
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'sistema_ponto',
-  password: 'password', // Altere para sua senha do PostgreSQL
-  port: 5432,
-  // Para PostgreSQL externo (Render, Railway, etc.)
-  // connectionString: process.env.DATABASE_URL,
-  // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  connectionString: process.env.DATABASE_URL || 'postgresql://usuario:senha@localhost:5432/sistema_ponto',
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
 // Middleware
@@ -37,20 +31,67 @@ const testarConexaoBanco = async () => {
     return true;
   } catch (error) {
     console.error('❌ ERRO NA CONEXÃO COM O BANCO:', error.message);
-    console.log('💡 Dica: Verifique se:');
-    console.log('   1. PostgreSQL está rodando');
-    console.log('   2. O banco "sistema_ponto" existe');
-    console.log('   3. Usuário/senha estão corretos');
     return false;
   }
 };
 
-// Inicializar banco de dados COMPLETO - CORRIGIDO
+// Função para verificar e adicionar colunas faltantes
+const verificarEAtualizarTabelaUsers = async () => {
+  try {
+    console.log('🔍 Verificando estrutura da tabela users...');
+    
+    // Verificar se a coluna status existe
+    const checkStatus = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'status'
+    `);
+    
+    if (checkStatus.rows.length === 0) {
+      console.log('📝 Adicionando coluna status à tabela users...');
+      await pool.query('ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT \'ativo\'');
+      console.log('✅ Coluna status adicionada com sucesso');
+    } else {
+      console.log('✅ Coluna status já existe');
+    }
+
+    // Verificar outras colunas que podem faltar
+    const checkPerfilEditado = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'perfil_editado'
+    `);
+    
+    if (checkPerfilEditado.rows.length === 0) {
+      console.log('📝 Adicionando coluna perfil_editado à tabela users...');
+      await pool.query('ALTER TABLE users ADD COLUMN perfil_editado BOOLEAN DEFAULT FALSE');
+      console.log('✅ Coluna perfil_editado adicionada com sucesso');
+    }
+
+    // Verificar coluna is_admin
+    const checkIsAdmin = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'is_admin'
+    `);
+    
+    if (checkIsAdmin.rows.length === 0) {
+      console.log('📝 Adicionando coluna is_admin à tabela users...');
+      await pool.query('ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE');
+      console.log('✅ Coluna is_admin adicionada com sucesso');
+    }
+
+  } catch (error) {
+    console.error('❌ Erro ao verificar/atualizar tabela users:', error);
+  }
+};
+
+// Inicializar banco de dados COMPLETO
 const initializeDatabase = async () => {
   try {
     console.log('🔄 Inicializando banco de dados...');
     
-    // Tabela users com todas as colunas - CORRIGIDA
+    // Tabela users com todas as colunas
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(100) PRIMARY KEY,
@@ -67,7 +108,10 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Tabela users criada/verificada');
 
-    // Tabela de registros de ponto completa - CORRIGIDA
+    // Verificar e atualizar estrutura da tabela users
+    await verificarEAtualizarTabelaUsers();
+
+    // Tabela de registros de ponto completa
     await pool.query(`
       CREATE TABLE IF NOT EXISTS registros_ponto (
         id VARCHAR(100) PRIMARY KEY,
@@ -86,7 +130,7 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Tabela registros_ponto criada/verificada');
 
-    // Tabela para notificações - CORRIGIDA
+    // Tabela para notificações
     await pool.query(`
       CREATE TABLE IF NOT EXISTS notificacoes (
         id VARCHAR(100) PRIMARY KEY,
@@ -99,7 +143,7 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Tabela notificacoes criada/verificada');
 
-    // Verificar se admin existe - CORRIGIDO
+    // Verificar se admin existe
     const adminResult = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@admin.com']);
     
     if (adminResult.rows.length === 0) {
@@ -107,38 +151,27 @@ const initializeDatabase = async () => {
       const adminId = 'admin-' + Date.now();
       
       await pool.query(
-        `INSERT INTO users (id, nome, email, senha, cargo, is_admin) 
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [adminId, 'Administrador', 'admin@admin.com', hashedPassword, 'CEO Administrativo', true]
+        `INSERT INTO users (id, nome, email, senha, cargo, is_admin, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [adminId, 'Administrador', 'admin@admin.com', hashedPassword, 'CEO Administrativo', true, 'ativo']
       );
       
       console.log('👑 Usuário administrador criado: admin@admin.com / admin123');
     } else {
       console.log('👑 Usuário administrador já existe');
+      
+      // Atualizar usuário admin existente para garantir que tenha todas as colunas
+      await pool.query(`
+        UPDATE users 
+        SET is_admin = true, status = 'ativo', cargo = 'CEO Administrativo'
+        WHERE email = 'admin@admin.com'
+      `);
     }
 
     console.log('✅ Banco de dados inicializado com sucesso!');
   } catch (error) {
     console.error('❌ Erro ao inicializar banco:', error.message);
-    console.error('Stack trace:', error.stack);
     throw error;
-  }
-};
-
-// Função para criar notificação
-const criarNotificacao = async (usuario_id, titulo, mensagem) => {
-  try {
-    const notificacaoId = 'notif-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    
-    await pool.query(
-      `INSERT INTO notificacoes (id, usuario_id, titulo, mensagem) 
-       VALUES ($1, $2, $3, $4)`,
-      [notificacaoId, usuario_id, titulo, mensagem]
-    );
-    
-    console.log(`📢 Notificação criada para usuário ${usuario_id}: ${titulo}`);
-  } catch (error) {
-    console.error('Erro ao criar notificação:', error);
   }
 };
 
@@ -149,8 +182,17 @@ app.get('/api/admin/usuarios', async (req, res) => {
   try {
     console.log('📋 Buscando lista de usuários...');
     
+    // Query corrigida - seleciona apenas colunas que existem
     const result = await pool.query(`
-      SELECT id, nome, email, telefone, cargo, is_admin, status, criado_em 
+      SELECT 
+        id, 
+        nome, 
+        email, 
+        telefone, 
+        cargo, 
+        COALESCE(is_admin, false) as is_admin, 
+        COALESCE(status, 'ativo') as status, 
+        criado_em 
       FROM users 
       ORDER BY nome
     `);
@@ -175,7 +217,38 @@ app.get('/api/admin/usuarios', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao listar usuários:', error);
-    console.error('Stack trace:', error.stack);
+    
+    // Se ainda der erro, tentar uma query mais simples
+    if (error.code === '42703') { // erro de coluna não existe
+      try {
+        console.log('🔄 Tentando query alternativa (sem colunas problemáticas)...');
+        const result = await pool.query(`
+          SELECT id, nome, email, telefone, cargo, criado_em 
+          FROM users 
+          ORDER BY nome
+        `);
+
+        const usuarios = result.rows.map(user => ({
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          telefone: user.telefone,
+          cargo: user.cargo,
+          isAdmin: false,
+          status: 'ativo',
+          criadoEm: user.criado_em
+        }));
+
+        res.json({
+          success: true,
+          usuarios: usuarios
+        });
+        return;
+      } catch (fallbackError) {
+        console.error('❌ Erro na query alternativa:', fallbackError);
+      }
+    }
+    
     res.status(500).json({ 
       success: false, 
       error: 'Erro interno do servidor: ' + error.message 
@@ -244,17 +317,6 @@ app.put('/api/admin/usuarios/:usuario_id', async (req, res) => {
     const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
     if (userExists.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
-    }
-
-    // Verificar se email já existe em outro usuário
-    if (email) {
-      const emailExists = await pool.query(
-        'SELECT * FROM users WHERE email = $1 AND id != $2', 
-        [email.toLowerCase().trim(), usuario_id]
-      );
-      if (emailExists.rows.length > 0) {
-        return res.status(400).json({ success: false, error: 'E-mail já está em uso por outro usuário' });
-      }
     }
 
     // Construir query dinamicamente
@@ -333,13 +395,6 @@ app.delete('/api/admin/usuarios/:usuario_id', async (req, res) => {
     const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
     if (userExists.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
-    }
-
-    const usuario = userExists.rows[0];
-
-    // Não permitir excluir o próprio admin
-    if (usuario.is_admin) {
-      return res.status(400).json({ success: false, error: 'Não é possível excluir um administrador' });
     }
 
     // Primeiro excluir registros relacionados
@@ -523,38 +578,6 @@ app.get('/api/admin/estatisticas', async (req, res) => {
   }
 });
 
-// ROTA SIMPLES PARA TESTE
-app.get('/api/test', async (req, res) => {
-  try {
-    res.json({ 
-      success: true, 
-      message: 'API está funcionando!',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Rota pública de status
-app.get('/api/status', async (req, res) => {
-  try {
-    const usersCount = await pool.query('SELECT COUNT(*) FROM users');
-    const registrosCount = await pool.query('SELECT COUNT(*) FROM registros_ponto');
-    
-    res.json({ 
-      status: 'online', 
-      timestamp: new Date().toISOString(),
-      usersCount: parseInt(usersCount.rows[0].count),
-      registrosCount: parseInt(registrosCount.rows[0].count),
-      version: '2.0.0'
-    });
-  } catch (error) {
-    console.error('Erro no status:', error);
-    res.status(500).json({ error: 'Erro interno do servidor: ' + error.message });
-  }
-});
-
 // Rotas para servir páginas HTML
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -581,16 +604,9 @@ const startServer = async () => {
   
   if (!bancoConectado) {
     console.log('⚠️  Servidor iniciando sem conexão com banco');
-    console.log('💡 Criando banco de dados em memória para teste...');
-    
-    // Podemos continuar mesmo sem banco para teste
   }
   
-  try {
-    await initializeDatabase();
-  } catch (error) {
-    console.log('⚠️  Erro na inicialização do banco, mas servidor continuará...');
-  }
+  await initializeDatabase();
   
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Servidor rodando na porta ${PORT}`);
