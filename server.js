@@ -872,7 +872,7 @@ app.get('/api/admin/estatisticas', async (req, res) => {
 
 // ========== ROTAS DE RELATÓRIOS ==========
 
-// ROTA PARA RELATÓRIO DE FREQUÊNCIA
+// ROTA PARA RELATÓRIO DE FREQUÊNCIA - CORRIGIDA
 app.get('/api/admin/relatorios/frequencia', async (req, res) => {
   try {
     const { usuario_id, data_inicio, data_fim } = req.query;
@@ -908,6 +908,7 @@ app.get('/api/admin/relatorios/frequencia', async (req, res) => {
       paramCount += 2;
     }
 
+    // CORREÇÃO: Adicionar todas as colunas não-agregadas no GROUP BY
     query += ` GROUP BY u.nome, u.cargo, DATE(rp.criado_em) ORDER BY data DESC, usuario_nome`;
 
     const result = await pool.query(query, params);
@@ -925,7 +926,7 @@ app.get('/api/admin/relatorios/frequencia', async (req, res) => {
   }
 });
 
-// ROTA PARA RELATÓRIO DE HORAS EXTRAS
+// ROTA PARA RELATÓRIO DE HORAS EXTRAS - CORRIGIDA
 app.get('/api/admin/relatorios/horas-extras', async (req, res) => {
   try {
     const { usuario_id, data_inicio, data_fim } = req.query;
@@ -937,7 +938,6 @@ app.get('/api/admin/relatorios/horas-extras', async (req, res) => {
         u.nome as usuario_nome,
         u.cargo as usuario_cargo,
         DATE(rp.criado_em) as data,
-        COUNT(*) as total_horas_extras,
         rp.hora_entrada,
         rp.hora_saida,
         rp.observacao
@@ -978,7 +978,7 @@ app.get('/api/admin/relatorios/horas-extras', async (req, res) => {
   }
 });
 
-// ROTA PARA RELATÓRIO COMPLETO
+// ROTA PARA RELATÓRIO COMPLETO - CORRIGIDA
 app.get('/api/admin/relatorios/completo', async (req, res) => {
   try {
     const { usuario_id, data_inicio, data_fim } = req.query;
