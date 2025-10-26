@@ -69,6 +69,14 @@
         }
         .loading-spinner {
             display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        #loading-usuarios, #loading-registros {
+            display: none;
+        }
+        #no-users, #no-registros {
+            display: none;
         }
     </style>
 </head>
@@ -108,7 +116,7 @@
         <div id="dashboard-section">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="fas fa-tachometer-alt"></i> Dashboard Administrativo</h2>
-                <span id="admin-name" class="text-muted">Carregando...</span>
+                <span id="admin-name" class="text-muted">Administrador</span>
             </div>
 
             <!-- Stats Cards -->
@@ -226,7 +234,7 @@
                                             <i class="fas fa-spinner fa-spin fa-2x"></i>
                                             <p class="mt-2">Carregando usuários...</p>
                                         </div>
-                                        <div id="no-users" style="display: none;">
+                                        <div id="no-users">
                                             <i class="fas fa-users fa-2x mb-2"></i><br>
                                             Nenhum usuário encontrado
                                         </div>
@@ -286,7 +294,7 @@
                                             <i class="fas fa-spinner fa-spin fa-2x"></i>
                                             <p class="mt-2">Carregando registros...</p>
                                         </div>
-                                        <div id="no-registros" style="display: none;">
+                                        <div id="no-registros">
                                             <i class="fas fa-inbox fa-2x mb-2"></i><br>
                                             Nenhum registro encontrado
                                         </div>
@@ -512,13 +520,7 @@
 
         // Verificar autenticação e admin
         document.addEventListener('DOMContentLoaded', function() {
-            const usuario = JSON.parse(localStorage.getItem('usuario'));
-            if (!usuario || !usuario.isAdmin) {
-                window.location.href = 'login';
-                return;
-            }
-
-            document.getElementById('admin-name').textContent = usuario.nome;
+            console.log('🔄 Inicializando painel admin...');
             carregarEstatisticas();
             carregarUsuarios();
             carregarRegistrosAdmin();
@@ -552,6 +554,7 @@
         // Carregar estatísticas do sistema
         async function carregarEstatisticas() {
             try {
+                console.log('📈 Carregando estatísticas...');
                 const response = await fetch('/api/admin/estatisticas');
                 const data = await response.json();
                 
@@ -560,45 +563,69 @@
                     document.getElementById('admin-users').textContent = data.estatisticas.totalAdmins;
                     document.getElementById('total-registros').textContent = data.estatisticas.totalRegistros;
                     document.getElementById('registros-hoje').textContent = data.estatisticas.registrosHoje;
+                    console.log('✅ Estatísticas carregadas');
+                } else {
+                    console.error('❌ Erro nas estatísticas:', data.error);
+                    showAlert('❌ Erro ao carregar estatísticas: ' + data.error, 'danger');
                 }
             } catch (error) {
-                console.error('Erro ao carregar estatísticas:', error);
-                showAlert('❌ Erro ao carregar estatísticas', 'danger');
+                console.error('❌ Erro ao carregar estatísticas:', error);
+                showAlert('❌ Erro ao carregar estatísticas: ' + error.message, 'danger');
             }
         }
 
         // Carregar lista de usuários - CORRIGIDA
         async function carregarUsuarios() {
             try {
+                console.log('👥 Carregando usuários...');
+                
                 // Mostrar loading
-                document.getElementById('loading-usuarios').style.display = 'block';
-                document.getElementById('no-users').style.display = 'none';
+                const loadingElement = document.getElementById('loading-usuarios');
+                const noUsersElement = document.getElementById('no-users');
+                if (loadingElement) loadingElement.style.display = 'block';
+                if (noUsersElement) noUsersElement.style.display = 'none';
 
                 const response = await fetch('/api/admin/usuarios');
+                console.log('📨 Resposta da API:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('📊 Dados recebidos:', data);
                 
                 if (data.success) {
                     usuariosList = data.usuarios;
                     exibirUsuarios(data.usuarios);
                     popularFiltroUsuarios(data.usuarios);
                     popularFiltroRelatorioUsuarios(data.usuarios);
+                    console.log('✅ Usuários carregados:', data.usuarios.length);
                 } else {
-                    console.error('Erro na resposta da API:', data);
+                    console.error('❌ Erro na resposta da API:', data);
                     showAlert('❌ Erro ao carregar usuários: ' + (data.error || 'Erro desconhecido'), 'danger');
-                    document.getElementById('no-users').style.display = 'block';
+                    if (noUsersElement) noUsersElement.style.display = 'block';
                 }
             } catch (error) {
-                console.error('Erro ao carregar usuários:', error);
+                console.error('❌ Erro ao carregar usuários:', error);
                 showAlert('❌ Erro ao carregar usuários: ' + error.message, 'danger');
-                document.getElementById('no-users').style.display = 'block';
+                const noUsersElement = document.getElementById('no-users');
+                if (noUsersElement) noUsersElement.style.display = 'block';
             } finally {
-                document.getElementById('loading-usuarios').style.display = 'none';
+                const loadingElement = document.getElementById('loading-usuarios');
+                if (loadingElement) loadingElement.style.display = 'none';
             }
         }
 
         // Exibir usuários na tabela - CORRIGIDA
         function exibirUsuarios(usuarios) {
             const tbody = document.getElementById('usuarios-body');
+            const noUsersElement = document.getElementById('no-users');
+            
+            if (!tbody) {
+                console.error('❌ Elemento tbody não encontrado');
+                return;
+            }
             
             if (!usuarios || usuarios.length === 0) {
                 tbody.innerHTML = `
@@ -609,8 +636,11 @@
                         </td>
                     </tr>
                 `;
+                if (noUsersElement) noUsersElement.style.display = 'block';
                 return;
             }
+            
+            if (noUsersElement) noUsersElement.style.display = 'none';
             
             tbody.innerHTML = usuarios.map(usuario => `
                 <tr>
@@ -626,7 +656,7 @@
                             ${usuario.status}
                         </span>
                     </td>
-                    <td>${new Date(usuario.criadoEm).toLocaleDateString('pt-BR')}</td>
+                    <td>${formatarData(usuario.criadoEm)}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" onclick="editarUsuario('${usuario.id}')">
                             <i class="fas fa-edit"></i>
@@ -644,9 +674,22 @@
             `).join('');
         }
 
+        // Função auxiliar para formatar data
+        function formatarData(dataString) {
+            if (!dataString) return '-';
+            try {
+                const data = new Date(dataString);
+                return data.toLocaleDateString('pt-BR');
+            } catch (error) {
+                return '-';
+            }
+        }
+
         // Popular filtro de usuários
         function popularFiltroUsuarios(usuarios) {
             const select = document.getElementById('filter-user');
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Todos os usuários</option>';
             
             usuarios.forEach(usuario => {
@@ -657,6 +700,8 @@
         // Popular filtro de relatórios
         function popularFiltroRelatorioUsuarios(usuarios) {
             const select = document.getElementById('relatorio-usuario');
+            if (!select) return;
+            
             select.innerHTML = '<option value="">Todos os usuários</option>';
             
             usuarios.forEach(usuario => {
@@ -692,7 +737,7 @@
                     modal.show();
                 }
             } catch (error) {
-                console.error('Erro ao carregar usuário:', error);
+                console.error('❌ Erro ao carregar usuário:', error);
                 showAlert('❌ Erro ao carregar usuário', 'danger');
             }
         }
@@ -754,7 +799,7 @@
                     showAlert('❌ ' + data.error, 'danger');
                 }
             } catch (error) {
-                console.error('Erro ao salvar usuário:', error);
+                console.error('❌ Erro ao salvar usuário:', error);
                 showAlert('❌ Erro ao salvar usuário', 'danger');
             }
         }
@@ -780,7 +825,7 @@
                     showAlert('❌ ' + data.error, 'danger');
                 }
             } catch (error) {
-                console.error('Erro ao excluir usuário:', error);
+                console.error('❌ Erro ao excluir usuário:', error);
                 showAlert('❌ Erro ao excluir usuário', 'danger');
             }
         }
@@ -810,7 +855,7 @@
                     showAlert('❌ ' + data.error, 'danger');
                 }
             } catch (error) {
-                console.error('Erro ao redefinir senha:', error);
+                console.error('❌ Erro ao redefinir senha:', error);
                 showAlert('❌ Erro ao redefinir senha', 'danger');
             }
         }
@@ -818,12 +863,17 @@
         // Carregar registros administrativos
         async function carregarRegistrosAdmin() {
             try {
-                document.getElementById('loading-registros').style.display = 'block';
-                document.getElementById('no-registros').style.display = 'none';
+                console.log('📊 Carregando registros admin...');
+                
+                // Mostrar loading
+                const loadingElement = document.getElementById('loading-registros');
+                const noRegistrosElement = document.getElementById('no-registros');
+                if (loadingElement) loadingElement.style.display = 'block';
+                if (noRegistrosElement) noRegistrosElement.style.display = 'none';
 
-                const userId = document.getElementById('filter-user').value;
-                const startDate = document.getElementById('filter-start').value;
-                const endDate = document.getElementById('filter-end').value;
+                const userId = document.getElementById('filter-user')?.value;
+                const startDate = document.getElementById('filter-start')?.value;
+                const endDate = document.getElementById('filter-end')?.value;
 
                 let url = `/api/admin/registros?limit=200`;
                 if (userId) {
@@ -839,23 +889,32 @@
                 if (data.success) {
                     registrosList = data.registros;
                     exibirRegistrosAdmin(data.registros);
+                    console.log('✅ Registros carregados:', data.registros.length);
                 } else {
-                    console.error('Erro na resposta da API:', data);
+                    console.error('❌ Erro na resposta da API:', data);
                     showAlert('❌ Erro ao carregar registros: ' + (data.error || 'Erro desconhecido'), 'danger');
-                    document.getElementById('no-registros').style.display = 'block';
+                    if (noRegistrosElement) noRegistrosElement.style.display = 'block';
                 }
             } catch (error) {
-                console.error('Erro ao carregar registros:', error);
+                console.error('❌ Erro ao carregar registros:', error);
                 showAlert('❌ Erro ao carregar registros: ' + error.message, 'danger');
-                document.getElementById('no-registros').style.display = 'block';
+                const noRegistrosElement = document.getElementById('no-registros');
+                if (noRegistrosElement) noRegistrosElement.style.display = 'block';
             } finally {
-                document.getElementById('loading-registros').style.display = 'none';
+                const loadingElement = document.getElementById('loading-registros');
+                if (loadingElement) loadingElement.style.display = 'none';
             }
         }
 
         // Exibir registros administrativos
         function exibirRegistrosAdmin(registros) {
             const tbody = document.getElementById('registros-admin-body');
+            const noRegistrosElement = document.getElementById('no-registros');
+            
+            if (!tbody) {
+                console.error('❌ Elemento tbody não encontrado');
+                return;
+            }
             
             if (registros.length === 0) {
                 tbody.innerHTML = `
@@ -866,8 +925,11 @@
                         </td>
                     </tr>
                 `;
+                if (noRegistrosElement) noRegistrosElement.style.display = 'block';
                 return;
             }
+
+            if (noRegistrosElement) noRegistrosElement.style.display = 'none';
 
             tbody.innerHTML = registros.map(registro => `
                 <tr>
@@ -919,7 +981,7 @@
                     modal.show();
                 }
             } catch (error) {
-                console.error('Erro ao carregar registro:', error);
+                console.error('❌ Erro ao carregar registro:', error);
                 showAlert('❌ Erro ao carregar registro', 'danger');
             }
         }
@@ -957,7 +1019,7 @@
                     showAlert('❌ ' + data.error, 'danger');
                 }
             } catch (error) {
-                console.error('Erro ao salvar registro:', error);
+                console.error('❌ Erro ao salvar registro:', error);
                 showAlert('❌ Erro ao salvar registro', 'danger');
             }
         }
@@ -986,7 +1048,7 @@
                     showAlert('❌ ' + data.error, 'danger');
                 }
             } catch (error) {
-                console.error('Erro ao excluir registro:', error);
+                console.error('❌ Erro ao excluir registro:', error);
                 showAlert('❌ Erro ao excluir registro', 'danger');
             }
         }
@@ -1012,7 +1074,7 @@
                 window.open(url, '_blank');
                 showAlert('📊 Exportação para Excel iniciada', 'info');
             } catch (error) {
-                console.error('Erro ao exportar Excel:', error);
+                console.error('❌ Erro ao exportar Excel:', error);
                 showAlert('❌ Erro ao exportar Excel', 'danger');
             }
         }
@@ -1038,186 +1100,9 @@
                 window.open(url, '_blank');
                 showAlert('📄 Exportação para PDF iniciada', 'info');
             } catch (error) {
-                console.error('Erro ao exportar PDF:', error);
+                console.error('❌ Erro ao exportar PDF:', error);
                 showAlert('❌ Erro ao exportar PDF', 'danger');
             }
         }
 
-        // Gerar relatórios na página
-        async function gerarRelatorio() {
-            try {
-                const usuarioId = document.getElementById('relatorio-usuario').value;
-                const dataInicio = document.getElementById('relatorio-data-inicio').value;
-                const dataFim = document.getElementById('relatorio-data-fim').value;
-
-                // Buscar registros com filtros
-                let url = `/api/admin/registros?limit=1000`;
-                if (usuarioId) url += `&usuario_id_filter=${usuarioId}`;
-                if (dataInicio && dataFim) url += `&data_inicio=${dataInicio}&data_fim=${dataFim}`;
-
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (data.success) {
-                    const registros = data.registros;
-                    gerarRelatorioFrequencia(registros);
-                    gerarRelatorioHorasExtras(registros);
-                    gerarRelatorioCompleto(registros);
-                } else {
-                    showAlert('❌ Erro ao carregar dados para relatório', 'danger');
-                }
-            } catch (error) {
-                console.error('Erro ao gerar relatório:', error);
-                showAlert('❌ Erro ao gerar relatório', 'danger');
-            }
-        }
-
-        // Gerar relatório de frequência
-        function gerarRelatorioFrequencia(registros) {
-            const container = document.getElementById('relatorio-frequencia');
-            
-            // Agrupar por usuário
-            const usuarios = {};
-            registros.forEach(registro => {
-                if (!usuarios[registro.usuario_nome]) {
-                    usuarios[registro.usuario_nome] = {
-                        totalRegistros: 0,
-                        horasExtras: 0,
-                        diasTrabalhados: new Set()
-                    };
-                }
-                
-                usuarios[registro.usuario_nome].totalRegistros++;
-                if (registro.horas_extras) {
-                    usuarios[registro.usuario_nome].horasExtras++;
-                }
-                usuarios[registro.usuario_nome].diasTrabalhados.add(registro.data);
-            });
-
-            let html = '<div class="table-responsive"><table class="table table-sm">';
-            html += '<thead><tr><th>Usuário</th><th>Dias Trabalhados</th><th>Total Registros</th><th>Horas Extras</th></tr></thead><tbody>';
-            
-            Object.keys(usuarios).forEach(usuario => {
-                const dados = usuarios[usuario];
-                html += `<tr>
-                    <td><strong>${usuario}</strong></td>
-                    <td>${dados.diasTrabalhados.size}</td>
-                    <td>${dados.totalRegistros}</td>
-                    <td>${dados.horasExtras}</td>
-                </tr>`;
-            });
-            
-            html += '</tbody></table></div>';
-            container.innerHTML = html;
-        }
-
-        // Gerar relatório de horas extras
-        function gerarRelatorioHorasExtras(registros) {
-            const container = document.getElementById('relatorio-horas-extras');
-            
-            const horasExtras = registros.filter(r => r.horas_extras);
-            
-            if (horasExtras.length === 0) {
-                container.innerHTML = '<p class="text-center text-muted">Nenhuma hora extra encontrada no período</p>';
-                return;
-            }
-
-            let html = '<div class="table-responsive"><table class="table table-sm">';
-            html += '<thead><tr><th>Usuário</th><th>Data</th><th>Horário</th><th>Local</th></tr></thead><tbody>';
-            
-            horasExtras.forEach(registro => {
-                html += `<tr>
-                    <td><strong>${registro.usuario_nome}</strong></td>
-                    <td>${registro.data}</td>
-                    <td>${registro.hora_entrada} - ${registro.hora_saida}</td>
-                    <td>${registro.local || '-'}</td>
-                </tr>`;
-            });
-            
-            html += '</tbody></table></div>';
-            container.innerHTML = html;
-        }
-
-        // Gerar relatório completo
-        function gerarRelatorioCompleto(registros) {
-            const tbody = document.getElementById('relatorio-completo-body');
-            
-            if (registros.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Nenhum registro encontrado</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = registros.map(registro => {
-                // Calcular horas trabalhadas (simplificado)
-                let horasTrabalhadas = '-';
-                let horasExtras = '-';
-                
-                if (registro.hora_entrada && registro.hora_saida) {
-                    const entrada = new Date(`2000-01-01T${registro.hora_entrada}`);
-                    const saida = new Date(`2000-01-01T${registro.hora_saida}`);
-                    const diffMs = saida - entrada;
-                    const diffHrs = diffMs / (1000 * 60 * 60);
-                    
-                    horasTrabalhadas = diffHrs.toFixed(1) + 'h';
-                    horasExtras = registro.horas_extras ? horasTrabalhadas : '0h';
-                }
-
-                return `<tr>
-                    <td><strong>${registro.usuario_nome}</strong></td>
-                    <td>${registro.data}</td>
-                    <td>${registro.hora_entrada || '-'}</td>
-                    <td>${registro.hora_saida || '-'}</td>
-                    <td>${horasTrabalhadas}</td>
-                    <td>${horasExtras}</td>
-                    <td>${registro.local || '-'}</td>
-                </tr>`;
-            }).join('');
-        }
-
-        // Função para mostrar alertas
-        function showAlert(message, type) {
-            const alertContainer = document.getElementById('alert-container');
-            const alertId = 'alert-' + Date.now();
-            
-            const alertHTML = `
-                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            
-            alertContainer.innerHTML += alertHTML;
-            
-            // Auto-remover após 5 segundos
-            setTimeout(() => {
-                const alertElement = document.getElementById(alertId);
-                if (alertElement) {
-                    alertElement.remove();
-                }
-            }, 5000);
-        }
-
-        // Logout
-        function logout() {
-            localStorage.removeItem('usuario');
-            window.location.href = 'login';
-        }
-
-        // Event listeners para modais
-        document.getElementById('modalUsuario').addEventListener('show.bs.modal', function () {
-            if (!document.getElementById('usuario-id').value) {
-                novoUsuario();
-            }
-        });
-
-        // Configurar data atual nos filtros
-        document.addEventListener('DOMContentLoaded', function() {
-            const hoje = new Date().toISOString().split('T')[0];
-            document.getElementById('filter-start').value = hoje;
-            document.getElementById('filter-end').value = hoje;
-            document.getElementById('relatorio-data-inicio').value = hoje;
-            document.getElementById('relatorio-data-fim').value = hoje;
-        });
-    </script>
-</body>
-</html>
+        // Gerar

@@ -11,8 +11,8 @@ const PORT = process.env.PORT || 3000;
 
 // Configurações do PostgreSQL
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  connectionString: process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/sistema_ponto',
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
 // Middleware
