@@ -209,6 +209,71 @@
             background: #f8f9fa;
             border-left: 4px solid #17a2b8;
         }
+
+        /* NOVO ESTILO PARA O CARTÃO SIMPLIFICADO DE HORAS EXTRAS */
+        .overtime-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            max-width: 320px;
+            width: 100%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #eaeaea;
+        }
+        
+        .overtime-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .overtime-header {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .overtime-title {
+            font-size: 18px;
+            color: #2c3e50;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        
+        .overtime-month {
+            font-size: 14px;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        
+        .overtime-content {
+            text-align: center;
+            padding: 15px 0;
+        }
+        
+        .overtime-number {
+            font-size: 48px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+        
+        .overtime-label {
+            font-size: 16px;
+            color: #7f8c8d;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .overtime-footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+            padding-top: 16px;
+            border-top: 1px solid #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -248,40 +313,29 @@
     <div id="alert-container"></div>
 
     <div class="container mt-4">
-        <!-- Cards de Horas Extras Detalhadas -->
+        <!-- NOVO CARTÃO SIMPLIFICADO DE HORAS EXTRAS -->
         <div class="row mb-4">
-            <div class="col-md-6 mb-3">
-                <div class="card horas-extras-card card-hover">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4 id="horas-extras-reais">0h</h4>
-                                <p class="mb-0">Horas Extras (Mês Atual)</p>
-                                <small class="opacity-75" id="periodo-horas-extras"></small>
-                            </div>
-                            <div class="align-self-center">
-                                <i class="fas fa-user-clock fa-2x opacity-75"></i>
-                            </div>
-                        </div>
+            <div class="col-md-6">
+                <div class="overtime-card card-hover">
+                    <div class="overtime-header">
+                        <div class="overtime-title">Horas Extras (Mês Atual)</div>
+                        <div class="overtime-month" id="periodo-horas-extras">10/2025</div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="card info-card card-hover">
-                    <div class="card-body">
-                        <h6><i class="fas fa-info-circle"></i> Como é calculado?</h6>
-                        <small class="text-muted">
-                            • 1 hora de almoço é descontada automaticamente<br>
-                            • Cálculo resetado a cada mês<br>
-                            • Somente horas extras registradas
-                        </small>
+                    
+                    <div class="overtime-content">
+                        <div class="overtime-number" id="horas-extras-reais">12h</div>
+                        <div class="overtime-label">Total Horas Extras</div>
+                    </div>
+                    
+                    <div class="overtime-footer">
+                        Atualizado em tempo real
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Card de Horas Extras Simples (mantido para compatibilidade) -->
-        <div class="row mb-4">
+        <div class="row mb-4" style="display: none;">
             <div class="col-md-4 mb-3">
                 <div class="card stats-card card-hover">
                     <div class="card-body">
