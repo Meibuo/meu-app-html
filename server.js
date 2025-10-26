@@ -75,6 +75,25 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Tabela registros_ponto criada/verificada');
 
+    // Verificar se as colunas hora_entrada e hora_saida existem, se não, adicionar
+    try {
+      await pool.query('SELECT hora_entrada FROM registros_ponto LIMIT 1');
+      console.log('✅ Coluna hora_entrada já existe');
+    } catch (error) {
+      console.log('🔄 Adicionando coluna hora_entrada...');
+      await pool.query('ALTER TABLE registros_ponto ADD COLUMN hora_entrada TIME');
+      console.log('✅ Coluna hora_entrada adicionada');
+    }
+
+    try {
+      await pool.query('SELECT hora_saida FROM registros_ponto LIMIT 1');
+      console.log('✅ Coluna hora_saida já existe');
+    } catch (error) {
+      console.log('🔄 Adicionando coluna hora_saida...');
+      await pool.query('ALTER TABLE registros_ponto ADD COLUMN hora_saida TIME');
+      console.log('✅ Coluna hora_saida adicionada');
+    }
+
     // Verificar se admin existe
     const adminResult = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@admin.com']);
     
