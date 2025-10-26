@@ -518,8 +518,57 @@
         let usuariosList = [];
         let registrosList = [];
 
+        // Função para mostrar alertas
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            const alertId = 'alert-' + Date.now();
+            
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertContainer.innerHTML += alertHTML;
+            
+            // Auto-remover após 5 segundos
+            setTimeout(() => {
+                const alertElement = document.getElementById(alertId);
+                if (alertElement) {
+                    alertElement.remove();
+                }
+            }, 5000);
+        }
+
+        // Função de logout
+        function logout() {
+            if (confirm('Deseja realmente sair do sistema?')) {
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+        }
+
+        // Função para gerar relatório (placeholder)
+        function gerarRelatorio() {
+            showAlert('Funcionalidade de relatório em desenvolvimento', 'info');
+        }
+
         // Verificar autenticação e admin
         document.addEventListener('DOMContentLoaded', function() {
+            // Configurar o modal de novo usuário
+            const btnNovoUsuario = document.getElementById('btn-novo-usuario');
+            if (btnNovoUsuario) {
+                btnNovoUsuario.addEventListener('click', function() {
+                    document.getElementById('modalUsuarioTitle').textContent = 'Novo Usuário';
+                    document.getElementById('form-usuario').reset();
+                    document.getElementById('usuario-id').value = '';
+                    document.getElementById('senha').required = true;
+                    document.getElementById('senha').placeholder = '';
+                });
+            }
+            
             console.log('🔄 Inicializando painel admin...');
             carregarEstatisticas();
             carregarUsuarios();
@@ -579,14 +628,25 @@
             try {
                 console.log('👥 Carregando usuários...');
                 
-                // Mostrar loading
+                // Mostrar loading - COM VERIFICAÇÃO DE ELEMENTO
                 const loadingElement = document.getElementById('loading-usuarios');
                 const noUsersElement = document.getElementById('no-users');
+                const tbody = document.getElementById('usuarios-body');
+                
                 if (loadingElement) loadingElement.style.display = 'block';
                 if (noUsersElement) noUsersElement.style.display = 'none';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center"><div class="loading-spinner"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Carregando usuários...</p></div></td></tr>';
 
                 const response = await fetch('/api/admin/usuarios');
                 console.log('📨 Resposta da API:', response.status);
+                
+                // Verificar se a resposta é JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('❌ Resposta não é JSON:', text.substring(0, 200));
+                    throw new Error('Resposta do servidor não é JSON');
+                }
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -865,11 +925,14 @@
             try {
                 console.log('📊 Carregando registros admin...');
                 
-                // Mostrar loading
+                // Mostrar loading - COM VERIFICAÇÃO
                 const loadingElement = document.getElementById('loading-registros');
                 const noRegistrosElement = document.getElementById('no-registros');
+                const tbody = document.getElementById('registros-admin-body');
+                
                 if (loadingElement) loadingElement.style.display = 'block';
                 if (noRegistrosElement) noRegistrosElement.style.display = 'none';
+                if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="text-center"><div class="loading-spinner"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Carregando registros...</p></div></td></tr>';
 
                 const userId = document.getElementById('filter-user')?.value;
                 const startDate = document.getElementById('filter-start')?.value;
@@ -884,6 +947,15 @@
                 }
 
                 const response = await fetch(url);
+                
+                // Verificar se é JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('❌ Resposta não é JSON:', text.substring(0, 200));
+                    throw new Error('Resposta do servidor não é JSON');
+                }
+                
                 const data = await response.json();
 
                 if (data.success) {
@@ -1104,5 +1176,6 @@
                 showAlert('❌ Erro ao exportar PDF', 'danger');
             }
         }
-
-        // Gerar
+    </script>
+</body>
+</html>
