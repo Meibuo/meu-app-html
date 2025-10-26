@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 // Configurações do PostgreSQL
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://username:password@localhost:5432/sistema_ponto',
+  connectionString: process.env.DATABASE_URL || 'postgresql://usuario:senha@localhost:5432/sistema_ponto',
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
@@ -193,7 +193,7 @@ function getHorariosFixos(data) {
 
 // ========== ROTAS DA API ==========
 
-// ROTA DE LOGIN
+// ROTA DE LOGIN (SIMPLIFICADA - SEM VERIFICAÇÃO DE AUTENTICAÇÃO)
 app.post('/api/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -243,7 +243,7 @@ app.post('/api/login', async (req, res) => {
 
 // ========== ROTAS ADMINISTRATIVAS ==========
 
-// ROTA PARA LISTAR TODOS OS USUÁRIOS
+// ROTA PARA LISTAR TODOS OS USUÁRIOS (SEM AUTENTICAÇÃO)
 app.get('/api/admin/usuarios', async (req, res) => {
   try {
     console.log('📋 Buscando lista de usuários...');
@@ -274,11 +274,14 @@ app.get('/api/admin/usuarios', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao listar usuários:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro interno do servidor: ' + error.message 
+    });
   }
 });
 
-// ROTA DE CADASTRO (para admin)
+// ROTA DE CADASTRO (para admin - SEM AUTENTICAÇÃO)
 app.post('/api/admin/cadastro', async (req, res) => {
   try {
     const { nome, email, telefone, senha, cargo, isAdmin } = req.body;
@@ -327,7 +330,7 @@ app.post('/api/admin/cadastro', async (req, res) => {
   }
 });
 
-// ROTA PARA EDITAR USUÁRIO
+// ROTA PARA EDITAR USUÁRIO (SEM AUTENTICAÇÃO)
 app.put('/api/admin/usuarios/:usuario_id', async (req, res) => {
   try {
     const { usuario_id } = req.params;
@@ -424,7 +427,7 @@ app.put('/api/admin/usuarios/:usuario_id', async (req, res) => {
   }
 });
 
-// ROTA PARA EXCLUIR USUÁRIO
+// ROTA PARA EXCLUIR USUÁRIO (SEM AUTENTICAÇÃO)
 app.delete('/api/admin/usuarios/:usuario_id', async (req, res) => {
   try {
     const { usuario_id } = req.params;
@@ -464,7 +467,7 @@ app.delete('/api/admin/usuarios/:usuario_id', async (req, res) => {
   }
 });
 
-// ROTA PARA REDEFINIR SENHA - SENHA PADRÃO 123456
+// ROTA PARA REDEFINIR SENHA - SENHA PADRÃO 123456 (SEM AUTENTICAÇÃO)
 app.post('/api/admin/redefinir-senha', async (req, res) => {
   try {
     const { usuario_id_reset } = req.body;
@@ -511,7 +514,7 @@ app.post('/api/admin/redefinir-senha', async (req, res) => {
   }
 });
 
-// ROTA PARA BUSCAR TODOS OS REGISTROS
+// ROTA PARA BUSCAR TODOS OS REGISTROS (SEM AUTENTICAÇÃO)
 app.get('/api/admin/registros', async (req, res) => {
   try {
     const { usuario_id_filter, data_inicio, data_fim, limit = 200 } = req.query;
@@ -590,7 +593,7 @@ app.get('/api/admin/registros', async (req, res) => {
   }
 });
 
-// ROTA PARA EDITAR REGISTRO DE PONTO
+// ROTA PARA EDITAR REGISTRO DE PONTO (SEM AUTENTICAÇÃO)
 app.put('/api/admin/registros/:registro_id', async (req, res) => {
   try {
     const { registro_id } = req.params;
@@ -683,7 +686,7 @@ app.put('/api/admin/registros/:registro_id', async (req, res) => {
   }
 });
 
-// ROTA PARA EXCLUIR REGISTRO (ADMIN)
+// ROTA PARA EXCLUIR REGISTRO (ADMIN - SEM AUTENTICAÇÃO)
 app.delete('/api/admin/registros/:registro_id', async (req, res) => {
   try {
     const { registro_id } = req.params;
@@ -728,7 +731,7 @@ app.delete('/api/admin/registros/:registro_id', async (req, res) => {
   }
 });
 
-// ROTA PARA ESTATÍSTICAS DO SISTEMA
+// ROTA PARA ESTATÍSTICAS DO SISTEMA (SEM AUTENTICAÇÃO)
 app.get('/api/admin/estatisticas', async (req, res) => {
   try {
     console.log('📈 Buscando estatísticas do sistema...');
@@ -772,7 +775,7 @@ app.get('/api/admin/estatisticas', async (req, res) => {
 
 // ========== ROTAS DE EXPORTAÇÃO ==========
 
-// ROTA PARA EXPORTAR EXCEL (ADMIN)
+// ROTA PARA EXPORTAR EXCEL (ADMIN - SEM AUTENTICAÇÃO)
 app.get('/api/exportar/excel/admin', async (req, res) => {
   try {
     const { usuario_id_filter, data_inicio, data_fim } = req.query;
@@ -872,7 +875,7 @@ app.get('/api/exportar/excel/admin', async (req, res) => {
   }
 });
 
-// ROTA PARA EXPORTAR PDF (ADMIN)
+// ROTA PARA EXPORTAR PDF (ADMIN - SEM AUTENTICAÇÃO)
 app.get('/api/exportar/pdf/admin', async (req, res) => {
   try {
     const { usuario_id_filter, data_inicio, data_fim } = req.query;
@@ -998,212 +1001,6 @@ app.get('/api/exportar/pdf/admin', async (req, res) => {
   }
 });
 
-// ROTA PARA EXPORTAR PARA EXCEL (USUÁRIO)
-app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
-  try {
-    const usuario_id = req.params.usuario_id;
-    const { data_inicio, data_fim } = req.query;
-
-    console.log('📊 Exportando Excel para usuário:', usuario_id);
-
-    let query = `
-      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
-      FROM registros_ponto rp 
-      JOIN users u ON rp.usuario_id = u.id 
-      WHERE rp.usuario_id = $1
-    `;
-    let params = [usuario_id];
-
-    if (data_inicio && data_fim) {
-      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
-      params.push(data_inicio, data_fim);
-    }
-
-    query += ` ORDER BY rp.criado_em DESC`;
-
-    const result = await pool.query(query, params);
-    const registros = result.rows;
-
-    console.log(`📊 Exportando ${registros.length} registros para Excel`);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Registros de Ponto');
-
-    worksheet.columns = [
-      { header: 'Data', key: 'data', width: 15 },
-      { header: 'Hora', key: 'hora', width: 10 },
-      { header: 'Tipo', key: 'tipo', width: 15 },
-      { header: 'Local', key: 'local', width: 20 },
-      { header: 'Horas Extras', key: 'horas_extras', width: 12 },
-      { header: 'Hora Entrada', key: 'hora_entrada', width: 12 },
-      { header: 'Hora Saída', key: 'hora_saida', width: 12 },
-      { header: 'Observação', key: 'observacao', width: 30 },
-      { header: 'Usuário', key: 'usuario_nome', width: 20 },
-      { header: 'E-mail', key: 'usuario_email', width: 25 }
-    ];
-
-    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: '4472C4' }
-    };
-
-    registros.forEach(registro => {
-      const data = new Date(registro.criado_em);
-      const dataFormatada = data.toLocaleDateString('pt-BR');
-      const horaFormatada = data.toLocaleTimeString('pt-BR');
-
-      let dataCustomFormatada = dataFormatada;
-      if (registro.data_custom && typeof registro.data_custom === 'string') {
-        try {
-          const [year, month, day] = registro.data_custom.split('-');
-          dataCustomFormatada = `${day}/${month}/${year}`;
-        } catch (error) {
-          // Usa a data padrão se houver erro
-        }
-      }
-
-      worksheet.addRow({
-        data: dataCustomFormatada,
-        hora: horaFormatada,
-        tipo: registro.tipo,
-        local: registro.local || '',
-        horas_extras: registro.horas_extras ? 'Sim' : 'Não',
-        hora_entrada: registro.hora_entrada || '',
-        hora_saida: registro.hora_saida || '',
-        observacao: registro.observacao || '',
-        usuario_nome: registro.usuario_nome,
-        usuario_email: registro.usuario_email
-      });
-    });
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.xlsx`);
-
-    await workbook.xlsx.write(res);
-    res.end();
-
-    console.log('✅ Excel exportado com sucesso');
-
-  } catch (error) {
-    console.error('❌ Erro ao exportar Excel:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erro interno do servidor: ' + error.message
-    });
-  }
-});
-
-// ROTA PARA EXPORTAR PARA PDF (USUÁRIO)
-app.get('/api/exportar/pdf/:usuario_id', async (req, res) => {
-  try {
-    const usuario_id = req.params.usuario_id;
-    const { data_inicio, data_fim } = req.query;
-
-    console.log('📄 Exportando PDF para usuário:', usuario_id);
-
-    let query = `
-      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
-      FROM registros_ponto rp 
-      JOIN users u ON rp.usuario_id = u.id 
-      WHERE rp.usuario_id = $1
-    `;
-    let params = [usuario_id];
-
-    if (data_inicio && data_fim) {
-      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
-      params.push(data_inicio, data_fim);
-    }
-
-    query += ` ORDER BY rp.criado_em DESC`;
-
-    const result = await pool.query(query, params);
-    const registros = result.rows;
-
-    console.log(`📄 Exportando ${registros.length} registros para PDF`);
-
-    // Criar PDF
-    const doc = new PDFDocument();
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.pdf`);
-    
-    doc.pipe(res);
-
-    // Cabeçalho
-    doc.fontSize(20).text('Relatório de Ponto', 50, 50);
-    doc.fontSize(12).text(`Usuário: ${registros.length > 0 ? registros[0].usuario_nome : 'N/A'}`, 50, 80);
-    doc.fontSize(12).text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 50, 100);
-    
-    // Informações do filtro
-    let yPosition = 130;
-    if (data_inicio && data_fim) {
-      doc.fontSize(10).text(`Período: ${data_inicio} à ${data_fim}`, 50, yPosition);
-      yPosition += 20;
-    }
-
-    // Tabela
-    const tableTop = yPosition + 20;
-    let currentY = tableTop;
-
-    // Cabeçalho da tabela
-    doc.fontSize(8).text('Data', 50, currentY);
-    doc.text('Hora', 100, currentY);
-    doc.text('Tipo', 150, currentY);
-    doc.text('Local', 200, currentY);
-    doc.text('H.Extras', 280, currentY);
-    doc.text('Observação', 330, currentY);
-
-    currentY += 20;
-
-    // Linhas da tabela
-    registros.forEach((registro, index) => {
-      if (currentY > 700) { // Nova página se necessário
-        doc.addPage();
-        currentY = 50;
-      }
-
-      const data = new Date(registro.criado_em);
-      const dataFormatada = data.toLocaleDateString('pt-BR');
-      const horaFormatada = data.toLocaleTimeString('pt-BR');
-
-      let dataCustomFormatada = dataFormatada;
-      if (registro.data_custom && typeof registro.data_custom === 'string') {
-        try {
-          const [year, month, day] = registro.data_custom.split('-');
-          dataCustomFormatada = `${day}/${month}/${year}`;
-        } catch (error) {
-          // Usa a data padrão se houver erro
-        }
-      }
-
-      doc.text(dataCustomFormatada, 50, currentY);
-      doc.text(horaFormatada, 100, currentY);
-      doc.text(registro.tipo, 150, currentY);
-      doc.text((registro.local || '-').substring(0, 15), 200, currentY);
-      doc.text(registro.horas_extras ? 'Sim' : 'Não', 280, currentY);
-      doc.text((registro.observacao || '-').substring(0, 20), 330, currentY);
-
-      currentY += 15;
-    });
-
-    // Rodapé
-    doc.fontSize(10).text(`Total de registros: ${registros.length}`, 50, currentY + 20);
-
-    doc.end();
-
-    console.log('✅ PDF exportado com sucesso');
-
-  } catch (error) {
-    console.error('❌ Erro ao exportar PDF:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erro interno do servidor: ' + error.message
-    });
-  }
-});
-
 // ========== ROTAS DO USUÁRIO COMUM ==========
 
 // ROTA PARA OBTER NOTIFICAÇÕES
@@ -1270,12 +1067,6 @@ app.put('/api/perfil', async (req, res) => {
     const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
     if (userExists.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
-    }
-
-    const user = userExists.rows[0];
-
-    if (!user.is_admin && user.perfil_editado) {
-      return res.status(400).json({ success: false, error: 'Perfil já foi editado. Para novas alterações, entre em contato com o administrador.' });
     }
 
     await pool.query(
