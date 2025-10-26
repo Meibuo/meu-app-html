@@ -527,7 +527,7 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
   }
 });
 
-// Obter registros do usuário - VERSÃO COM HORÁRIOS FIXOS
+// Obter registros do usuário - VERSÃO CORRIGIDA
 app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
@@ -552,20 +552,27 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
     const registros = result.rows.map(reg => {
       let dataFormatada;
       
-      // Usar data_custom se existir, senão usar criado_em
-      if (reg.data_custom) {
-        // data_custom já vem no formato YYYY-MM-DD
-        const [year, month, day] = reg.data_custom.split('-');
-        dataFormatada = `${day}/${month}/${year}`;
+      // CORREÇÃO: Verificar se data_custom existe e é válido
+      if (reg.data_custom && typeof reg.data_custom === 'string') {
+        try {
+          // data_custom já vem no formato YYYY-MM-DD
+          const [year, month, day] = reg.data_custom.split('-');
+          dataFormatada = `${day}/${month}/${year}`;
+        } catch (error) {
+          console.warn('❌ Erro ao formatar data_custom:', reg.data_custom);
+          // Se der erro, usar criado_em
+          const data = new Date(reg.criado_em);
+          dataFormatada = data.toLocaleDateString('pt-BR');
+        }
       } else {
         // Formatar criado_em
         const data = new Date(reg.criado_em);
         dataFormatada = data.toLocaleDateString('pt-BR');
       }
       
-      // Obter horários fixos para o dia
+      // Obter horários fixos para o dia - CORREÇÃO
       let dataParaHorarios;
-      if (reg.data_custom) {
+      if (reg.data_custom && typeof reg.data_custom === 'string') {
         dataParaHorarios = reg.data_custom;
       } else {
         const data = new Date(reg.criado_em);
