@@ -77,24 +77,19 @@ const initializeDatabase = async () => {
     `);
     console.log('✅ Tabela registros_ponto criada/verificada');
 
-    // Verificar se as colunas hora_entrada e hora_saida existem, se não, adicionar
-    try {
-      await pool.query('SELECT hora_entrada FROM registros_ponto LIMIT 1');
-      console.log('✅ Coluna hora_entrada já existe');
-    } catch (error) {
-      console.log('🔄 Adicionando coluna hora_entrada...');
-      await pool.query('ALTER TABLE registros_ponto ADD COLUMN hora_entrada TIME');
-      console.log('✅ Coluna hora_entrada adicionada');
-    }
-
-    try {
-      await pool.query('SELECT hora_saida FROM registros_ponto LIMIT 1');
-      console.log('✅ Coluna hora_saida já existe');
-    } catch (error) {
-      console.log('🔄 Adicionando coluna hora_saida...');
-      await pool.query('ALTER TABLE registros_ponto ADD COLUMN hora_saida TIME');
-      console.log('✅ Coluna hora_saida adicionada');
-    }
+    // Tabela para notificações
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notificacoes (
+        id VARCHAR(100) PRIMARY KEY,
+        usuario_id VARCHAR(100) NOT NULL,
+        titulo VARCHAR(200) NOT NULL,
+        mensagem TEXT NOT NULL,
+        lida BOOLEAN DEFAULT FALSE,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (usuario_id) REFERENCES users(id)
+      )
+    `);
+    console.log('✅ Tabela notificacoes criada/verificada');
 
     // Verificar se admin existe
     const adminResult = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@admin.com']);
@@ -121,58 +116,20 @@ const initializeDatabase = async () => {
   }
 };
 
-// Middleware de autenticação SIMPLIFICADO (apenas para rotas que realmente precisam)
-const requireAuth = async (req, res, next) => {
+// Função para criar notificação
+const criarNotificacao = async (usuario_id, titulo, mensagem) => {
   try {
-    // Tentar obter usuario_id de diferentes lugares
-    let usuario_id = req.body.usuario_id || req.query.usuario_id;
+    const notificacaoId = 'notif-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     
-    // Se não encontrou no body ou query, tentar na URL para rotas GET
-    if (!usuario_id && req.params.usuario_id) {
-      usuario_id = req.params.usuario_id;
-    }
+    await pool.query(
+      `INSERT INTO notificacoes (id, usuario_id, titulo, mensagem) 
+       VALUES ($1, $2, $3, $4)`,
+      [notificacaoId, usuario_id, titulo, mensagem]
+    );
     
-    if (!usuario_id) {
-      return res.status(401).json({ success: false, error: 'Usuário não autenticado' });
-    }
-
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
-    if (result.rows.length === 0) {
-      return res.status(401).json({ success: false, error: 'Usuário não encontrado' });
-    }
-
-    req.user = result.rows[0];
-    next();
+    console.log(`📢 Notificação criada para usuário ${usuario_id}: ${titulo}`);
   } catch (error) {
-    console.error('Erro na autenticação:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
-  }
-};
-
-// Middleware para admin
-const requireAdmin = async (req, res, next) => {
-  try {
-    const usuario_id = req.body.usuario_id || req.query.usuario_id;
-    
-    if (!usuario_id) {
-      return res.status(401).json({ success: false, error: 'Usuário não autenticado' });
-    }
-
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
-    if (result.rows.length === 0) {
-      return res.status(401).json({ success: false, error: 'Usuário não encontrado' });
-    }
-
-    const user = result.rows[0];
-    if (!user.is_admin) {
-      return res.status(403).json({ success: false, error: 'Acesso restrito a administradores' });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error('Erro na verificação de admin:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    console.error('Erro ao criar notificação:', error);
   }
 };
 
@@ -286,10 +243,10 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ========== ROTAS ADMINISTRATIVAS CORRIGIDAS ==========
+// ========== ROTAS ADMINISTRATIVAS SEM AUTENTICAÇÃO ==========
 
-// ROTA PARA LISTAR TODOS OS USUÁRIOS (APENAS ADMIN)
-app.get('/api/admin/usuarios', requireAdmin, async (req, res) => {
+// ROTA PARA LISTAR TODOS OS USUÁRIOS
+app.get('/api/admin/usuarios', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT id, nome, email, telefone, cargo, is_admin, status, criado_em 
@@ -320,7 +277,7 @@ app.get('/api/admin/usuarios', requireAdmin, async (req, res) => {
 });
 
 // ROTA DE CADASTRO (para admin)
-app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
+app.post('/api/admin/cadastro', async (req, res) => {
   try {
     const { nome, email, telefone, senha, cargo, isAdmin } = req.body;
     
@@ -364,8 +321,8 @@ app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
   }
 });
 
-// ROTA PARA EDITAR USUÁRIO (APENAS ADMIN)
-app.put('/api/admin/usuarios/:usuario_id', requireAdmin, async (req, res) => {
+// ROTA PARA EDITAR USUÁRIO
+app.put('/api/admin/usuarios/:usuario_id', async (req, res) => {
   try {
     const { usuario_id } = req.params;
     const { nome, email, telefone, cargo, isAdmin, senha } = req.body;
@@ -439,6 +396,13 @@ app.put('/api/admin/usuarios/:usuario_id', requireAdmin, async (req, res) => {
 
     await pool.query(query, params);
 
+    // Criar notificação para o usuário
+    await criarNotificacao(
+      usuario_id,
+      'Perfil Atualizado',
+      'Seus dados foram atualizados pelo administrador. Verifique suas informações.'
+    );
+
     res.json({
       success: true,
       message: 'Usuário atualizado com sucesso!'
@@ -450,8 +414,44 @@ app.put('/api/admin/usuarios/:usuario_id', requireAdmin, async (req, res) => {
   }
 });
 
-// ROTA PARA REDEFINIR SENHA (APENAS ADMIN) - SENHA PADRÃO 123456
-app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
+// ROTA PARA EXCLUIR USUÁRIO
+app.delete('/api/admin/usuarios/:usuario_id', async (req, res) => {
+  try {
+    const { usuario_id } = req.params;
+
+    // Verificar se usuário existe
+    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+    }
+
+    const usuario = userExists.rows[0];
+
+    // Não permitir excluir o próprio admin
+    if (usuario.is_admin) {
+      return res.status(400).json({ success: false, error: 'Não é possível excluir um administrador' });
+    }
+
+    // Primeiro excluir registros relacionados
+    await pool.query('DELETE FROM registros_ponto WHERE usuario_id = $1', [usuario_id]);
+    await pool.query('DELETE FROM notificacoes WHERE usuario_id = $1', [usuario_id]);
+    
+    // Depois excluir o usuário
+    await pool.query('DELETE FROM users WHERE id = $1', [usuario_id]);
+
+    res.json({
+      success: true,
+      message: 'Usuário excluído com sucesso!'
+    });
+
+  } catch (error) {
+    console.error('Erro ao excluir usuário:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA REDEFINIR SENHA - SENHA PADRÃO 123456
+app.post('/api/admin/redefinir-senha', async (req, res) => {
   try {
     const { usuario_id_reset } = req.body;
 
@@ -474,6 +474,13 @@ app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
       [hashedPassword, usuario_id_reset]
     );
 
+    // Criar notificação para o usuário
+    await criarNotificacao(
+      usuario_id_reset,
+      'Senha Redefinida',
+      'Sua senha foi redefinida pelo administrador. A nova senha é: 123456 - Recomendamos que altere sua senha após o primeiro login.'
+    );
+
     res.json({
       success: true,
       message: 'Senha redefinida com sucesso! A nova senha é: 123456',
@@ -486,13 +493,13 @@ app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
   }
 });
 
-// ROTA PARA BUSCAR TODOS OS REGISTROS (APENAS ADMIN) - CORRIGIDA
-app.get('/api/admin/registros', requireAdmin, async (req, res) => {
+// ROTA PARA BUSCAR TODOS OS REGISTROS - CORRIGIDA
+app.get('/api/admin/registros', async (req, res) => {
   try {
     const { usuario_id_filter, data_inicio, data_fim, limit = 200 } = req.query;
 
     let query = `
-      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
+      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email, u.cargo as usuario_cargo
       FROM registros_ponto rp 
       JOIN users u ON rp.usuario_id = u.id 
       WHERE 1=1
@@ -533,21 +540,16 @@ app.get('/api/admin/registros', requireAdmin, async (req, res) => {
         dataFormatada = data.toLocaleDateString('pt-BR');
       }
 
-      const hora = new Date(reg.criado_em).toLocaleTimeString('pt-BR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-
       return {
         id: reg.id,
         usuario_id: reg.usuario_id,
         usuario_nome: reg.usuario_nome,
+        usuario_cargo: reg.usuario_cargo,
         tipo: reg.tipo,
         local: reg.local,
         observacao: reg.observacao,
         horas_extras: reg.horas_extras,
         data: dataFormatada,
-        hora: hora,
         hora_entrada: reg.hora_entrada ? reg.hora_entrada.substring(0, 5) : '',
         hora_saida: reg.hora_saida ? reg.hora_saida.substring(0, 5) : '',
         criadoEm: reg.criado_em
@@ -566,8 +568,97 @@ app.get('/api/admin/registros', requireAdmin, async (req, res) => {
   }
 });
 
-// ROTA PARA ESTATÍSTICAS DO SISTEMA (APENAS ADMIN)
-app.get('/api/admin/estatisticas', requireAdmin, async (req, res) => {
+// ROTA PARA EDITAR REGISTRO DE PONTO
+app.put('/api/admin/registros/:registro_id', async (req, res) => {
+  try {
+    const { registro_id } = req.params;
+    const { data_custom, hora_entrada, hora_saida, local, observacao, horas_extras } = req.body;
+
+    // Verificar se registro existe
+    const registroExists = await pool.query(`
+      SELECT rp.*, u.nome as usuario_nome 
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE rp.id = $1
+    `, [registro_id]);
+
+    if (registroExists.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Registro não encontrado' });
+    }
+
+    const registro = registroExists.rows[0];
+
+    // Construir query dinamicamente
+    let query = 'UPDATE registros_ponto SET ';
+    const params = [];
+    let paramCount = 1;
+    const updates = [];
+
+    if (data_custom) {
+      updates.push(`data_custom = $${paramCount}`);
+      params.push(data_custom);
+      paramCount++;
+    }
+
+    if (hora_entrada) {
+      updates.push(`hora_entrada = $${paramCount}`);
+      params.push(hora_entrada);
+      paramCount++;
+    }
+
+    if (hora_saida) {
+      updates.push(`hora_saida = $${paramCount}`);
+      params.push(hora_saida);
+      paramCount++;
+    }
+
+    if (local) {
+      updates.push(`local = $${paramCount}`);
+      params.push(local);
+      paramCount++;
+    }
+
+    if (observacao !== undefined) {
+      updates.push(`observacao = $${paramCount}`);
+      params.push(observacao);
+      paramCount++;
+    }
+
+    if (horas_extras !== undefined) {
+      updates.push(`horas_extras = $${paramCount}`);
+      params.push(horas_extras);
+      paramCount++;
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'Nenhum campo para atualizar' });
+    }
+
+    query += updates.join(', ') + ` WHERE id = $${paramCount}`;
+    params.push(registro_id);
+
+    await pool.query(query, params);
+
+    // Criar notificação para o usuário
+    await criarNotificacao(
+      registro.usuario_id,
+      'Registro de Ponto Modificado',
+      `Seu registro de ponto do dia ${new Date(registro.criado_em).toLocaleDateString('pt-BR')} foi modificado pelo administrador. Verifique as alterações realizadas.`
+    );
+
+    res.json({
+      success: true,
+      message: 'Registro atualizado com sucesso!'
+    });
+
+  } catch (error) {
+    console.error('Erro ao editar registro:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA ESTATÍSTICAS DO SISTEMA
+app.get('/api/admin/estatisticas', async (req, res) => {
   try {
     // Total de usuários
     const usersResult = await pool.query('SELECT COUNT(*) FROM users');
@@ -604,17 +695,77 @@ app.get('/api/admin/estatisticas', requireAdmin, async (req, res) => {
   }
 });
 
-// ROTA DE ATUALIZAÇÃO DE PERFIL
-app.put('/api/perfil', requireAuth, async (req, res) => {
+// ROTA PARA OBTER NOTIFICAÇÕES
+app.get('/api/notificacoes/:usuario_id', async (req, res) => {
   try {
-    const { nome, telefone } = req.body;
-    const usuario_id = req.user.id;
+    const { usuario_id } = req.params;
+
+    const result = await pool.query(`
+      SELECT * FROM notificacoes 
+      WHERE usuario_id = $1 
+      ORDER BY criado_em DESC 
+      LIMIT 50
+    `, [usuario_id]);
+
+    const notificacoes = result.rows.map(notif => ({
+      id: notif.id,
+      titulo: notif.titulo,
+      mensagem: notif.mensagem,
+      lida: notif.lida,
+      criadoEm: notif.criado_em
+    }));
+
+    res.json({
+      success: true,
+      notificacoes: notificacoes
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar notificações:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA MARCAR NOTIFICAÇÃO COMO LIDA
+app.put('/api/notificacoes/:notificacao_id/lida', async (req, res) => {
+  try {
+    const { notificacao_id } = req.params;
+
+    await pool.query(
+      'UPDATE notificacoes SET lida = true WHERE id = $1',
+      [notificacao_id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Notificação marcada como lida'
+    });
+
+  } catch (error) {
+    console.error('Erro ao marcar notificação como lida:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ========== ROTAS DO USUÁRIO COMUM ==========
+
+// ROTA DE ATUALIZAÇÃO DE PERFIL
+app.put('/api/perfil', async (req, res) => {
+  try {
+    const { usuario_id, nome, telefone } = req.body;
     
-    if (!nome) {
-      return res.status(400).json({ success: false, error: 'Nome é obrigatório' });
+    if (!usuario_id || !nome) {
+      return res.status(400).json({ success: false, error: 'ID do usuário e nome são obrigatórios' });
     }
 
-    if (!req.user.is_admin && req.user.perfil_editado) {
+    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+    }
+
+    const user = userExists.rows[0];
+
+    if (!user.is_admin && user.perfil_editado) {
       return res.status(400).json({ success: false, error: 'Perfil já foi editado. Para novas alterações, entre em contato com o administrador.' });
     }
 
@@ -649,20 +800,26 @@ app.put('/api/perfil', requireAuth, async (req, res) => {
 });
 
 // ROTA PARA ALTERAR SENHA
-app.put('/api/alterar-senha', requireAuth, async (req, res) => {
+app.put('/api/alterar-senha', async (req, res) => {
   try {
-    const { senhaAtual, novaSenha } = req.body;
-    const usuario_id = req.user.id;
+    const { usuario_id, senhaAtual, novaSenha } = req.body;
     
-    if (!senhaAtual || !novaSenha) {
-      return res.status(400).json({ success: false, error: 'Senha atual e nova senha são obrigatórias' });
+    if (!usuario_id || !senhaAtual || !novaSenha) {
+      return res.status(400).json({ success: false, error: 'ID do usuário, senha atual e nova senha são obrigatórias' });
     }
 
     if (novaSenha.length < 6) {
       return res.status(400).json({ success: false, error: 'Nova senha deve ter pelo menos 6 caracteres' });
     }
 
-    const senhaAtualValida = await bcrypt.compare(senhaAtual, req.user.senha);
+    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+    }
+
+    const user = userExists.rows[0];
+
+    const senhaAtualValida = await bcrypt.compare(senhaAtual, user.senha);
     if (!senhaAtualValida) {
       return res.status(400).json({ success: false, error: 'Senha atual incorreta' });
     }
@@ -687,25 +844,15 @@ app.put('/api/alterar-senha', requireAuth, async (req, res) => {
 
 // ========== ROTAS DE REGISTRO DE PONTO ==========
 
-// ROTA DE REGISTRO DE PONTO - CORRIGIDA
-app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
+// ROTA DE REGISTRO DE PONTO
+app.post('/api/registrar-ponto', async (req, res) => {
   try {
-    const { local, observacao, horas_extras, data_custom, hora_entrada, hora_saida } = req.body;
-    const usuario_id = req.user.id;
+    const { usuario_id, local, observacao, horas_extras, data_custom, hora_entrada, hora_saida } = req.body;
     
-    console.log('📍 Tentativa de registro de ponto:', { 
-      usuario_id, 
-      local, 
-      horas_extras,
-      data_custom,
-      hora_entrada,
-      hora_saida
-    });
-
-    if (!local) {
+    if (!usuario_id || !local) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Local é obrigatório' 
+        error: 'ID do usuário e local são obrigatórios' 
       });
     }
 
@@ -803,13 +950,11 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
   }
 });
 
-// Obter registros do usuário - VERSÃO CORRIGIDA
+// Obter registros do usuário
 app.get('/api/registros/:usuario_id', async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
     const { limit = 50 } = req.query;
-
-    console.log(`📊 Buscando registros para usuário ${usuario_id}. Limite: ${limit}`);
 
     const result = await pool.query(
       `SELECT * FROM registros_ponto 
@@ -819,30 +964,22 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
       [usuario_id, parseInt(limit)]
     );
 
-    console.log(`✅ Encontrados ${result.rows.length} registros para usuário ${usuario_id}`);
-
     const registros = result.rows.map(reg => {
       let dataFormatada;
       
-      // CORREÇÃO: Verificar se data_custom existe e é válido
       if (reg.data_custom && typeof reg.data_custom === 'string') {
         try {
-          // data_custom já vem no formato YYYY-MM-DD
           const [year, month, day] = reg.data_custom.split('-');
           dataFormatada = `${day}/${month}/${year}`;
         } catch (error) {
-          console.warn('❌ Erro ao formatar data_custom:', reg.data_custom);
-          // Se der erro, usar criado_em
           const data = new Date(reg.criado_em);
           dataFormatada = data.toLocaleDateString('pt-BR');
         }
       } else {
-        // Formatar criado_em
         const data = new Date(reg.criado_em);
         dataFormatada = data.toLocaleDateString('pt-BR');
       }
       
-      // Obter horários fixos para o dia - CORREÇÃO
       let dataParaHorarios;
       if (reg.data_custom && typeof reg.data_custom === 'string') {
         dataParaHorarios = reg.data_custom;
@@ -868,8 +1005,6 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
       };
     });
 
-    console.log('📋 Primeiros registros formatados:', registros.slice(0, 3));
-
     res.json({ 
       success: true, 
       registros,
@@ -885,7 +1020,7 @@ app.get('/api/registros/:usuario_id', async (req, res) => {
   }
 });
 
-// ESTATÍSTICAS SIMPLES DO USUÁRIO - AGORA COM HORAS EXTRAS
+// ESTATÍSTICAS SIMPLES DO USUÁRIO
 app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
@@ -896,7 +1031,6 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
       [usuario_id]
     );
 
-    // Cada hora extra é um único registro agora
     const totalHorasExtras = parseInt(horasExtrasResult.rows[0].count);
 
     res.json({
@@ -912,14 +1046,10 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
   }
 });
 
-// ========== NOVAS ROTAS ADICIONADAS ==========
-
-// ROTA PARA EXCLUIR REGISTRO - SEM AUTENTICAÇÃO DESNECESSÁRIA
+// ROTA PARA EXCLUIR REGISTRO
 app.delete('/api/registros/:registro_id', async (req, res) => {
   try {
     const { registro_id } = req.params;
-
-    console.log('🗑️ Tentativa de excluir registro:', registro_id);
 
     // Verificar se o registro existe
     const registroResult = await pool.query(
@@ -931,10 +1061,8 @@ app.delete('/api/registros/:registro_id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Registro não encontrado' });
     }
 
-    // Excluir o registro (qualquer usuário pode excluir seus próprios registros)
+    // Excluir o registro
     await pool.query('DELETE FROM registros_ponto WHERE id = $1', [registro_id]);
-
-    console.log('✅ Registro excluído com sucesso:', registro_id);
 
     res.json({
       success: true,
@@ -950,13 +1078,12 @@ app.delete('/api/registros/:registro_id', async (req, res) => {
   }
 });
 
-// ROTA PARA EXPORTAR PARA EXCEL - SIMPLIFICADA
+// ROTA PARA EXPORTAR PARA EXCEL
 app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
   try {
     const usuario_id = req.params.usuario_id;
     const { data_inicio, data_fim } = req.query;
 
-    // Construir query com filtro de datas se fornecido
     let query = `
       SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
       FROM registros_ponto rp 
@@ -975,11 +1102,9 @@ app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
     const result = await pool.query(query, params);
     const registros = result.rows;
 
-    // Criar workbook do Excel
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Registros de Ponto');
 
-    // Definir cabeçalhos
     worksheet.columns = [
       { header: 'Data', key: 'data', width: 15 },
       { header: 'Hora', key: 'hora', width: 10 },
@@ -993,7 +1118,6 @@ app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
       { header: 'E-mail', key: 'usuario_email', width: 25 }
     ];
 
-    // Estilizar cabeçalhos
     worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
     worksheet.getRow(1).fill = {
       type: 'pattern',
@@ -1001,7 +1125,6 @@ app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
       fgColor: { argb: '4472C4' }
     };
 
-    // Adicionar dados
     registros.forEach(registro => {
       const data = new Date(registro.criado_em);
       const dataFormatada = data.toLocaleDateString('pt-BR');
@@ -1021,11 +1144,9 @@ app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
       });
     });
 
-    // Configurar resposta
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.xlsx`);
 
-    // Enviar arquivo
     await workbook.xlsx.write(res);
     res.end();
 
@@ -1035,151 +1156,6 @@ app.get('/api/exportar/excel/:usuario_id', async (req, res) => {
       success: false,
       error: 'Erro interno do servidor: ' + error.message
     });
-  }
-});
-
-// ROTA PARA EXPORTAR PARA PDF - SIMPLIFICADA
-app.get('/api/exportar/pdf/:usuario_id', async (req, res) => {
-  try {
-    const usuario_id = req.params.usuario_id;
-    const { data_inicio, data_fim } = req.query;
-
-    // Buscar registros
-    let query = `
-      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
-      FROM registros_ponto rp 
-      JOIN users u ON rp.usuario_id = u.id 
-      WHERE rp.usuario_id = $1
-    `;
-    let params = [usuario_id];
-
-    if (data_inicio && data_fim) {
-      query += ` AND DATE(rp.criado_em) BETWEEN $2 AND $3`;
-      params.push(data_inicio, data_fim);
-    }
-
-    query += ` ORDER BY rp.criado_em DESC LIMIT 100`;
-
-    const result = await pool.query(query, params);
-    const registros = result.rows;
-
-    // Criar PDF
-    const doc = new PDFDocument({ margin: 50 });
-    
-    // Configurar cabeçalho do response
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=registros-ponto-${usuario_id}-${Date.now()}.pdf`);
-
-    doc.pipe(res);
-
-    // Cabeçalho do PDF
-    doc.fontSize(20).font('Helvetica-Bold').text('RELATÓRIO DE PONTOS', 50, 50);
-    doc.fontSize(12).font('Helvetica').text(`Usuário: ${registros[0]?.usuario_nome || 'N/A'}`, 50, 80);
-    doc.text(`E-mail: ${registros[0]?.usuario_email || 'N/A'}`, 50, 95);
-    doc.text(`Data de emissão: ${new Date().toLocaleDateString('pt-BR')}`, 50, 110);
-    doc.text(`Total de registros: ${registros.length}`, 50, 125);
-
-    // Linha divisória
-    doc.moveTo(50, 140).lineTo(550, 140).stroke();
-
-    let yPosition = 160;
-
-    // Adicionar registros
-    registros.forEach((registro, index) => {
-      if (yPosition > 700) { // Nova página se necessário
-        doc.addPage();
-        yPosition = 50;
-      }
-
-      const data = new Date(registro.criado_em);
-      
-      doc.fontSize(10).font('Helvetica-Bold')
-         .text(`Registro ${index + 1}`, 50, yPosition);
-      
-      yPosition += 15;
-      
-      doc.font('Helvetica')
-         .text(`Data: ${data.toLocaleDateString('pt-BR')}`, 50, yPosition);
-      
-      yPosition += 12;
-      
-      doc.text(`Hora: ${data.toLocaleTimeString('pt-BR')}`, 50, yPosition);
-      
-      yPosition += 12;
-      
-      doc.text(`Tipo: ${registro.tipo}`, 50, yPosition);
-      
-      yPosition += 12;
-      
-      doc.text(`Local: ${registro.local || 'N/A'}`, 50, yPosition);
-      
-      yPosition += 12;
-      
-      doc.text(`Horas Extras: ${registro.horas_extras ? 'Sim' : 'Não'}`, 50, yPosition);
-      
-      if (registro.hora_entrada && registro.hora_saida) {
-        yPosition += 12;
-        doc.text(`Horário: ${registro.hora_entrada} - ${registro.hora_saida}`, 50, yPosition);
-      }
-      
-      if (registro.observacao) {
-        yPosition += 12;
-        doc.text(`Observação: ${registro.observacao}`, 50, yPosition);
-      }
-
-      yPosition += 20; // Espaço entre registros
-    });
-
-    doc.end();
-
-  } catch (error) {
-    console.error('❌ Erro ao exportar PDF:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erro interno do servidor: ' + error.message
-    });
-  }
-});
-
-// ROTA DE DEBUG - Verificar registros no banco
-app.get('/api/debug/registros/:usuario_id', async (req, res) => {
-  try {
-    const usuario_id = req.params.usuario_id;
-    
-    console.log('🔍 DEBUG: Buscando registros para usuário:', usuario_id);
-    
-    const result = await pool.query(
-      `SELECT id, tipo, local, observacao, horas_extras, data_custom, hora_entrada, hora_saida, criado_em 
-       FROM registros_ponto 
-       WHERE usuario_id = $1 
-       ORDER BY criado_em DESC 
-       LIMIT 20`,
-      [usuario_id]
-    );
-
-    console.log('📋 DEBUG - Registros encontrados:', result.rows.length);
-    result.rows.forEach((reg, index) => {
-      console.log(`📝 Registro ${index + 1}:`, {
-        id: reg.id,
-        tipo: reg.tipo,
-        local: reg.local,
-        horas_extras: reg.horas_extras,
-        data_custom: reg.data_custom,
-        hora_entrada: reg.hora_entrada,
-        hora_saida: reg.hora_saida,
-        criado_em: reg.criado_em
-      });
-    });
-
-    res.json({
-      success: true,
-      total: result.rows.length,
-      registros: result.rows
-    });
-
-  } catch (error) {
-    console.error('❌ DEBUG - Erro:', error);
-    res.status(500).json({ success: false, error: error.message });
   }
 });
 

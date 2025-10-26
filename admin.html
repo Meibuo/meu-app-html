@@ -48,6 +48,9 @@
             z-index: 9999;
             min-width: 300px;
         }
+        .badge-admin {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+        }
     </style>
 </head>
 <body>
@@ -233,11 +236,12 @@
                                 <tr>
                                     <th>Usuário</th>
                                     <th>Data</th>
-                                    <th>Hora</th>
-                                    <th>Tipo</th>
+                                    <th>Hora Entrada</th>
+                                    <th>Hora Saída</th>
                                     <th>Local</th>
                                     <th>Observação</th>
                                     <th>Horas Extras</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="registros-admin-body">
@@ -307,6 +311,55 @@
         </div>
     </div>
 
+    <!-- Modal Editar Registro -->
+    <div class="modal fade" id="modalEditarRegistro" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Registro de Ponto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-editar-registro">
+                        <input type="hidden" id="registro-id">
+                        <div class="mb-3">
+                            <label for="edit-data" class="form-label">Data</label>
+                            <input type="date" class="form-control" id="edit-data">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="edit-hora-entrada" class="form-label">Hora Entrada</label>
+                                <input type="time" class="form-control" id="edit-hora-entrada">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-hora-saida" class="form-label">Hora Saída</label>
+                                <input type="time" class="form-control" id="edit-hora-saida">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-local" class="form-label">Local</label>
+                            <input type="text" class="form-control" id="edit-local">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-observacao" class="form-label">Observação</label>
+                            <textarea class="form-control" id="edit-observacao" rows="3"></textarea>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="edit-horas-extras">
+                            <label class="form-check-label" for="edit-horas-extras">
+                                Horas Extras
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarEdicaoRegistro()">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // ========== FUNÇÕES DO PAINEL ADMIN ==========
@@ -346,9 +399,7 @@
         // Carregar estatísticas do sistema
         async function carregarEstatisticas() {
             try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
-                
-                const response = await fetch(`/api/admin/estatisticas?usuario_id=${usuario.id}`);
+                const response = await fetch('/api/admin/estatisticas');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -366,9 +417,7 @@
         // Carregar lista de usuários
         async function carregarUsuarios() {
             try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
-                const response = await fetch(`/api/admin/usuarios?usuario_id=${usuario.id}`);
-                
+                const response = await fetch('/api/admin/usuarios');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -389,7 +438,7 @@
                 <tr>
                     <td>
                         <strong>${usuario.nome}</strong>
-                        ${usuario.isAdmin ? '<span class="badge bg-warning ms-1">Admin</span>' : ''}
+                        ${usuario.isAdmin ? '<span class="badge badge-admin ms-1">Admin</span>' : ''}
                     </td>
                     <td>${usuario.email}</td>
                     <td>${usuario.telefone || '-'}</td>
@@ -408,8 +457,8 @@
                             <i class="fas fa-key"></i>
                         </button>
                         ${!usuario.isAdmin ? `
-                            <button class="btn btn-sm btn-outline-danger" onclick="desativarUsuario('${usuario.id}')">
-                                <i class="fas fa-ban"></i>
+                            <button class="btn btn-sm btn-outline-danger" onclick="excluirUsuario('${usuario.id}')">
+                                <i class="fas fa-trash"></i>
                             </button>
                         ` : ''}
                     </td>
@@ -439,9 +488,7 @@
         // Editar usuário
         async function editarUsuario(usuarioId) {
             try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
-                const response = await fetch(`/api/admin/usuarios?usuario_id=${usuario.id}`);
-                
+                const response = await fetch('/api/admin/usuarios');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -470,14 +517,12 @@
         // Salvar usuário (criar ou editar)
         async function salvarUsuario() {
             try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
                 const formData = {
                     nome: document.getElementById('nome').value,
                     email: document.getElementById('email').value,
                     telefone: document.getElementById('telefone').value,
                     cargo: document.getElementById('cargo').value,
-                    isAdmin: document.getElementById('is-admin').checked,
-                    usuario_id: usuario.id
+                    isAdmin: document.getElementById('is-admin').checked
                 };
 
                 // Adicionar senha apenas se for novo usuário ou se foi preenchida
@@ -496,7 +541,7 @@
                 let response;
                 if (usuarioId) {
                     // Editar usuário existente
-                    response = await fetch(`/api/admin/usuarios/${usuarioId}?usuario_id=${usuario.id}`, {
+                    response = await fetch(`/api/admin/usuarios/${usuarioId}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -531,6 +576,32 @@
             }
         }
 
+        // Excluir usuário
+        async function excluirUsuario(usuarioId) {
+            if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita e todos os registros do usuário serão perdidos.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/usuarios/${usuarioId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✅ ' + data.message, 'success');
+                    carregarUsuarios();
+                    carregarEstatisticas();
+                } else {
+                    showAlert('❌ ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir usuário:', error);
+                showAlert('❌ Erro ao excluir usuário', 'danger');
+            }
+        }
+
         // Redefinir senha do usuário - AGORA COM SENHA PADRÃO 123456
         async function redefinirSenha(usuarioId) {
             if (!confirm('Deseja redefinir a senha deste usuário? A nova senha será: 123456')) {
@@ -538,14 +609,12 @@
             }
 
             try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
                 const response = await fetch('/api/admin/redefinir-senha', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        usuario_id: usuario.id,
                         usuario_id_reset: usuarioId
                     })
                 });
@@ -563,30 +632,14 @@
             }
         }
 
-        // Desativar usuário
-        async function desativarUsuario(usuarioId) {
-            if (!confirm('Deseja desativar este usuário? Ele não poderá mais acessar o sistema.')) {
-                return;
-            }
-
-            try {
-                // Aqui você implementaria a lógica para desativar usuário
-                showAlert('⚠️ Funcionalidade em desenvolvimento', 'warning');
-            } catch (error) {
-                console.error('Erro ao desativar usuário:', error);
-                showAlert('❌ Erro ao desativar usuário', 'danger');
-            }
-        }
-
         // Carregar registros administrativos
         async function carregarRegistrosAdmin() {
             try {
-                const usuario = JSON.parse(localStorage.getItem('usuario'));
                 const userId = document.getElementById('filter-user').value;
                 const startDate = document.getElementById('filter-start').value;
                 const endDate = document.getElementById('filter-end').value;
 
-                let url = `/api/admin/registros?usuario_id=${usuario.id}&limit=200`;
+                let url = `/api/admin/registros?limit=200`;
                 if (userId) {
                     url += `&usuario_id_filter=${userId}`;
                 }
@@ -613,7 +666,7 @@
             if (registros.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             <i class="fas fa-inbox fa-2x mb-2"></i><br>
                             Nenhum registro encontrado
                         </td>
@@ -626,31 +679,99 @@
                 <tr>
                     <td>
                         <strong>${registro.usuario_nome}</strong>
-                        <br><small class="text-muted">${registro.usuario_email}</small>
+                        <br><small class="text-muted">${registro.usuario_cargo}</small>
                     </td>
                     <td>${registro.data}</td>
-                    <td>${registro.hora}</td>
-                    <td>
-                        <span class="badge ${getBadgeClass(registro.tipo)}">
-                            ${formatarTipo(registro.tipo)}
-                        </span>
-                    </td>
+                    <td>${registro.hora_entrada || '-'}</td>
+                    <td>${registro.hora_saida || '-'}</td>
                     <td>${registro.local || '-'}</td>
                     <td>${registro.observacao || '-'}</td>
                     <td>${registro.horas_extras ? '<span class="badge bg-warning">Sim</span>' : 'Não'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editarRegistro('${registro.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </td>
                 </tr>
             `).join('');
+        }
+
+        // Editar registro
+        async function editarRegistro(registroId) {
+            try {
+                // Buscar dados do registro
+                const response = await fetch(`/api/admin/registros`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const registro = data.registros.find(r => r.id === registroId);
+                    if (registro) {
+                        document.getElementById('registro-id').value = registro.id;
+                        
+                        // Converter data para formato YYYY-MM-DD
+                        const dataParts = registro.data.split('/');
+                        const dataFormatada = `${dataParts[2]}-${dataParts[1]}-${dataParts[0]}`;
+                        
+                        document.getElementById('edit-data').value = dataFormatada;
+                        document.getElementById('edit-hora-entrada').value = registro.hora_entrada || '';
+                        document.getElementById('edit-hora-saida').value = registro.hora_saida || '';
+                        document.getElementById('edit-local').value = registro.local || '';
+                        document.getElementById('edit-observacao').value = registro.observacao || '';
+                        document.getElementById('edit-horas-extras').checked = registro.horas_extras;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('modalEditarRegistro'));
+                        modal.show();
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao carregar registro:', error);
+                showAlert('❌ Erro ao carregar registro', 'danger');
+            }
+        }
+
+        // Salvar edição do registro
+        async function salvarEdicaoRegistro() {
+            try {
+                const formData = {
+                    data_custom: document.getElementById('edit-data').value,
+                    hora_entrada: document.getElementById('edit-hora-entrada').value,
+                    hora_saida: document.getElementById('edit-hora-saida').value,
+                    local: document.getElementById('edit-local').value,
+                    observacao: document.getElementById('edit-observacao').value,
+                    horas_extras: document.getElementById('edit-horas-extras').checked
+                };
+
+                const registroId = document.getElementById('registro-id').value;
+
+                const response = await fetch(`/api/admin/registros/${registroId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✅ ' + data.message, 'success');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarRegistro'));
+                    modal.hide();
+                    carregarRegistrosAdmin();
+                } else {
+                    showAlert('❌ ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar registro:', error);
+                showAlert('❌ Erro ao salvar registro', 'danger');
+            }
         }
 
         // Exportar dados
         async function exportarDados() {
             try {
                 const usuario = JSON.parse(localStorage.getItem('usuario'));
-                
-                // Por enquanto, exporta apenas os dados do admin
-                // Em uma versão completa, exportaria todos os dados do sistema
                 window.open(`/api/exportar/excel/${usuario.id}`, '_blank');
-                
             } catch (error) {
                 console.error('Erro ao exportar dados:', error);
                 showAlert('❌ Erro ao exportar dados', 'danger');
@@ -658,28 +779,6 @@
         }
 
         // Funções auxiliares
-        function formatarTipo(tipo) {
-            const tipos = {
-                'entrada': 'Entrada',
-                'saida': 'Saída',
-                'intervalo': 'Intervalo',
-                'retorno': 'Retorno',
-                'hora_extra': 'Hora Extra'
-            };
-            return tipos[tipo] || tipo;
-        }
-
-        function getBadgeClass(tipo) {
-            const classes = {
-                'entrada': 'bg-success',
-                'saida': 'bg-danger',
-                'intervalo': 'bg-warning',
-                'retorno': 'bg-info',
-                'hora_extra': 'bg-primary'
-            };
-            return classes[tipo] || 'bg-secondary';
-        }
-
         function showAlert(message, type) {
             const alertContainer = document.getElementById('alert-container');
             const alertId = 'alert-' + Date.now();
