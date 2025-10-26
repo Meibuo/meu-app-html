@@ -78,6 +78,13 @@
         #no-users, #no-registros {
             display: none;
         }
+        .relatorio-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .relatorio-item:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body>
@@ -391,6 +398,7 @@
                                         <tr>
                                             <th>Usuário</th>
                                             <th>Data</th>
+                                            <th>Tipo</th>
                                             <th>Entrada</th>
                                             <th>Saída</th>
                                             <th>Horas Trabalhadas</th>
@@ -400,7 +408,7 @@
                                     </thead>
                                     <tbody id="relatorio-completo-body">
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted py-4">
+                                            <td colspan="8" class="text-center text-muted py-4">
                                                 Selecione os filtros e clique em Gerar
                                             </td>
                                         </tr>
@@ -541,18 +549,141 @@
             }, 5000);
         }
 
-        // Função de logout
+        // Função de logout - CORRIGIDA
         function logout() {
             if (confirm('Deseja realmente sair do sistema?')) {
+                // Limpar qualquer dado de sessão
                 localStorage.removeItem('user');
                 localStorage.removeItem('token');
+                localStorage.removeItem('currentUser');
+                sessionStorage.clear();
+                
+                // Redirecionar para a página de login
                 window.location.href = '/login';
             }
         }
 
-        // Função para gerar relatório (placeholder)
-        function gerarRelatorio() {
-            showAlert('Funcionalidade de relatório em desenvolvimento', 'info');
+        // Função para gerar relatório - IMPLEMENTADA
+        async function gerarRelatorio() {
+            try {
+                const usuarioId = document.getElementById('relatorio-usuario').value;
+                const dataInicio = document.getElementById('relatorio-data-inicio').value;
+                const dataFim = document.getElementById('relatorio-data-fim').value;
+
+                if (!dataInicio || !dataFim) {
+                    showAlert('❌ Selecione o período do relatório', 'warning');
+                    return;
+                }
+
+                showAlert('📊 Gerando relatórios...', 'info');
+
+                // Gerar relatório de frequência
+                const frequenciaResponse = await fetch(`/api/admin/relatorios/frequencia?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                const frequenciaData = await frequenciaResponse.json();
+
+                // Gerar relatório de horas extras
+                const horasExtrasResponse = await fetch(`/api/admin/relatorios/horas-extras?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                const horasExtrasData = await horasExtrasResponse.json();
+
+                // Gerar relatório completo
+                const completoResponse = await fetch(`/api/admin/relatorios/completo?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                const completoData = await completoResponse.json();
+
+                if (frequenciaData.success && horasExtrasData.success && completoData.success) {
+                    exibirRelatorioFrequencia(frequenciaData.relatorio);
+                    exibirRelatorioHorasExtras(horasExtrasData.relatorio);
+                    exibirRelatorioCompleto(completoData.relatorio);
+                    showAlert('✅ Relatórios gerados com sucesso!', 'success');
+                } else {
+                    showAlert('❌ Erro ao gerar relatórios', 'danger');
+                }
+
+            } catch (error) {
+                console.error('❌ Erro ao gerar relatório:', error);
+                showAlert('❌ Erro ao gerar relatórios: ' + error.message, 'danger');
+            }
+        }
+
+        // Exibir relatório de frequência
+        function exibirRelatorioFrequencia(dados) {
+            const container = document.getElementById('relatorio-frequencia');
+            
+            if (!dados || dados.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">Nenhum dado encontrado para o período selecionado</p>';
+                return;
+            }
+
+            let html = '';
+            dados.forEach(item => {
+                html += `
+                    <div class="relatorio-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>${item.usuario_nome}</strong>
+                            <span class="badge bg-primary">${item.data}</span>
+                        </div>
+                        <div class="small text-muted">
+                            Cargo: ${item.usuario_cargo} | 
+                            Entradas: ${item.entradas} | 
+                            Saídas: ${item.saidas} | 
+                            Total: ${item.total_registros} registros
+                            ${item.horas_extras > 0 ? `| Horas Extras: ${item.horas_extras}` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Exibir relatório de horas extras
+        function exibirRelatorioHorasExtras(dados) {
+            const container = document.getElementById('relatorio-horas-extras');
+            
+            if (!dados || dados.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">Nenhuma hora extra encontrada para o período selecionado</p>';
+                return;
+            }
+
+            let html = '';
+            dados.forEach(item => {
+                html += `
+                    <div class="relatorio-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>${item.usuario_nome}</strong>
+                            <span class="badge bg-warning">${item.data}</span>
+                        </div>
+                        <div class="small text-muted">
+                            ${item.hora_entrada} às ${item.hora_saida}
+                            ${item.observacao ? `| ${item.observacao}` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Exibir relatório completo
+        function exibirRelatorioCompleto(dados) {
+            const tbody = document.getElementById('relatorio-completo-body');
+            
+            if (!dados || dados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Nenhum registro encontrado para o período selecionado</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = dados.map(item => `
+                <tr>
+                    <td>${item.usuario_nome}</td>
+                    <td>${item.data}</td>
+                    <td><span class="badge ${item.tipo === 'entrada' ? 'bg-success' : item.tipo === 'saida' ? 'bg-danger' : 'bg-info'}">${item.tipo}</span></td>
+                    <td>${item.hora_entrada || '-'}</td>
+                    <td>${item.hora_saida || '-'}</td>
+                    <td>${item.horas_trabalhadas || '-'}</td>
+                    <td>${item.horas_extras ? '<span class="badge bg-warning">Sim</span>' : 'Não'}</td>
+                    <td>${item.local || '-'}</td>
+                </tr>
+            `).join('');
         }
 
         // Verificar autenticação e admin
@@ -597,6 +728,8 @@
                 carregarUsuarios();
             } else if (sectionName === 'registros') {
                 carregarRegistrosAdmin();
+            } else if (sectionName === 'relatorios') {
+                carregarUsuarios(); // Para popular o filtro de usuários
             }
         }
 
