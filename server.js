@@ -286,10 +286,43 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// ========== ROTAS ADMINISTRATIVAS ==========
+
+// ROTA PARA LISTAR TODOS OS USUÁRIOS (APENAS ADMIN)
+app.get('/api/admin/usuarios', requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, nome, email, telefone, cargo, is_admin, status, criado_em 
+      FROM users 
+      ORDER BY nome
+    `);
+
+    const usuarios = result.rows.map(user => ({
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      telefone: user.telefone,
+      cargo: user.cargo,
+      isAdmin: user.is_admin,
+      status: user.status,
+      criadoEm: user.criado_em
+    }));
+
+    res.json({
+      success: true,
+      usuarios: usuarios
+    });
+
+  } catch (error) {
+    console.error('Erro ao listar usuários:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
 // ROTA DE CADASTRO (para admin)
 app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
   try {
-    const { nome, email, telefone, senha, cargo, status } = req.body;
+    const { nome, email, telefone, senha, cargo, isAdmin } = req.body;
     
     if (!nome || !email || !senha) {
       return res.status(400).json({ success: false, error: 'Nome, e-mail e senha são obrigatórios' });
@@ -306,9 +339,9 @@ app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
     const userId = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
     await pool.query(
-      `INSERT INTO users (id, nome, email, telefone, senha, cargo, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [userId, nome, emailLimpo, telefone || null, hashedPassword, cargo || 'Terceiro', status || 'ativo']
+      `INSERT INTO users (id, nome, email, telefone, senha, cargo, is_admin, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [userId, nome, emailLimpo, telefone || null, hashedPassword, cargo || 'Terceiro', isAdmin || false, 'ativo']
     );
 
     res.json({ 
@@ -320,12 +353,253 @@ app.post('/api/admin/cadastro', requireAdmin, async (req, res) => {
         email: emailLimpo,
         telefone: telefone || null,
         cargo: cargo || 'Terceiro',
-        status: status || 'ativo'
+        isAdmin: isAdmin || false,
+        status: 'ativo'
       }
     });
 
   } catch (error) {
     console.error('Erro no cadastro:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA EDITAR USUÁRIO (APENAS ADMIN)
+app.put('/api/admin/usuarios/:usuario_id', requireAdmin, async (req, res) => {
+  try {
+    const { usuario_id } = req.params;
+    const { nome, email, telefone, cargo, isAdmin, senha } = req.body;
+
+    // Verificar se usuário existe
+    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+    }
+
+    // Verificar se email já existe em outro usuário
+    if (email) {
+      const emailExists = await pool.query(
+        'SELECT * FROM users WHERE email = $1 AND id != $2', 
+        [email.toLowerCase().trim(), usuario_id]
+      );
+      if (emailExists.rows.length > 0) {
+        return res.status(400).json({ success: false, error: 'E-mail já está em uso por outro usuário' });
+      }
+    }
+
+    // Construir query dinamicamente
+    let query = 'UPDATE users SET ';
+    const params = [];
+    let paramCount = 1;
+    const updates = [];
+
+    if (nome) {
+      updates.push(`nome = $${paramCount}`);
+      params.push(nome);
+      paramCount++;
+    }
+
+    if (email) {
+      updates.push(`email = $${paramCount}`);
+      params.push(email.toLowerCase().trim());
+      paramCount++;
+    }
+
+    if (telefone !== undefined) {
+      updates.push(`telefone = $${paramCount}`);
+      params.push(telefone || null);
+      paramCount++;
+    }
+
+    if (cargo) {
+      updates.push(`cargo = $${paramCount}`);
+      params.push(cargo);
+      paramCount++;
+    }
+
+    if (isAdmin !== undefined) {
+      updates.push(`is_admin = $${paramCount}`);
+      params.push(isAdmin);
+      paramCount++;
+    }
+
+    if (senha) {
+      const hashedPassword = await bcrypt.hash(senha, 10);
+      updates.push(`senha = $${paramCount}`);
+      params.push(hashedPassword);
+      paramCount++;
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'Nenhum campo para atualizar' });
+    }
+
+    query += updates.join(', ') + ` WHERE id = $${paramCount}`;
+    params.push(usuario_id);
+
+    await pool.query(query, params);
+
+    res.json({
+      success: true,
+      message: 'Usuário atualizado com sucesso!'
+    });
+
+  } catch (error) {
+    console.error('Erro ao editar usuário:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA REDEFINIR SENHA (APENAS ADMIN) - SENHA PADRÃO 123456
+app.post('/api/admin/redefinir-senha', requireAdmin, async (req, res) => {
+  try {
+    const { usuario_id } = req.body;
+
+    if (!usuario_id) {
+      return res.status(400).json({ success: false, error: 'ID do usuário é obrigatório' });
+    }
+
+    // Verificar se usuário existe
+    const userExists = await pool.query('SELECT * FROM users WHERE id = $1', [usuario_id]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Usuário não encontrado' });
+    }
+
+    // Redefinir senha para 123456
+    const senhaPadrao = '123456';
+    const hashedPassword = await bcrypt.hash(senhaPadrao, 10);
+
+    await pool.query(
+      'UPDATE users SET senha = $1 WHERE id = $2',
+      [hashedPassword, usuario_id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Senha redefinida com sucesso! A nova senha é: 123456',
+      novaSenha: '123456'
+    });
+
+  } catch (error) {
+    console.error('Erro ao redefinir senha:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA BUSCAR TODOS OS REGISTROS (APENAS ADMIN)
+app.get('/api/admin/registros', requireAdmin, async (req, res) => {
+  try {
+    const { usuario_id, data_inicio, data_fim, limit = 200 } = req.query;
+
+    let query = `
+      SELECT rp.*, u.nome as usuario_nome, u.email as usuario_email 
+      FROM registros_ponto rp 
+      JOIN users u ON rp.usuario_id = u.id 
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramCount = 1;
+
+    if (usuario_id) {
+      query += ` AND rp.usuario_id = $${paramCount}`;
+      params.push(usuario_id);
+      paramCount++;
+    }
+
+    if (data_inicio && data_fim) {
+      query += ` AND DATE(rp.criado_em) BETWEEN $${paramCount} AND $${paramCount + 1}`;
+      params.push(data_inicio, data_fim);
+      paramCount += 2;
+    }
+
+    query += ` ORDER BY rp.criado_em DESC LIMIT $${paramCount}`;
+    params.push(parseInt(limit));
+
+    const result = await pool.query(query, params);
+
+    const registros = result.rows.map(reg => {
+      let dataFormatada;
+      
+      if (reg.data_custom && typeof reg.data_custom === 'string') {
+        try {
+          const [year, month, day] = reg.data_custom.split('-');
+          dataFormatada = `${day}/${month}/${year}`;
+        } catch (error) {
+          const data = new Date(reg.criado_em);
+          dataFormatada = data.toLocaleDateString('pt-BR');
+        }
+      } else {
+        const data = new Date(reg.criado_em);
+        dataFormatada = data.toLocaleDateString('pt-BR');
+      }
+
+      const hora = new Date(reg.criado_em).toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+
+      return {
+        id: reg.id,
+        usuario_id: reg.usuario_id,
+        usuario_nome: reg.usuario_nome,
+        tipo: reg.tipo,
+        local: reg.local,
+        observacao: reg.observacao,
+        horas_extras: reg.horas_extras,
+        data: dataFormatada,
+        hora: hora,
+        hora_entrada: reg.hora_entrada ? reg.hora_entrada.substring(0, 5) : '',
+        hora_saida: reg.hora_saida ? reg.hora_saida.substring(0, 5) : '',
+        criadoEm: reg.criado_em
+      };
+    });
+
+    res.json({
+      success: true,
+      registros: registros,
+      total: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar registros admin:', error);
+    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+  }
+});
+
+// ROTA PARA ESTATÍSTICAS DO SISTEMA (APENAS ADMIN)
+app.get('/api/admin/estatisticas', requireAdmin, async (req, res) => {
+  try {
+    // Total de usuários
+    const usersResult = await pool.query('SELECT COUNT(*) FROM users');
+    const totalUsers = parseInt(usersResult.rows[0].count);
+
+    // Total de administradores
+    const adminResult = await pool.query('SELECT COUNT(*) FROM users WHERE is_admin = true');
+    const totalAdmins = parseInt(adminResult.rows[0].count);
+
+    // Total de registros
+    const registrosResult = await pool.query('SELECT COUNT(*) FROM registros_ponto');
+    const totalRegistros = parseInt(registrosResult.rows[0].count);
+
+    // Registros hoje
+    const hojeResult = await pool.query(`
+      SELECT COUNT(*) FROM registros_ponto 
+      WHERE DATE(criado_em) = CURRENT_DATE
+    `);
+    const registrosHoje = parseInt(hojeResult.rows[0].count);
+
+    res.json({
+      success: true,
+      estatisticas: {
+        totalUsers,
+        totalAdmins,
+        totalRegistros,
+        registrosHoje
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor' });
   }
 });
