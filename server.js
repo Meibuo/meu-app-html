@@ -71,8 +71,7 @@ const initializeDatabase = async () => {
         hora_custom TIME,
         hora_entrada TIME,
         hora_saida TIME,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (usuario_id) REFERENCES users(id)
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Tabela registros_ponto criada/verificada');
@@ -85,8 +84,7 @@ const initializeDatabase = async () => {
         titulo VARCHAR(200) NOT NULL,
         mensagem TEXT NOT NULL,
         lida BOOLEAN DEFAULT FALSE,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (usuario_id) REFERENCES users(id)
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log('✅ Tabela notificacoes criada/verificada');
@@ -276,7 +274,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao listar usuários:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -325,7 +323,7 @@ app.post('/api/admin/cadastro', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro no cadastro:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -422,7 +420,7 @@ app.put('/api/admin/usuarios/:usuario_id', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao editar usuário:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -462,7 +460,7 @@ app.delete('/api/admin/usuarios/:usuario_id', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao excluir usuário:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -509,7 +507,7 @@ app.post('/api/admin/redefinir-senha', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao redefinir senha:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -588,7 +586,7 @@ app.get('/api/admin/registros', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao buscar registros admin:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -681,7 +679,7 @@ app.put('/api/admin/registros/:registro_id', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao editar registro:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -768,7 +766,7 @@ app.get('/api/admin/estatisticas', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao buscar estatísticas:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -870,7 +868,7 @@ app.get('/api/exportar/excel/admin', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao exportar Excel admin:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -996,7 +994,7 @@ app.get('/api/exportar/pdf/admin', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Erro ao exportar PDF admin:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -1235,7 +1233,7 @@ app.get('/api/notificacoes/:usuario_id', async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao buscar notificações:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -1256,7 +1254,7 @@ app.put('/api/notificacoes/:notificacao_id/lida', async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao marcar notificação como lida:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -1306,7 +1304,7 @@ app.put('/api/perfil', async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao atualizar perfil:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -1349,7 +1347,7 @@ app.put('/api/alterar-senha', async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao alterar senha:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -1557,7 +1555,7 @@ app.get('/api/estatisticas/:usuario_id', async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error);
-    res.status(500).json({ success: false, error: 'Erro interno do servidor' });
+    res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
@@ -1612,7 +1610,7 @@ app.get('/api/status', async (req, res) => {
     });
   } catch (error) {
     console.error('Erro no status:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ error: 'Erro interno do servidor: ' + error.message });
   }
 });
 
