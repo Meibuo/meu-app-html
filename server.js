@@ -302,6 +302,15 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// ROTA PARA LOGOUT
+app.post('/api/logout', (req, res) => {
+  console.log('🚪 Usuário realizando logout');
+  res.json({ 
+    success: true, 
+    message: 'Logout realizado com sucesso!' 
+  });
+});
+
 // ========== ROTAS ADMINISTRATIVAS ==========
 
 // ROTA PARA LISTAR TODOS OS USUÁRIOS - CORRIGIDA
@@ -1027,6 +1036,36 @@ app.get('/api/admin/relatorios/completo', async (req, res) => {
   } catch (error) {
     console.error('❌ Erro ao gerar relatório completo:', error);
     res.status(500).json({ success: false, error: 'Erro interno do servidor: ' + error.message });
+  }
+});
+
+// ROTA SIMPLES PARA TESTE DE RELATÓRIOS
+app.get('/api/admin/relatorios/teste', async (req, res) => {
+  try {
+    console.log('🧪 Teste de relatórios - Parâmetros:', req.query);
+    
+    // Retornar dados de exemplo para teste
+    res.json({
+      success: true,
+      relatorio: [
+        {
+          usuario_nome: "Usuário Teste",
+          usuario_cargo: "Cargo Teste", 
+          data: new Date().toISOString().split('T')[0],
+          total_registros: 1,
+          entradas: 1,
+          saidas: 1,
+          horas_extras: 0
+        }
+      ]
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro no teste de relatórios:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Erro interno: ' + error.message 
+    });
   }
 });
 

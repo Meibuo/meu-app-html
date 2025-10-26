@@ -552,18 +552,16 @@
         // Função de logout - CORRIGIDA
         function logout() {
             if (confirm('Deseja realmente sair do sistema?')) {
-                // Limpar qualquer dado de sessão
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
-                localStorage.removeItem('currentUser');
+                // Limpar TODOS os dados de sessão/local storage
+                localStorage.clear();
                 sessionStorage.clear();
                 
-                // Redirecionar para a página de login
-                window.location.href = '/login';
+                // Forçar o redirecionamento para login SEM cache
+                window.location.href = '/login?logout=' + Date.now();
             }
         }
 
-        // Função para gerar relatório - IMPLEMENTADA
+        // Função para gerar relatório - CORRIGIDA
         async function gerarRelatorio() {
             try {
                 const usuarioId = document.getElementById('relatorio-usuario').value;
@@ -577,25 +575,54 @@
 
                 showAlert('📊 Gerando relatórios...', 'info');
 
-                // Gerar relatório de frequência
-                const frequenciaResponse = await fetch(`/api/admin/relatorios/frequencia?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
-                const frequenciaData = await frequenciaResponse.json();
+                // Mostrar loading nos containers
+                document.getElementById('relatorio-frequencia').innerHTML = '<p class="text-center text-muted">Carregando...</p>';
+                document.getElementById('relatorio-horas-extras').innerHTML = '<p class="text-center text-muted">Carregando...</p>';
+                document.getElementById('relatorio-completo-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Carregando...</td></tr>';
 
-                // Gerar relatório de horas extras
-                const horasExtrasResponse = await fetch(`/api/admin/relatorios/horas-extras?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
-                const horasExtrasData = await horasExtrasResponse.json();
+                // Gerar relatórios SEQUENCIALMENTE para evitar conflitos
+                let frequenciaData, horasExtrasData, completoData;
+                
+                try {
+                    // 1. Relatório de Frequência
+                    const frequenciaResponse = await fetch(`/api/admin/relatorios/frequencia?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                    frequenciaData = await frequenciaResponse.json();
+                    
+                    if (!frequenciaData.success) {
+                        throw new Error(frequenciaData.error || 'Erro no relatório de frequência');
+                    }
+                    
+                    // 2. Relatório de Horas Extras
+                    const horasExtrasResponse = await fetch(`/api/admin/relatorios/horas-extras?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                    horasExtrasData = await horasExtrasResponse.json();
+                    
+                    if (!horasExtrasData.success) {
+                        throw new Error(horasExtrasData.error || 'Erro no relatório de horas extras');
+                    }
+                    
+                    // 3. Relatório Completo
+                    const completoResponse = await fetch(`/api/admin/relatorios/completo?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
+                    completoData = await completoResponse.json();
+                    
+                    if (!completoData.success) {
+                        throw new Error(completoData.error || 'Erro no relatório completo');
+                    }
 
-                // Gerar relatório completo
-                const completoResponse = await fetch(`/api/admin/relatorios/completo?usuario_id=${usuarioId || ''}&data_inicio=${dataInicio}&data_fim=${dataFim}`);
-                const completoData = await completoResponse.json();
-
-                if (frequenciaData.success && horasExtrasData.success && completoData.success) {
+                    // Exibir todos os relatórios
                     exibirRelatorioFrequencia(frequenciaData.relatorio);
                     exibirRelatorioHorasExtras(horasExtrasData.relatorio);
                     exibirRelatorioCompleto(completoData.relatorio);
+                    
                     showAlert('✅ Relatórios gerados com sucesso!', 'success');
-                } else {
-                    showAlert('❌ Erro ao gerar relatórios', 'danger');
+
+                } catch (apiError) {
+                    console.error('❌ Erro na API de relatórios:', apiError);
+                    showAlert('❌ Erro ao gerar relatórios: ' + apiError.message, 'danger');
+                    
+                    // Limpar áreas em caso de erro
+                    document.getElementById('relatorio-frequencia').innerHTML = '<p class="text-center text-muted">Erro ao carregar dados</p>';
+                    document.getElementById('relatorio-horas-extras').innerHTML = '<p class="text-center text-muted">Erro ao carregar dados</p>';
+                    document.getElementById('relatorio-completo-body').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Erro ao carregar dados</td></tr>';
                 }
 
             } catch (error) {

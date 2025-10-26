@@ -224,10 +224,20 @@
             `;
         }
         
-        // Verificar se já está logado
+        // Verificar parâmetro de logout na URL
         document.addEventListener('DOMContentLoaded', function() {
+            // Verificar se veio de logout
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('logout')) {
+                // Limpar storage novamente para garantir
+                localStorage.clear();
+                sessionStorage.clear();
+                console.log('✅ Logout realizado com sucesso');
+            }
+            
+            // Verificar se já está logado (após limpar se veio de logout)
             const usuario = localStorage.getItem('usuario');
-            if (usuario) {
+            if (usuario && !urlParams.has('logout')) {
                 const userData = JSON.parse(usuario);
                 if (userData.isAdmin) {
                     window.location.href = 'admin';
