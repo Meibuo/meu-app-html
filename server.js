@@ -67,6 +67,8 @@ const initializeDatabase = async () => {
         manual BOOLEAN DEFAULT FALSE,
         data_custom DATE,
         hora_custom TIME,
+        hora_entrada TIME,
+        hora_saida TIME,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (usuario_id) REFERENCES users(id)
       )
@@ -155,31 +157,42 @@ const requireAdmin = async (req, res, next) => {
 
 // Função para obter horários fixos baseado no dia da semana
 function getHorariosFixos(data) {
-  const diaSemana = new Date(data).getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
-  
-  if (diaSemana === 5) { // Sexta-feira
-    return {
-      entrada: '07:00',
-      intervalo: '12:00', 
-      retorno: '13:00',
-      saida: '16:00',
-      texto: '07:00 | 12:00 | 13:00 | 16:00'
-    };
-  } else if (diaSemana >= 1 && diaSemana <= 4) { // Segunda a Quinta
-    return {
-      entrada: '07:00',
-      intervalo: '12:00',
-      retorno: '13:00', 
-      saida: '17:00',
-      texto: '07:00 | 12:00 | 13:00 | 17:00'
-    };
-  } else { // Sábado, Domingo ou Feriado
+  try {
+    const diaSemana = new Date(data).getDay(); // 0=Domingo, 1=Segunda, ..., 6=Sábado
+    
+    if (diaSemana === 5) { // Sexta-feira
+      return {
+        entrada: '07:00',
+        intervalo: '12:00', 
+        retorno: '13:00',
+        saida: '16:00',
+        texto: '07:00 | 12:00 | 13:00 | 16:00'
+      };
+    } else if (diaSemana >= 1 && diaSemana <= 4) { // Segunda a Quinta
+      return {
+        entrada: '07:00',
+        intervalo: '12:00',
+        retorno: '13:00', 
+        saida: '17:00',
+        texto: '07:00 | 12:00 | 13:00 | 17:00'
+      };
+    } else { // Sábado, Domingo ou Feriado
+      return {
+        entrada: '--:--',
+        intervalo: '--:--',
+        retorno: '--:--',
+        saida: '--:--',
+        texto: 'Folga'
+      };
+    }
+  } catch (error) {
+    console.error('Erro ao obter horários fixos:', error);
     return {
       entrada: '--:--',
       intervalo: '--:--',
       retorno: '--:--',
       saida: '--:--',
-      texto: 'Folga'
+      texto: 'Horário não definido'
     };
   }
 }
@@ -386,48 +399,33 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
     let registros = [];
 
     if (horas_extras && hora_entrada && hora_saida) {
-      // Registrar HORA EXTRA com entrada e saída
-      const registroEntradaId = 'reg-' + Date.now() + '-1-' + Math.random().toString(36).substr(2, 5);
-      const registroSaidaId = 'reg-' + Date.now() + '-2-' + Math.random().toString(36).substr(2, 5);
+      // Registrar HORA EXTRA - APENAS UM REGISTRO
+      const registroId = 'reg-he-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
-      // Registrar entrada da hora extra
       await pool.query(
-        `INSERT INTO registros_ponto (id, usuario_id, tipo, local, observacao, horas_extras, data_custom, hora_custom) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        `INSERT INTO registros_ponto (id, usuario_id, tipo, local, observacao, horas_extras, data_custom, hora_entrada, hora_saida) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
-          registroEntradaId, 
+          registroId, 
           usuario_id, 
-          'entrada', 
+          'hora_extra', 
           local, 
-          observacao ? observacao + ' (Hora Extra - Entrada)' : 'Hora Extra - Entrada', 
+          observacao || null, 
           true,
           data_custom,
-          hora_entrada
-        ]
-      );
-
-      // Registrar saída da hora extra
-      await pool.query(
-        `INSERT INTO registros_ponto (id, usuario_id, tipo, local, observacao, horas_extras, data_custom, hora_custom) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          registroSaidaId, 
-          usuario_id, 
-          'saida', 
-          local, 
-          observacao ? observacao + ' (Hora Extra - Saída)' : 'Hora Extra - Saída', 
-          true,
-          data_custom,
+          hora_entrada,
           hora_saida
         ]
       );
 
-      registros = [
-        { id: registroEntradaId, tipo: 'entrada', hora: hora_entrada },
-        { id: registroSaidaId, tipo: 'saida', hora: hora_saida }
-      ];
+      registros = [{ 
+        id: registroId, 
+        tipo: 'hora_extra', 
+        hora_entrada: hora_entrada,
+        hora_saida: hora_saida
+      }];
 
-      console.log('✅ Hora extra registrada com sucesso - Entrada:', hora_entrada, 'Saída:', hora_saida);
+      console.log('✅ Hora extra registrada com sucesso:', hora_entrada, 'às', hora_saida);
 
     } else {
       // Ponto normal - detecção automática
@@ -470,7 +468,6 @@ app.post('/api/registrar-ponto', requireAuth, async (req, res) => {
       registros = [{ 
         id: registroId, 
         tipo: tipo, 
-        hora: '', // Não mostrar hora específica
         horariosDia: horariosFixos
       }];
       console.log('✅ Ponto registrado com sucesso - Tipo:', tipo);
@@ -517,31 +514,47 @@ app.get('/api/registros/:usuario_id', requireAuth, async (req, res) => {
 
     const registros = result.rows.map(reg => {
       // Usar data_custom se existir, senão usar criado_em
-      const data = reg.data_custom || new Date(reg.criado_em).toISOString().split('T')[0];
-      const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
-      
-      // Obter horários fixos para o dia
-      const horariosFixos = getHorariosFixos(data);
-      
-      // Para pontos normais, não mostrar hora específica
-      let horaFormatada = '';
-      if (reg.horas_extras && reg.hora_custom) {
-        // Para horas extras, usar a hora customizada
-        horaFormatada = reg.hora_custom.substring(0, 5);
-      }
+      let data;
+      try {
+        if (reg.data_custom) {
+          data = reg.data_custom;
+        } else {
+          data = new Date(reg.criado_em).toISOString().split('T')[0];
+        }
+        const dataFormatada = new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
+        
+        // Obter horários fixos para o dia
+        const horariosFixos = getHorariosFixos(data);
 
-      return {
-        id: reg.id,
-        tipo: reg.tipo,
-        local: reg.local,
-        observacao: reg.observacao,
-        horas_extras: reg.horas_extras,
-        data: dataFormatada,
-        hora: horaFormatada,
-        horariosDia: horariosFixos,
-        diaSemana: new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }),
-        criadoEm: reg.criado_em
-      };
+        return {
+          id: reg.id,
+          tipo: reg.tipo,
+          local: reg.local,
+          observacao: reg.observacao,
+          horas_extras: reg.horas_extras,
+          data: dataFormatada,
+          hora_entrada: reg.hora_entrada ? reg.hora_entrada.substring(0, 5) : '',
+          hora_saida: reg.hora_saida ? reg.hora_saida.substring(0, 5) : '',
+          horariosDia: horariosFixos,
+          diaSemana: new Date(data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long' }),
+          criadoEm: reg.criado_em
+        };
+      } catch (error) {
+        console.error('Erro ao formatar registro:', error);
+        return {
+          id: reg.id,
+          tipo: reg.tipo,
+          local: reg.local,
+          observacao: reg.observacao,
+          horas_extras: reg.horas_extras,
+          data: 'Data inválida',
+          hora_entrada: reg.hora_entrada ? reg.hora_entrada.substring(0, 5) : '',
+          hora_saida: reg.hora_saida ? reg.hora_saida.substring(0, 5) : '',
+          horariosDia: { texto: 'Horário não definido' },
+          diaSemana: 'Dia inválido',
+          criadoEm: reg.criado_em
+        };
+      }
     });
 
     console.log('📋 Primeiros registros formatados:', registros.slice(0, 3));
@@ -576,8 +589,8 @@ app.get('/api/estatisticas/:usuario_id', requireAuth, async (req, res) => {
       [usuario_id]
     );
 
-    // Calcular horas extras totais (cada hora extra tem 2 registros: entrada e saída)
-    const totalHorasExtras = Math.floor(parseInt(horasExtrasResult.rows[0].count) / 2);
+    // Cada hora extra é um único registro agora
+    const totalHorasExtras = parseInt(horasExtrasResult.rows[0].count);
 
     res.json({
       success: true,
@@ -600,7 +613,7 @@ app.get('/api/debug/registros/:usuario_id', requireAuth, async (req, res) => {
     console.log('🔍 DEBUG: Buscando registros para usuário:', usuario_id);
     
     const result = await pool.query(
-      `SELECT id, tipo, local, observacao, horas_extras, data_custom, hora_custom, criado_em 
+      `SELECT id, tipo, local, observacao, horas_extras, data_custom, hora_entrada, hora_saida, criado_em 
        FROM registros_ponto 
        WHERE usuario_id = $1 
        ORDER BY criado_em DESC 
@@ -616,7 +629,8 @@ app.get('/api/debug/registros/:usuario_id', requireAuth, async (req, res) => {
         local: reg.local,
         horas_extras: reg.horas_extras,
         data_custom: reg.data_custom,
-        hora_custom: reg.hora_custom,
+        hora_entrada: reg.hora_entrada,
+        hora_saida: reg.hora_saida,
         criado_em: reg.criado_em
       });
     });

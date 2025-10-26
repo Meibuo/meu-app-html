@@ -164,29 +164,9 @@
             padding: 15px;
         }
         
-        .registro-item.saida {
-            border-left-color: #dc3545;
-            background: #fff8f8;
-        }
-        
-        .registro-item.intervalo {
-            border-left-color: #ffc107;
-            background: #fffef0;
-        }
-        
-        .registro-item.retorno {
-            border-left-color: #17a2b8;
-            background: #f0fdff;
-        }
-        
         .registro-item.hora-extra {
             border-left-color: #ff6b6b;
             background: #fff0f0;
-        }
-        
-        .hora-extra-badge {
-            background: #ff6b6b;
-            color: white;
         }
         
         .horarios-dia {
@@ -195,6 +175,15 @@
             padding: 8px 12px;
             margin-top: 8px;
             font-size: 0.85em;
+        }
+        
+        .hora-extra-info {
+            background: #ffe6e6;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 0.85em;
+            border-left: 3px solid #ff6b6b;
         }
     </style>
 </head>
@@ -677,26 +666,49 @@
             lista.innerHTML = registros.map(registro => {
                 const isHoraExtra = registro.horas_extras;
                 
-                return `
-                    <div class="registro-item ${isHoraExtra ? 'hora-extra' : registro.tipo}">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <div class="d-flex align-items-center mb-2">
-                                    <strong class="me-2">Ponto registrado</strong>
-                                    ${isHoraExtra ? '<span class="badge hora-extra-badge me-2">HORA EXTRA</span>' : ''}
-                                </div>
-                                <div class="text-muted small">
-                                    <i class="fas fa-calendar me-1"></i>${registro.data}
-                                    ${registro.local ? `<br><i class="fas fa-map-marker-alt me-1"></i>${registro.local}` : ''}
-                                    ${registro.observacao ? `<br><i class="fas fa-sticky-note me-1"></i>${registro.observacao}` : ''}
-                                </div>
-                                <div class="horarios-dia">
-                                    <small><strong>Horários:</strong> ${registro.horariosDia.texto}</small>
+                if (isHoraExtra) {
+                    // Exibir HORA EXTRA
+                    return `
+                        <div class="registro-item hora-extra">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <strong class="me-2">Ponto de Extra registrado</strong>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="fas fa-calendar me-1"></i>${registro.data}
+                                        ${registro.local ? `<br><i class="fas fa-map-marker-alt me-1"></i>${registro.local}` : ''}
+                                        ${registro.observacao ? `<br><i class="fas fa-sticky-note me-1"></i>${registro.observacao}` : ''}
+                                    </div>
+                                    <div class="hora-extra-info">
+                                        <small><strong>Horário:</strong> ${registro.hora_entrada} às ${registro.hora_saida}</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else {
+                    // Exibir PONTO NORMAL
+                    return `
+                        <div class="registro-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <strong class="me-2">Ponto registrado</strong>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="fas fa-calendar me-1"></i>${registro.data}
+                                        ${registro.local ? `<br><i class="fas fa-map-marker-alt me-1"></i>${registro.local}` : ''}
+                                        ${registro.observacao ? `<br><i class="fas fa-sticky-note me-1"></i>${registro.observacao}` : ''}
+                                    </div>
+                                    <div class="horarios-dia">
+                                        <small><strong>Horários:</strong> ${registro.horariosDia.texto}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
             }).join('');
         }
 
